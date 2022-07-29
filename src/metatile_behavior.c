@@ -139,7 +139,7 @@ bool8 MetatileBehavior_IsATile(u8 metatileBehavior)
 
 bool8 MetatileBehavior_IsEncounterTile(u8 metatileBehavior)
 {
-    if ((sTileBitAttributes[metatileBehavior] & TILE_FLAG_HAS_ENCOUNTERS))
+    if ((sTileBitAttributes[metatileBehavior] & TILE_FLAG_ENCOUNTER_TILE))
         return TRUE;
     else
         return FALSE;
