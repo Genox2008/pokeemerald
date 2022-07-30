@@ -836,15 +836,6 @@ static const u8 sTerrainToType[] =
     [BATTLE_TERRAIN_PLAIN]      = TYPE_NORMAL,
 };
 
-// - ITEM_ULTRA_BALL skips Master Ball and ITEM_NONE
-static const u8 sBallCatchBonuses[] =
-{
-    [ITEM_ULTRA_BALL - ITEM_ULTRA_BALL]  = 20,
-    [ITEM_GREAT_BALL - ITEM_ULTRA_BALL]  = 15,
-    [ITEM_POKE_BALL - ITEM_ULTRA_BALL]   = 10,
-    [ITEM_SAFARI_BALL - ITEM_ULTRA_BALL] = 15
-};
-
 // In Battle Palace, moves are chosen based on the pokemons nature rather than by the player
 // Moves are grouped into "Attack", "Defense", or "Support" (see PALACE_MOVE_GROUP_*)
 // Each nature has a certain percent chance of selecting a move from a particular group
@@ -1155,7 +1146,7 @@ static void Cmd_accuracycheck(void)
         if (gBattleMons[gBattlerAttacker].ability == ABILITY_HUSTLE && IS_TYPE_PHYSICAL(type))
             calc = (calc * 80) / 100; // 1.2 hustle loss
 
-        if (gBattleMons[gBattlerTarget].item == ITEM_ENIGMA_BERRY)
+        if (gBattleMons[gBattlerTarget].item == ITEM_ENIGMA_BERRY_E_READER)
         {
             holdEffect = gEnigmaBerries[gBattlerTarget].holdEffect;
             param = gEnigmaBerries[gBattlerTarget].holdEffectParam;
@@ -1255,7 +1246,7 @@ static void Cmd_critcalc(void)
 
     item = gBattleMons[gBattlerAttacker].item;
 
-    if (item == ITEM_ENIGMA_BERRY)
+    if (item == ITEM_ENIGMA_BERRY_E_READER)
         holdEffect = gEnigmaBerries[gBattlerAttacker].holdEffect;
     else
         holdEffect = ItemId_GetHoldEffect(item);
@@ -1269,7 +1260,7 @@ static void Cmd_critcalc(void)
                 + (gBattleMoves[gCurrentMove].effect == EFFECT_POISON_TAIL)
                 + (holdEffect == HOLD_EFFECT_SCOPE_LENS)
                 + 2 * (holdEffect == HOLD_EFFECT_LUCKY_PUNCH && gBattleMons[gBattlerAttacker].species == SPECIES_CHANSEY)
-                + 2 * (holdEffect == HOLD_EFFECT_STICK && gBattleMons[gBattlerAttacker].species == SPECIES_FARFETCHD);
+                + 2 * (holdEffect == HOLD_EFFECT_LEEK && gBattleMons[gBattlerAttacker].species == SPECIES_FARFETCHD);
 
     if (critChance >= ARRAY_COUNT(sCriticalHitChance))
         critChance = ARRAY_COUNT(sCriticalHitChance) - 1;
@@ -1658,7 +1649,7 @@ static void Cmd_adjustnormaldamage(void)
 
     ApplyRandomDmgMultiplier();
 
-    if (gBattleMons[gBattlerTarget].item == ITEM_ENIGMA_BERRY)
+    if (gBattleMons[gBattlerTarget].item == ITEM_ENIGMA_BERRY_E_READER)
     {
         holdEffect = gEnigmaBerries[gBattlerTarget].holdEffect;
         param = gEnigmaBerries[gBattlerTarget].holdEffectParam;
@@ -1700,7 +1691,7 @@ static void Cmd_adjustnormaldamage2(void) // The same as adjustnormaldamage exce
 
     ApplyRandomDmgMultiplier();
 
-    if (gBattleMons[gBattlerTarget].item == ITEM_ENIGMA_BERRY)
+    if (gBattleMons[gBattlerTarget].item == ITEM_ENIGMA_BERRY_E_READER)
     {
         holdEffect = gEnigmaBerries[gBattlerTarget].holdEffect;
         param = gEnigmaBerries[gBattlerTarget].holdEffectParam;
@@ -2744,7 +2735,7 @@ void SetMoveEffect(bool8 primary, u8 certain)
                         RecordAbilityBattle(gBattlerTarget, gLastUsedAbility);
                     }
                     else if (gBattleMons[gBattlerAttacker].item != ITEM_NONE
-                        || gBattleMons[gBattlerTarget].item == ITEM_ENIGMA_BERRY
+                        || gBattleMons[gBattlerTarget].item == ITEM_ENIGMA_BERRY_E_READER
                         || IS_ITEM_MAIL(gBattleMons[gBattlerTarget].item)
                         || gBattleMons[gBattlerTarget].item == ITEM_NONE)
                     {
@@ -3263,7 +3254,7 @@ static void Cmd_getexp(void)
 
                 item = GetMonData(&gPlayerParty[i], MON_DATA_HELD_ITEM);
 
-                if (item == ITEM_ENIGMA_BERRY)
+                if (item == ITEM_ENIGMA_BERRY_E_READER)
                     holdEffect = gSaveBlock1Ptr->enigmaBerry.holdEffect;
                 else
                     holdEffect = ItemId_GetHoldEffect(item);
@@ -3302,7 +3293,7 @@ static void Cmd_getexp(void)
         {
             item = GetMonData(&gPlayerParty[gBattleStruct->expGetterMonId], MON_DATA_HELD_ITEM);
 
-            if (item == ITEM_ENIGMA_BERRY)
+            if (item == ITEM_ENIGMA_BERRY_E_READER)
                 holdEffect = gSaveBlock1Ptr->enigmaBerry.holdEffect;
             else
                 holdEffect = ItemId_GetHoldEffect(item);
@@ -4192,7 +4183,7 @@ static void Cmd_moveend(void)
     endMode = gBattlescriptCurrInstr[1];
     endState = gBattlescriptCurrInstr[2];
 
-    if (gBattleMons[gBattlerAttacker].item == ITEM_ENIGMA_BERRY)
+    if (gBattleMons[gBattlerAttacker].item == ITEM_ENIGMA_BERRY_E_READER)
         holdEffectAtk = gEnigmaBerries[gBattlerAttacker].holdEffect;
     else
         holdEffectAtk = ItemId_GetHoldEffect(gBattleMons[gBattlerAttacker].item);
@@ -5828,7 +5819,7 @@ static void Cmd_adjustsetdamage(void) // The same as adjustnormaldamage, except 
 {
     u8 holdEffect, param;
 
-    if (gBattleMons[gBattlerTarget].item == ITEM_ENIGMA_BERRY)
+    if (gBattleMons[gBattlerTarget].item == ITEM_ENIGMA_BERRY_E_READER)
     {
         holdEffect = gEnigmaBerries[gBattlerTarget].holdEffect;
         param = gEnigmaBerries[gBattlerTarget].holdEffectParam;
@@ -7415,7 +7406,7 @@ static void Cmd_tryKO(void)
 {
     u8 holdEffect, param;
 
-    if (gBattleMons[gBattlerTarget].item == ITEM_ENIGMA_BERRY)
+    if (gBattleMons[gBattlerTarget].item == ITEM_ENIGMA_BERRY_E_READER)
     {
        holdEffect = gEnigmaBerries[gBattlerTarget].holdEffect;
        param = gEnigmaBerries[gBattlerTarget].holdEffectParam;
@@ -9110,8 +9101,8 @@ static void Cmd_tryswapitems(void) // trick
         // can't swap if two pokemon don't have an item
         // or if either of them is an enigma berry or a mail
         else if ((gBattleMons[gBattlerAttacker].item == ITEM_NONE && gBattleMons[gBattlerTarget].item == ITEM_NONE)
-                 || gBattleMons[gBattlerAttacker].item == ITEM_ENIGMA_BERRY
-                 || gBattleMons[gBattlerTarget].item == ITEM_ENIGMA_BERRY
+                 || gBattleMons[gBattlerAttacker].item == ITEM_ENIGMA_BERRY_E_READER
+                 || gBattleMons[gBattlerTarget].item == ITEM_ENIGMA_BERRY_E_READER
                  || IS_ITEM_MAIL(gBattleMons[gBattlerAttacker].item)
                  || IS_ITEM_MAIL(gBattleMons[gBattlerTarget].item))
         {
@@ -9790,7 +9781,7 @@ static void Cmd_removelightscreenreflect(void) // brick break
 
 static void Cmd_handleballthrow(void)
 {
-    u8 ballMultiplier = 0;
+    u8 ballMultiplier = 10;
 
     if (gBattleControllerExecFlags)
         return;
@@ -9815,58 +9806,44 @@ static void Cmd_handleballthrow(void)
         u32 odds;
         u8 catchRate;
 
-        if (gLastUsedItem == ITEM_SAFARI_BALL)
+        if (gBattleTypeFlags & BATTLE_TYPE_SAFARI)
             catchRate = gBattleStruct->safariCatchFactor * 1275 / 100;
         else
             catchRate = gBaseStats[gBattleMons[gBattlerTarget].species].catchRate;
 
-        if (gLastUsedItem > ITEM_SAFARI_BALL)
+        switch (gLastUsedItem)
         {
-            switch (gLastUsedItem)
+        case ITEM_ULTRA_BALL:
+            ballMultiplier = 20;
+        case ITEM_GREAT_BALL:
+        case ITEM_SAFARI_BALL:
+            ballMultiplier = 15;
+        case ITEM_NET_BALL:
+            if (IS_BATTLER_OF_TYPE(gBattlerTarget, TYPE_WATER) || IS_BATTLER_OF_TYPE(gBattlerTarget, TYPE_BUG))
+                ballMultiplier = 30;
+            break;
+        case ITEM_DIVE_BALL:
+            if (GetCurrentMapType() == MAP_TYPE_UNDERWATER)
+                ballMultiplier = 35;
+            break;
+        case ITEM_NEST_BALL:
+            if (gBattleMons[gBattlerTarget].level < 40)
             {
-            case ITEM_NET_BALL:
-                if (IS_BATTLER_OF_TYPE(gBattlerTarget, TYPE_WATER) || IS_BATTLER_OF_TYPE(gBattlerTarget, TYPE_BUG))
-                    ballMultiplier = 30;
-                else
+                ballMultiplier = 40 - gBattleMons[gBattlerTarget].level;
+                if (ballMultiplier <= 9)
                     ballMultiplier = 10;
-                break;
-            case ITEM_DIVE_BALL:
-                if (GetCurrentMapType() == MAP_TYPE_UNDERWATER)
-                    ballMultiplier = 35;
-                else
-                    ballMultiplier = 10;
-                break;
-            case ITEM_NEST_BALL:
-                if (gBattleMons[gBattlerTarget].level < 40)
-                {
-                    ballMultiplier = 40 - gBattleMons[gBattlerTarget].level;
-                    if (ballMultiplier <= 9)
-                        ballMultiplier = 10;
-                }
-                else
-                {
-                    ballMultiplier = 10;
-                }
-                break;
-            case ITEM_REPEAT_BALL:
-                if (GetSetPokedexFlag(SpeciesToNationalPokedexNum(gBattleMons[gBattlerTarget].species), FLAG_GET_CAUGHT))
-                    ballMultiplier = 30;
-                else
-                    ballMultiplier = 10;
-                break;
-            case ITEM_TIMER_BALL:
-                ballMultiplier = gBattleResults.battleTurnCounter + 10;
-                if (ballMultiplier > 40)
-                    ballMultiplier = 40;
-                break;
-            case ITEM_LUXURY_BALL:
-            case ITEM_PREMIER_BALL:
-                ballMultiplier = 10;
-                break;
             }
+            break;
+        case ITEM_REPEAT_BALL:
+            if (GetSetPokedexFlag(SpeciesToNationalPokedexNum(gBattleMons[gBattlerTarget].species), FLAG_GET_CAUGHT))
+                ballMultiplier = 30;
+            break;
+        case ITEM_TIMER_BALL:
+            ballMultiplier = gBattleResults.battleTurnCounter + 10;
+            if (ballMultiplier > 40)
+                ballMultiplier = 40;
+            break;
         }
-        else
-            ballMultiplier = sBallCatchBonuses[gLastUsedItem - ITEM_ULTRA_BALL];
 
         odds = (catchRate * ballMultiplier / 10)
             * (gBattleMons[gBattlerTarget].maxHP * 3 - gBattleMons[gBattlerTarget].hp * 2)
@@ -9877,18 +9854,8 @@ static void Cmd_handleballthrow(void)
         if (gBattleMons[gBattlerTarget].status1 & (STATUS1_POISON | STATUS1_BURN | STATUS1_PARALYSIS | STATUS1_TOXIC_POISON))
             odds = (odds * 15) / 10;
 
-        if (gLastUsedItem != ITEM_SAFARI_BALL)
-        {
-            if (gLastUsedItem == ITEM_MASTER_BALL)
-            {
-                gBattleResults.usedMasterBall = TRUE;
-            }
-            else
-            {
-                if (gBattleResults.catchAttempts[gLastUsedItem - ITEM_ULTRA_BALL] < 255)
-                    gBattleResults.catchAttempts[gLastUsedItem - ITEM_ULTRA_BALL]++;
-            }
-        }
+        if (gBattleResults.catchAttempts[gLastUsedItem - FIRST_BALL] < 255)
+            gBattleResults.catchAttempts[gLastUsedItem - FIRST_BALL]++;
 
         if (odds > 254) // mon caught
         {
