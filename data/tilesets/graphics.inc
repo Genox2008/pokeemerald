@@ -1729,3 +1729,43 @@ gTilesetPalettes_UnionRoom::
 	.align 2
 gTilesetTiles_UnionRoom::
 	.incbin "data/tilesets/secondary/union_room/tiles.4bpp.lz"
+
+	.align 2
+gTilesetPalettes_otusdefault::
+	.incbin "data/tilesets/primary/otusdefault/palettes/00.gbapal"
+	.incbin "data/tilesets/primary/otusdefault/palettes/01.gbapal"
+	.incbin "data/tilesets/primary/otusdefault/palettes/02.gbapal"
+	.incbin "data/tilesets/primary/otusdefault/palettes/03.gbapal"
+	.incbin "data/tilesets/primary/otusdefault/palettes/04.gbapal"
+	.incbin "data/tilesets/primary/otusdefault/palettes/05.gbapal"
+	.incbin "data/tilesets/primary/otusdefault/palettes/06.gbapal"
+	.incbin "data/tilesets/primary/otusdefault/palettes/07.gbapal"
+	.incbin "data/tilesets/primary/otusdefault/palettes/08.gbapal"
+	.incbin "data/tilesets/primary/otusdefault/palettes/09.gbapal"
+	.incbin "data/tilesets/primary/otusdefault/palettes/10.gbapal"
+	.incbin "data/tilesets/primary/otusdefault/palettes/11.gbapal"
+	.incbin "data/tilesets/primary/otusdefault/palettes/12.gbapal"
+
+	.align 2
+gTilesetTiles_otusdefault::
+	.incbin "data/tilesets/primary/otusdefault/tiles.4bpp.lz"
+
+	.align 2
+gTilesetPalettes_seconddefault::
+	.incbin "data/tilesets/secondary/seconddefault/palettes/00.gbapal"
+	.incbin "data/tilesets/secondary/seconddefault/palettes/01.gbapal"
+	.incbin "data/tilesets/secondary/seconddefault/palettes/02.gbapal"
+	.incbin "data/tilesets/secondary/seconddefault/palettes/03.gbapal"
+	.incbin "data/tilesets/secondary/seconddefault/palettes/04.gbapal"
+	.incbin "data/tilesets/secondary/seconddefault/palettes/05.gbapal"
+	.incbin "data/tilesets/secondary/seconddefault/palettes/06.gbapal"
+	.incbin "data/tilesets/secondary/seconddefault/palettes/07.gbapal"
+	.incbin "data/tilesets/secondary/seconddefault/palettes/08.gbapal"
+	.incbin "data/tilesets/secondary/seconddefault/palettes/09.gbapal"
+	.incbin "data/tilesets/secondary/seconddefault/palettes/10.gbapal"
+	.incbin "data/tilesets/secondary/seconddefault/palettes/11.gbapal"
+	.incbin "data/tilesets/secondary/seconddefault/palettes/12.gbapal"
+
+	.align 2
+gTilesetTiles_seconddefault::
+	.incbin "data/tilesets/secondary/seconddefault/tiles.4bpp.lz"

@@ -830,3 +830,25 @@ gTileset_UnionRoom::
 	.4byte gMetatiles_UnionRoom
 	.4byte gMetatileAttributes_UnionRoom
 	.4byte NULL @ animation callback
+
+	.align 2
+gTileset_otusdefault::
+	.byte TRUE @ is compressed
+	.byte FALSE @ is secondary
+	.2byte 0
+	.4byte gTilesetTiles_otusdefault
+	.4byte gTilesetPalettes_otusdefault
+	.4byte gMetatiles_otusdefault
+	.4byte gMetatileAttributes_otusdefault
+	.4byte NULL
+
+	.align 2
+gTileset_seconddefault::
+	.byte TRUE @ is compressed
+	.byte TRUE @ is secondary
+	.2byte 0
+	.4byte gTilesetTiles_seconddefault
+	.4byte gTilesetPalettes_seconddefault
+	.4byte gMetatiles_seconddefault
+	.4byte gMetatileAttributes_seconddefault
+	.4byte NULL

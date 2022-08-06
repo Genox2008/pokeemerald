@@ -1,0 +1,64 @@
+mapscripts LittlerootTown_ProfessorBirchsLab_MapScripts {}
+
+script Pokemon_Chimchar_get{
+
+    lockall
+    showmonpic(SPECIES_CHIMCHAR, 10, 3)
+    msgbox("Do you want to choose Chimchar?", MSGBOX_YESNO)
+    if(var(VAR_RESULT) == YES){
+        givemon(SPECIES_CHIMCHAR, 5, 0)
+        if(var(VAR_RESULT) == MON_GIVEN_TO_PARTY){
+            playfanfare(MUS_OBTAIN_ITEM)
+            msgbox("{PLAYER} recieved Chimchar!")
+            setflag(FLAG_SYS_POKEMON_GET)
+            setflag(FLAG_SYS_POKEDEX_GET)
+            removeobject(2)
+            setflag(FLAG_UNUSED_0x020)
+            call(NicknamePartyMon)
+        }
+        elif(var(VAR_RESULT) == MON_GIVEN_TO_PC){
+            playfanfare(MUS_OBTAIN_ITEM)
+            msgbox("{PLAYER} recieved Chimchar!")
+            setflag(FLAG_SYS_POKEMON_GET)
+            setflag(FLAG_SYS_POKEDEX_GET)
+            removeobject(2)
+            setflag(FLAG_UNUSED_0x020)
+            call(NicknameBoxMon)
+        }
+        else{
+            hidemonpic
+            msgbox("There's no room in your POKéMON party.")
+        }
+    }
+    else{
+        hidemonpic
+        msgbox("Choose wisely!")
+    }
+    waitmessage
+    releaseall
+    end
+
+}
+
+script NicknamePartyMon{
+
+    msgbox("Give it a nickname?", MSGBOX_YESNO)
+    hidemonpic
+    if(var(VAR_RESULT) == YES){
+        call(Common_EventScript_GetGiftMonPartySlot)
+        call(Common_EventScript_NameReceivedPartyMon)
+    }
+    
+
+}
+
+script NicknameBoxMon{
+
+    msgbox("Give it a nickname?", MSGBOX_YESNO)
+    hidemonpic
+    if(var(VAR_RESULT) == YES){
+        call(Common_EventScript_NameReceivedBoxMon)
+    }
+    call(Common_EventScript_TransferredToPC)
+
+}

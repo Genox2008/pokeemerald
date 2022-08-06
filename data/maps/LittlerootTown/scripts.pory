@@ -1,0 +1,10 @@
+mapscripts LittlerootTown_MapScripts {}
+
+script OtusTown_Boy_1 {
+    lockall
+    faceplayer
+    msgbox("PROF. SPRUCE spends days in his LAB\nstudying. He lives here, because\lhe likes the nature alot.")
+    msgbox("Otus Town really is a perfect place\nfor him!")
+    releaseall
+    end
+}

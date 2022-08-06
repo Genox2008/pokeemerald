@@ -94,20 +94,20 @@
     {
       "id": "LAYOUT_LITTLEROOT_TOWN",
       "name": "LittlerootTown_Layout",
-      "width": 20,
-      "height": 20,
-      "primary_tileset": "gTileset_General",
-      "secondary_tileset": "gTileset_Petalburg",
+      "width": 52,
+      "height": 36,
+      "primary_tileset": "gTileset_otusdefault",
+      "secondary_tileset": "gTileset_seconddefault",
       "border_filepath": "data/layouts/LittlerootTown/border.bin",
       "blockdata_filepath": "data/layouts/LittlerootTown/map.bin"
     },
     {
       "id": "LAYOUT_OLDALE_TOWN",
       "name": "OldaleTown_Layout",
-      "width": 20,
-      "height": 20,
-      "primary_tileset": "gTileset_General",
-      "secondary_tileset": "gTileset_Petalburg",
+      "width": 46,
+      "height": 50,
+      "primary_tileset": "gTileset_otusdefault",
+      "secondary_tileset": "gTileset_seconddefault",
       "border_filepath": "data/layouts/OldaleTown/border.bin",
       "blockdata_filepath": "data/layouts/OldaleTown/map.bin"
     },
@@ -534,8 +534,8 @@
     {
       "id": "LAYOUT_LITTLEROOT_TOWN_BRENDANS_HOUSE_1F",
       "name": "LittlerootTown_BrendansHouse_1F_Layout",
-      "width": 11,
-      "height": 9,
+      "width": 16,
+      "height": 11,
       "primary_tileset": "gTileset_Building",
       "secondary_tileset": "gTileset_BrendansMaysHouse",
       "border_filepath": "data/layouts/LittlerootTown_BrendansHouse_1F/border.bin",
@@ -544,7 +544,7 @@
     {
       "id": "LAYOUT_LITTLEROOT_TOWN_BRENDANS_HOUSE_2F",
       "name": "LittlerootTown_BrendansHouse_2F_Layout",
-      "width": 9,
+      "width": 11,
       "height": 8,
       "primary_tileset": "gTileset_Building",
       "secondary_tileset": "gTileset_BrendansMaysHouse",
@@ -4410,6 +4410,56 @@
       "secondary_tileset": "gTileset_MysteryEventsHouse",
       "border_filepath": "data/layouts/SootopolisCity_MysteryEventsHouse_1F_StairsUnblocked/border.bin",
       "blockdata_filepath": "data/layouts/SootopolisCity_MysteryEventsHouse_1F_StairsUnblocked/map.bin"
+    },
+    {
+      "id": "LAYOUT_ROUTE1",
+      "name": "Route1_Layout",
+      "width": 28,
+      "height": 44,
+      "primary_tileset": "gTileset_otusdefault",
+      "secondary_tileset": "gTileset_seconddefault",
+      "border_filepath": "data/layouts/Route1/border.bin",
+      "blockdata_filepath": "data/layouts/Route1/map.bin"
+    },
+    {
+      "id": "LAYOUT_ROUTE2",
+      "name": "Route2_Layout",
+      "width": 20,
+      "height": 20,
+      "primary_tileset": "gTileset_otusdefault",
+      "secondary_tileset": "gTileset_seconddefault",
+      "border_filepath": "data/layouts/Route2/border.bin",
+      "blockdata_filepath": "data/layouts/Route2/map.bin"
+    },
+    {
+      "id": "LAYOUT_ROUTE3",
+      "name": "Route3_Layout",
+      "width": 36,
+      "height": 24,
+      "primary_tileset": "gTileset_otusdefault",
+      "secondary_tileset": "gTileset_seconddefault",
+      "border_filepath": "data/layouts/Route3/border.bin",
+      "blockdata_filepath": "data/layouts/Route3/map.bin"
+    },
+    {
+      "id": "LAYOUT_PLAYER_HOUSE_2F",
+      "name": "PlayerHouse_2F_Layout",
+      "width": 11,
+      "height": 8,
+      "primary_tileset": "gTileset_Building",
+      "secondary_tileset": "gTileset_BrendansMaysHouse",
+      "border_filepath": "data/layouts/PlayerHouse_2F/border.bin",
+      "blockdata_filepath": "data/layouts/PlayerHouse_2F/map.bin"
+    },
+    {
+      "id": "LAYOUT_PLAYER_HOUSE_1F",
+      "name": "PlayerHouse_1F_Layout",
+      "width": 16,
+      "height": 10,
+      "primary_tileset": "gTileset_Building",
+      "secondary_tileset": "gTileset_BrendansMaysHouse",
+      "border_filepath": "data/layouts/PlayerHouse_1F/border.bin",
+      "blockdata_filepath": "data/layouts/PlayerHouse_1F/map.bin"
     }
   ]
 }
