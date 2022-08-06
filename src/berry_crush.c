@@ -874,7 +874,7 @@ static const struct DigitObjUtilTemplate sDigitObjTemplates[] =
         .xDelta = 8,
         .x = 156,
         .y = 0,
-        .spriteSheet = (void *) &sSpriteSheets[3],
+        .spriteSheet = (void*) &sSpriteSheets[3],
         .spritePal = &sSpritePals[2],
     },
     { // Seconds
@@ -886,7 +886,7 @@ static const struct DigitObjUtilTemplate sDigitObjTemplates[] =
         .xDelta = 8,
         .x = 180,
         .y = 0,
-        .spriteSheet = (void *) &sSpriteSheets[3],
+        .spriteSheet = (void*) &sSpriteSheets[3],
         .spritePal = &sSpritePals[2],
     },
     { // 1/60ths of a second
@@ -898,7 +898,7 @@ static const struct DigitObjUtilTemplate sDigitObjTemplates[] =
         .xDelta = 8,
         .x = 204,
         .y = 0,
-        .spriteSheet = (void *) &sSpriteSheets[3],
+        .spriteSheet = (void*) &sSpriteSheets[3],
         .spritePal = &sSpritePals[2],
     }
 };
@@ -2258,11 +2258,11 @@ static u32 Cmd_PrintMessage(struct BerryCrushGame *game, u8 *args)
         if (args[1] & F_MSG_EXPAND)
         {
             StringExpandPlaceholders(gStringVar4, sMessages[args[0]]);
-            AddTextPrinterParameterized2(0, FONT_NORMAL, gStringVar4, game->textSpeed, 0, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_WHITE, TEXT_COLOR_LIGHT_GRAY);
+            AddTextPrinterParameterized2(0, FONT_NORMAL, gStringVar4, game->textSpeed, 0, 2, 1, 3);
         }
         else
         {
-            AddTextPrinterParameterized2(0, FONT_NORMAL, sMessages[args[0]], game->textSpeed, 0, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_WHITE, TEXT_COLOR_LIGHT_GRAY);
+            AddTextPrinterParameterized2(0, FONT_NORMAL, sMessages[args[0]], game->textSpeed, 0, 2, 1, 3);
         }
         CopyWindowToVram(0, COPYWIN_FULL);
         break;
@@ -3242,7 +3242,7 @@ static u32 Cmd_SaveGame(struct BerryCrushGame *game, u8 *args)
         if (!IsLinkTaskFinished())
             return 0;
         DrawDialogueFrame(0, FALSE);
-        AddTextPrinterParameterized2(0, FONT_NORMAL, gText_SavingDontTurnOffPower, 0, 0, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_WHITE, TEXT_COLOR_LIGHT_GRAY);
+        AddTextPrinterParameterized2(0, FONT_NORMAL, gText_SavingDontTurnOffPower, 0, 0, 2, 1, 3);
         CopyWindowToVram(0, COPYWIN_FULL);
         CreateTask(Task_LinkFullSave, 0);
         break;
@@ -3391,9 +3391,9 @@ static u32 Cmd_StopGame(struct BerryCrushGame *game, u8 *args)
     case 0:
         DrawDialogueFrame(0, FALSE);
         if (game->playAgainState == PLAY_AGAIN_NO_BERRIES)
-            AddTextPrinterParameterized2(0, FONT_NORMAL, sMessages[MSG_NO_BERRIES], game->textSpeed, 0, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_WHITE, TEXT_COLOR_LIGHT_GRAY);
+            AddTextPrinterParameterized2(0, FONT_NORMAL, sMessages[MSG_NO_BERRIES], game->textSpeed, 0, 2, 1, 3);
         else
-            AddTextPrinterParameterized2(0, FONT_NORMAL, sMessages[MSG_DROPPED], game->textSpeed, 0, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_WHITE, TEXT_COLOR_LIGHT_GRAY);
+            AddTextPrinterParameterized2(0, FONT_NORMAL, sMessages[MSG_DROPPED], game->textSpeed, 0, 2, 1, 3);
         CopyWindowToVram(0, COPYWIN_FULL);
         break;
     case 1:

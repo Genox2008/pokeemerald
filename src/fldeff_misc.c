@@ -1200,34 +1200,28 @@ bool8 IsLargeBreakableDecoration(u16 metatileId, bool8 checkBase)
     return FALSE;
 }
 
-#define tState  data[0]
-#define tMosaic data[1]
-
 static void Task_FieldPoisonEffect(u8 taskId)
 {
     s16 *data = gTasks[taskId].data;
 
-    switch (tState)
+    switch (data[0])
     {
     case 0:
-        tMosaic += 2;
-        if (tMosaic > 8)
-            tState++;
+        data[1] += 2;
+        if (data[1] > 8)
+            data[0]++;
         break;
     case 1:
-        tMosaic -= 2;
-        if (tMosaic == 0)
-            tState++;
+        data[1] -= 2;
+        if (data[1] == 0)
+            data[0]++;
         break;
     case 2:
         DestroyTask(taskId);
         return;
     }
-    SetGpuReg(REG_OFFSET_MOSAIC, (tMosaic << 4) | tMosaic);
+    SetGpuReg(REG_OFFSET_MOSAIC, (data[1] << 4) | data[1]);
 }
-
-#undef tState
-#undef tMosaic
 
 void FldEffPoison_Start(void)
 {
