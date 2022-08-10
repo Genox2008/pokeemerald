@@ -1,0 +1,30 @@
+mapscripts OtusTown_MapScripts {}
+
+script PlayerHouse_Signscript {
+    lockall
+    msgbox("{PLAYER}'s house.")
+    releaseall
+    end
+}
+
+script RivalHouse_Signscript {
+    lockall
+    msgbox("RIVAL's house.")
+    releaseall
+    end
+}
+
+script SpruceLab_Signscript {
+    lockall
+    msgbox("Prof. Spruce's POKéMON lab.")
+    releaseall
+    end
+}
+
+script Boy1_Eventscript {
+    lockall
+    faceplayer
+    msgbox("Prof. Spruce lives here because of\nthe nature like scenery.\pOtus Town reaally is a perfect place for\nhim.")
+    releaseall
+    end
+}

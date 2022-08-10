@@ -28,8 +28,8 @@
       "x": 2,
       "y": 9,
       "elevation": 0,
-      "dest_map": "MAP_LITTLEROOT_TOWN",
-      "dest_warp_id": 0
+      "dest_map": "MAP_OTUS_TOWN",
+      "dest_warp_id": 1
     }
   ],
   "coord_events": [

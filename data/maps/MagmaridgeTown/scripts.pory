@@ -1,0 +1,35 @@
+mapscripts MagmaridgeTown_MapScripts {}
+
+script TownSign_Evntscript {
+    lockall
+    msgbox("Magmaridge Town\nNorth: Route 1\lEast: Route 2\lSouth: Route 6\lWest: Route 3")
+    releaseall
+    end
+}
+
+script PokemonCenterMagmaridgeSign_Evntscript {
+    lockall
+    msgbox("POKéMON Center")
+    releaseall
+    end
+}
+
+script PokemonMartMagmaridgeSign_Evntscript {
+    lockall
+    msgbox("POKéMON Mart")
+    releaseall
+    end
+}
+
+script GymMagmaridgeSign_Evntscript {
+    lockall
+    msgbox("Magmaridge Town's GYM")
+    releaseall
+    end
+}
+
+script LittleGirl_Magmaridge_Eventscript {
+    lockall
+    releaseall
+    end
+}

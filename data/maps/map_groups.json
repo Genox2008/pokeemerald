@@ -96,7 +96,12 @@
     "Underwater_Route125",
     "Route1",
     "Route2",
-    "Route3"
+    "Route3",
+    "Route4",
+    "Route5",
+    "Route6",
+    "MagmaridgeTown",
+    "OtusTown"
   ],
   "gMapGroup_IndoorLittleroot": [
     "LittlerootTown_BrendansHouse_1F",
@@ -105,7 +110,8 @@
     "LittlerootTown_MaysHouse_2F",
     "LittlerootTown_ProfessorBirchsLab",
     "PlayerHouse_2F",
-    "PlayerHouse_1F"
+    "PlayerHouse_1F",
+    "OtusTownLab"
   ],
   "gMapGroup_IndoorOldale": [
     "OldaleTown_House1",

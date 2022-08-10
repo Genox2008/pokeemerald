@@ -66,6 +66,11 @@
 #define MAP_ROUTE1              (57 | (0 << 8))
 #define MAP_ROUTE2              (58 | (0 << 8))
 #define MAP_ROUTE3              (59 | (0 << 8))
+#define MAP_ROUTE4              (60 | (0 << 8))
+#define MAP_ROUTE5              (61 | (0 << 8))
+#define MAP_ROUTE6              (62 | (0 << 8))
+#define MAP_MAGMARIDGE_TOWN     (63 | (0 << 8))
+#define MAP_OTUS_TOWN           (64 | (0 << 8))
 
 // gMapGroup_IndoorLittleroot
 #define MAP_LITTLEROOT_TOWN_BRENDANS_HOUSE_1F    (0 | (1 << 8))
@@ -75,6 +80,7 @@
 #define MAP_LITTLEROOT_TOWN_PROFESSOR_BIRCHS_LAB (4 | (1 << 8))
 #define MAP_PLAYER_HOUSE_2F                      (5 | (1 << 8))
 #define MAP_PLAYER_HOUSE_1F                      (6 | (1 << 8))
+#define MAP_OTUS_TOWN_LAB                        (7 | (1 << 8))
 
 // gMapGroup_IndoorOldale
 #define MAP_OLDALE_TOWN_HOUSE1            (0 | (2 << 8))

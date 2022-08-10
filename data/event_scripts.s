@@ -1066,3 +1066,15 @@ Common_EventScript_LegendaryFlewAway::
 	.include "data/maps/PlayerHouse_2F/scripts.inc"
 
 	.include "data/maps/PlayerHouse_1F/scripts.inc"
+
+	.include "data/maps/OtusTownLab/scripts.inc"
+
+	.include "data/maps/Route4/scripts.inc"
+
+	.include "data/maps/Route5/scripts.inc"
+
+	.include "data/maps/Route6/scripts.inc"
+
+	.include "data/maps/MagmaridgeTown/scripts.inc"
+
+	.include "data/maps/OtusTown/scripts.inc"

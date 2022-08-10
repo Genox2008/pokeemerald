@@ -105,7 +105,7 @@
       "id": "LAYOUT_OLDALE_TOWN",
       "name": "OldaleTown_Layout",
       "width": 46,
-      "height": 50,
+      "height": 36,
       "primary_tileset": "gTileset_otusdefault",
       "secondary_tileset": "gTileset_seconddefault",
       "border_filepath": "data/layouts/OldaleTown/border.bin",
@@ -574,8 +574,8 @@
     {
       "id": "LAYOUT_LITTLEROOT_TOWN_PROFESSOR_BIRCHS_LAB",
       "name": "LittlerootTown_ProfessorBirchsLab_Layout",
-      "width": 13,
-      "height": 13,
+      "width": 22,
+      "height": 11,
       "primary_tileset": "gTileset_Building",
       "secondary_tileset": "gTileset_Lab",
       "border_filepath": "data/layouts/LittlerootTown_ProfessorBirchsLab/border.bin",
@@ -4460,6 +4460,66 @@
       "secondary_tileset": "gTileset_BrendansMaysHouse",
       "border_filepath": "data/layouts/PlayerHouse_1F/border.bin",
       "blockdata_filepath": "data/layouts/PlayerHouse_1F/map.bin"
+    },
+    {
+      "id": "LAYOUT_OTUS_TOWN_LAB",
+      "name": "OtusTownLab_Layout",
+      "width": 22,
+      "height": 11,
+      "primary_tileset": "gTileset_Building",
+      "secondary_tileset": "gTileset_Lab",
+      "border_filepath": "data/layouts/OtusTownLab/border.bin",
+      "blockdata_filepath": "data/layouts/OtusTownLab/map.bin"
+    },
+    {
+      "id": "LAYOUT_ROUTE4",
+      "name": "Route4_Layout",
+      "width": 20,
+      "height": 20,
+      "primary_tileset": "gTileset_otusdefault",
+      "secondary_tileset": "gTileset_seconddefault",
+      "border_filepath": "data/layouts/Route4/border.bin",
+      "blockdata_filepath": "data/layouts/Route4/map.bin"
+    },
+    {
+      "id": "LAYOUT_ROUTE5",
+      "name": "Route5_Layout",
+      "width": 20,
+      "height": 20,
+      "primary_tileset": "gTileset_otusdefault",
+      "secondary_tileset": "gTileset_seconddefault",
+      "border_filepath": "data/layouts/Route5/border.bin",
+      "blockdata_filepath": "data/layouts/Route5/map.bin"
+    },
+    {
+      "id": "LAYOUT_ROUTE6",
+      "name": "Route6_Layout",
+      "width": 46,
+      "height": 20,
+      "primary_tileset": "gTileset_otusdefault",
+      "secondary_tileset": "gTileset_seconddefault",
+      "border_filepath": "data/layouts/Route6/border.bin",
+      "blockdata_filepath": "data/layouts/Route6/map.bin"
+    },
+    {
+      "id": "LAYOUT_MAGMARIDGE_TOWN",
+      "name": "MagmaridgeTown_Layout",
+      "width": 46,
+      "height": 36,
+      "primary_tileset": "gTileset_otusdefault",
+      "secondary_tileset": "gTileset_seconddefault",
+      "border_filepath": "data/layouts/MagmaridgeTown/border.bin",
+      "blockdata_filepath": "data/layouts/MagmaridgeTown/map.bin"
+    },
+    {
+      "id": "LAYOUT_OTUS_TOWN",
+      "name": "OtusTown_Layout",
+      "width": 52,
+      "height": 36,
+      "primary_tileset": "gTileset_otusdefault",
+      "secondary_tileset": "gTileset_seconddefault",
+      "border_filepath": "data/layouts/OtusTown/border.bin",
+      "blockdata_filepath": "data/layouts/OtusTown/map.bin"
     }
   ]
 }

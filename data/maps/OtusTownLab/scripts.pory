@@ -1,0 +1,210 @@
+mapscripts OtusTownLab_MapScripts {
+    MAP_SCRIPT_ON_TRANSITION {call(CallIfPokemonGot_Dis)}
+}
+
+script Scientist1_EventScript {
+    lockall 
+    faceplayer
+    msgbox("We are currently trying to create a new\ntechnology to heal POKéMON even faster\lthan POKéMON Centers do!")
+    releaseall
+    end
+}
+
+script Scientist2_EventScript {
+    lockall 
+    faceplayer
+    msgbox("I am currently researching old books\nwritten long ago to get the information\labout the history of the POKéMON and\ltheir origin!")
+    releaseall
+    end
+}
+
+script Bookshelf_Scientist2 {
+    lockall
+    msgbox("A bookshelf full of old books and\nmanuscripts!\pBetter not touch it!")
+    releaseall
+    end
+}
+
+script Bookshelf_ProfSpruce {
+    lockall
+    msgbox("A bookshelf full of books about the\nbiology and genetics of POKéMON!")
+    releaseall
+    end
+}
+
+script HiddenMan_XX {
+    lockall
+    msgbox("Man: ???????")
+    giveitem(ITEM_MACH_BIKE)
+    playfanfare(MUS_OBTAIN_ITEM)
+    msgbox("{PLAYER} received a Bike!")
+    setflag(FLAG_SYS_B_DASH)
+    playfanfare(MUS_OBTAIN_ITEM)
+    msgbox("{PLAYER} received Running Shoes!")
+    releaseall
+    end
+}
+
+script CallIfPokemonGot_Dis {
+    if(flag(FLAG_GOT_POKEMON)) {
+        setflag(FLAG_POKEBALL_DISA)
+        removeobject(4)
+        removeobject(5)
+        removeobject(6)
+    }
+}
+
+script Pokemon_Chimchar_get{
+
+    lockall
+    if(flag(FLAG_GOT_POKEMON)) { 
+        msgbox("Remember, you can get only one POKéMON!")
+        releaseall
+        end
+    }
+    showmonpic(SPECIES_CHIMCHAR, 10, 3)
+    msgbox("Do you want to choose Chimchar?", MSGBOX_YESNO)
+    if(var(VAR_RESULT) == YES){
+        givemon(SPECIES_CHIMCHAR, 5, 0)
+        if(var(VAR_RESULT) == MON_GIVEN_TO_PARTY){
+            playfanfare(MUS_OBTAIN_ITEM)
+            msgbox("{PLAYER} received Chimchar!")
+            setflag(FLAG_SYS_POKEMON_GET)
+            removeobject(5)
+            call(NicknamePartyMon)
+            setflag(FLAG_GOT_POKEMON)
+        }
+        elif(var(VAR_RESULT) == MON_GIVEN_TO_PC){
+            playfanfare(MUS_OBTAIN_ITEM)
+            msgbox("{PLAYER} received Chimchar!")
+            setflag(FLAG_SYS_POKEMON_GET)
+            removeobject(5)
+            call(NicknameBoxMon)
+            setflag(FLAG_GOT_POKEMON)
+        }
+        else{
+            hidemonpic
+            msgbox("There's no room in your POKéMON party.")
+        }
+    }
+    else{
+        hidemonpic
+        msgbox("Choose wisely!")
+    }
+    waitmessage
+    releaseall
+    end
+
+}
+
+script Pokemon_Piplup_get{
+
+    lockall
+    if(flag(FLAG_GOT_POKEMON)) { 
+        msgbox("Remember, you can get only one POKéMON!")
+        releaseall
+        end
+    }
+    showmonpic(SPECIES_PIPLUP, 10, 3)
+    msgbox("Do you want to choose Piplup?", MSGBOX_YESNO)
+    if(var(VAR_RESULT) == YES){
+        givemon(SPECIES_PIPLUP, 5, 0)
+        if(var(VAR_RESULT) == MON_GIVEN_TO_PARTY){
+            playfanfare(MUS_OBTAIN_ITEM)
+            msgbox("{PLAYER} received Piplup!")
+            setflag(FLAG_SYS_POKEMON_GET)
+            removeobject(6)
+            call(NicknamePartyMon)
+            setflag(FLAG_GOT_POKEMON)
+        }
+        elif(var(VAR_RESULT) == MON_GIVEN_TO_PC){
+            playfanfare(MUS_OBTAIN_ITEM)
+            msgbox("{PLAYER} received Piplup!")
+            setflag(FLAG_SYS_POKEMON_GET)
+            removeobject(6)
+            call(NicknameBoxMon)
+            setflag(FLAG_GOT_POKEMON)
+        }
+
+        else{
+            hidemonpic
+            msgbox("There's no room in your POKéMON party.")
+        }
+    }
+    else{
+        hidemonpic
+        msgbox("Choose wisely!")
+    }
+    waitmessage
+    releaseall
+    end
+
+}
+
+script Pokemon_Turtwig_get{
+
+    lockall
+    if(flag(FLAG_GOT_POKEMON)) { 
+        msgbox("Remember, you can get only one POKéMON!")
+        releaseall
+        end
+    }
+    showmonpic(SPECIES_TURTWIG, 10, 3)
+    msgbox("Do you want to choose Turtwig?", MSGBOX_YESNO)
+    if(var(VAR_RESULT) == YES){
+        givemon(SPECIES_TURTWIG, 5, 0)
+        if(var(VAR_RESULT) == MON_GIVEN_TO_PARTY){
+            playfanfare(MUS_OBTAIN_ITEM)
+            msgbox("{PLAYER} received Turtwig!")
+            setflag(FLAG_SYS_POKEMON_GET)
+            removeobject(4)
+            call(NicknamePartyMon)
+            setflag(FLAG_GOT_POKEMON)
+        }
+        elif(var(VAR_RESULT) == MON_GIVEN_TO_PC){
+            playfanfare(MUS_OBTAIN_ITEM)
+            msgbox("{PLAYER} received Turtwig!")
+            setflag(FLAG_SYS_POKEMON_GET)
+            removeobject(4)
+            call(NicknameBoxMon)
+            setflag(FLAG_GOT_POKEMON)
+        }
+        else{
+            hidemonpic
+            msgbox("There's no room in your POKéMON party.")
+        }
+      
+    }
+    else{
+        hidemonpic
+        msgbox("Choose wisely!")
+    }
+
+    waitmessage
+    releaseall
+    end
+
+}
+
+script NicknamePartyMon{
+
+    msgbox("Give it a nickname?", MSGBOX_YESNO)
+    hidemonpic
+    if(var(VAR_RESULT) == YES){
+        call(Common_EventScript_GetGiftMonPartySlot)
+        call(Common_EventScript_NameReceivedPartyMon)
+    }
+    
+
+}
+
+script NicknameBoxMon{
+
+    msgbox("Give it a nickname?", MSGBOX_YESNO)
+    hidemonpic
+    if(var(VAR_RESULT) == YES){
+        call(Common_EventScript_NameReceivedBoxMon)
+    }
+    call(Common_EventScript_TransferredToPC)
+
+}

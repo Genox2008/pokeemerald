@@ -1,0 +1,8 @@
+mapscripts OldaleTown_Mapscripts {}
+
+script MagmaridgeTown_Signscript {
+    lockall
+    msgbox("Magmaridge Town\nNorth: Route 1\lEast: Route 2\lSouth: Route 6\lWest: Route 3")
+    releaseall
+    end
+} 
