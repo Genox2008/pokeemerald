@@ -71,6 +71,11 @@
 #define MAP_ROUTE6              (62 | (0 << 8))
 #define MAP_MAGMARIDGE_TOWN     (63 | (0 << 8))
 #define MAP_OTUS_TOWN           (64 | (0 << 8))
+#define MAP_CAVE_OF_HEATNESS_1  (65 | (0 << 8))
+#define MAP_CAVE_OF_HEATNESS_2  (66 | (0 << 8))
+#define MAP_CAVE_OF_HEATNESS_3  (67 | (0 << 8))
+#define MAP_CAVE_OF_HEATNESS_4  (68 | (0 << 8))
+#define MAP_CAVE_OF_HEATNESS_5  (69 | (0 << 8))
 
 // gMapGroup_IndoorLittleroot
 #define MAP_LITTLEROOT_TOWN_BRENDANS_HOUSE_1F    (0 | (1 << 8))

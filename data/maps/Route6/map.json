@@ -15,7 +15,7 @@
   "connections": [
     {
       "direction": "up",
-      "offset": 6,
+      "offset": 0,
       "map": "MAP_MAGMARIDGE_TOWN"
     }
   ],

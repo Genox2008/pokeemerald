@@ -1,4 +1,4 @@
-OldaleTown_Mapscripts::
+OldaleTown_MapScripts::
 	.byte 0
 
 

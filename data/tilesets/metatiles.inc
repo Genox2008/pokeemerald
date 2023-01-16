@@ -572,3 +572,17 @@ gMetatiles_seconddefault::
 	.align 1
 gMetatileAttributes_seconddefault::
 	.incbin "data/tilesets/secondary/seconddefault/metatile_attributes.bin"
+	.align 1
+gMetatiles_Magmaridge1::
+	.incbin "data/tilesets/secondary/magmaridge1/metatiles.bin"
+
+	.align 1
+gMetatileAttributes_Magmaridge1::
+	.incbin "data/tilesets/secondary/magmaridge1/metatile_attributes.bin"
+	.align 1
+gMetatiles_CaveOfHeatness_T1::
+	.incbin "data/tilesets/primary/caveofheatness_t1/metatiles.bin"
+
+	.align 1
+gMetatileAttributes_CaveOfHeatness_T1::
+	.incbin "data/tilesets/primary/caveofheatness_t1/metatile_attributes.bin"

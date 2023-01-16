@@ -4414,10 +4414,10 @@
     {
       "id": "LAYOUT_ROUTE1",
       "name": "Route1_Layout",
-      "width": 28,
+      "width": 30,
       "height": 44,
       "primary_tileset": "gTileset_otusdefault",
-      "secondary_tileset": "gTileset_seconddefault",
+      "secondary_tileset": "gTileset_Magmaridge1",
       "border_filepath": "data/layouts/Route1/border.bin",
       "blockdata_filepath": "data/layouts/Route1/map.bin"
     },
@@ -4434,10 +4434,10 @@
     {
       "id": "LAYOUT_ROUTE3",
       "name": "Route3_Layout",
-      "width": 36,
-      "height": 24,
+      "width": 40,
+      "height": 36,
       "primary_tileset": "gTileset_otusdefault",
-      "secondary_tileset": "gTileset_seconddefault",
+      "secondary_tileset": "gTileset_Magmaridge1",
       "border_filepath": "data/layouts/Route3/border.bin",
       "blockdata_filepath": "data/layouts/Route3/map.bin"
     },
@@ -4494,20 +4494,20 @@
     {
       "id": "LAYOUT_ROUTE6",
       "name": "Route6_Layout",
-      "width": 46,
+      "width": 38,
       "height": 20,
       "primary_tileset": "gTileset_otusdefault",
-      "secondary_tileset": "gTileset_seconddefault",
+      "secondary_tileset": "gTileset_Magmaridge1",
       "border_filepath": "data/layouts/Route6/border.bin",
       "blockdata_filepath": "data/layouts/Route6/map.bin"
     },
     {
       "id": "LAYOUT_MAGMARIDGE_TOWN",
       "name": "MagmaridgeTown_Layout",
-      "width": 46,
-      "height": 36,
+      "width": 34,
+      "height": 30,
       "primary_tileset": "gTileset_otusdefault",
-      "secondary_tileset": "gTileset_seconddefault",
+      "secondary_tileset": "gTileset_Magmaridge1",
       "border_filepath": "data/layouts/MagmaridgeTown/border.bin",
       "blockdata_filepath": "data/layouts/MagmaridgeTown/map.bin"
     },
@@ -4520,6 +4520,56 @@
       "secondary_tileset": "gTileset_seconddefault",
       "border_filepath": "data/layouts/OtusTown/border.bin",
       "blockdata_filepath": "data/layouts/OtusTown/map.bin"
+    },
+    {
+      "id": "LAYOUT_CAVE_OF_HEATNESS_1",
+      "name": "CaveOfHeatness_1_Layout",
+      "width": 46,
+      "height": 36,
+      "primary_tileset": "gTileset_CaveOfHeatness_T1",
+      "secondary_tileset": "gTileset_MeteorFalls",
+      "border_filepath": "data/layouts/CaveOfHeatness_1/border.bin",
+      "blockdata_filepath": "data/layouts/CaveOfHeatness_1/map.bin"
+    },
+    {
+      "id": "LAYOUT_CAVE_OF_HEATNESS_2",
+      "name": "CaveOfHeatness_2_Layout",
+      "width": 40,
+      "height": 30,
+      "primary_tileset": "gTileset_CaveOfHeatness_T1",
+      "secondary_tileset": "gTileset_Petalburg",
+      "border_filepath": "data/layouts/CaveOfHeatness_2/border.bin",
+      "blockdata_filepath": "data/layouts/CaveOfHeatness_2/map.bin"
+    },
+    {
+      "id": "LAYOUT_CAVE_OF_HEATNESS_3",
+      "name": "CaveOfHeatness_3_Layout",
+      "width": 28,
+      "height": 20,
+      "primary_tileset": "gTileset_CaveOfHeatness_T1",
+      "secondary_tileset": "gTileset_BattleTent",
+      "border_filepath": "data/layouts/CaveOfHeatness_3/border.bin",
+      "blockdata_filepath": "data/layouts/CaveOfHeatness_3/map.bin"
+    },
+    {
+      "id": "LAYOUT_CAVE_OF_HEATNESS_4",
+      "name": "CaveOfHeatness_4_Layout",
+      "width": 24,
+      "height": 32,
+      "primary_tileset": "gTileset_CaveOfHeatness_T1",
+      "secondary_tileset": "gTileset_Petalburg",
+      "border_filepath": "data/layouts/CaveOfHeatness_4/border.bin",
+      "blockdata_filepath": "data/layouts/CaveOfHeatness_4/map.bin"
+    },
+    {
+      "id": "LAYOUT_CAVE_OF_HEATNESS_5",
+      "name": "CaveOfHeatness_5_Layout",
+      "width": 20,
+      "height": 20,
+      "primary_tileset": "gTileset_CaveOfHeatness_T1",
+      "secondary_tileset": "gTileset_Petalburg",
+      "border_filepath": "data/layouts/CaveOfHeatness_5/border.bin",
+      "blockdata_filepath": "data/layouts/CaveOfHeatness_5/map.bin"
     }
   ]
 }

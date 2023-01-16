@@ -1769,3 +1769,43 @@ gTilesetPalettes_seconddefault::
 	.align 2
 gTilesetTiles_seconddefault::
 	.incbin "data/tilesets/secondary/seconddefault/tiles.4bpp.lz"
+
+	.align 2
+gTilesetPalettes_Magmaridge1::
+	.incbin "data/tilesets/secondary/magmaridge1/palettes/00.gbapal"
+	.incbin "data/tilesets/secondary/magmaridge1/palettes/01.gbapal"
+	.incbin "data/tilesets/secondary/magmaridge1/palettes/02.gbapal"
+	.incbin "data/tilesets/secondary/magmaridge1/palettes/03.gbapal"
+	.incbin "data/tilesets/secondary/magmaridge1/palettes/04.gbapal"
+	.incbin "data/tilesets/secondary/magmaridge1/palettes/05.gbapal"
+	.incbin "data/tilesets/secondary/magmaridge1/palettes/06.gbapal"
+	.incbin "data/tilesets/secondary/magmaridge1/palettes/07.gbapal"
+	.incbin "data/tilesets/secondary/magmaridge1/palettes/08.gbapal"
+	.incbin "data/tilesets/secondary/magmaridge1/palettes/09.gbapal"
+	.incbin "data/tilesets/secondary/magmaridge1/palettes/10.gbapal"
+	.incbin "data/tilesets/secondary/magmaridge1/palettes/11.gbapal"
+	.incbin "data/tilesets/secondary/magmaridge1/palettes/12.gbapal"
+
+	.align 2
+gTilesetTiles_Magmaridge1::
+	.incbin "data/tilesets/secondary/magmaridge1/tiles.4bpp.lz"
+
+	.align 2
+gTilesetPalettes_CaveOfHeatness_T1::
+	.incbin "data/tilesets/primary/caveofheatness_t1/palettes/00.gbapal"
+	.incbin "data/tilesets/primary/caveofheatness_t1/palettes/01.gbapal"
+	.incbin "data/tilesets/primary/caveofheatness_t1/palettes/02.gbapal"
+	.incbin "data/tilesets/primary/caveofheatness_t1/palettes/03.gbapal"
+	.incbin "data/tilesets/primary/caveofheatness_t1/palettes/04.gbapal"
+	.incbin "data/tilesets/primary/caveofheatness_t1/palettes/05.gbapal"
+	.incbin "data/tilesets/primary/caveofheatness_t1/palettes/06.gbapal"
+	.incbin "data/tilesets/primary/caveofheatness_t1/palettes/07.gbapal"
+	.incbin "data/tilesets/primary/caveofheatness_t1/palettes/08.gbapal"
+	.incbin "data/tilesets/primary/caveofheatness_t1/palettes/09.gbapal"
+	.incbin "data/tilesets/primary/caveofheatness_t1/palettes/10.gbapal"
+	.incbin "data/tilesets/primary/caveofheatness_t1/palettes/11.gbapal"
+	.incbin "data/tilesets/primary/caveofheatness_t1/palettes/12.gbapal"
+
+	.align 2
+gTilesetTiles_CaveOfHeatness_T1::
+	.incbin "data/tilesets/primary/caveofheatness_t1/tiles.4bpp.lz"

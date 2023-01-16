@@ -101,7 +101,12 @@
     "Route5",
     "Route6",
     "MagmaridgeTown",
-    "OtusTown"
+    "OtusTown",
+    "CaveOfHeatness_1",
+    "CaveOfHeatness_2",
+    "CaveOfHeatness_3",
+    "CaveOfHeatness_4",
+    "CaveOfHeatness_5"
   ],
   "gMapGroup_IndoorLittleroot": [
     "LittlerootTown_BrendansHouse_1F",

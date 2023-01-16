@@ -2,7 +2,7 @@
   "id": "MAP_MAGMARIDGE_TOWN",
   "name": "MagmaridgeTown",
   "layout": "LAYOUT_MAGMARIDGE_TOWN",
-  "music": "MUS_HG_VIOLET",
+  "music": "MUS_HG_CERULEAN",
   "region_map_section": "MAPSEC_OLDALE_TOWN",
   "requires_flash": false,
   "weather": "WEATHER_NONE",
@@ -15,17 +15,17 @@
   "connections": [
     {
       "direction": "down",
-      "offset": -6,
+      "offset": 0,
       "map": "MAP_ROUTE6"
     },
     {
       "direction": "left",
-      "offset": 6,
+      "offset": -6,
       "map": "MAP_ROUTE3"
     },
     {
       "direction": "up",
-      "offset": 0,
+      "offset": 2,
       "map": "MAP_ROUTE1"
     }
   ],
@@ -42,23 +42,23 @@
     {
       "type": "sign",
       "x": 18,
-      "y": 9,
+      "y": 5,
       "elevation": 0,
       "player_facing_dir": "BG_EVENT_PLAYER_FACING_ANY",
       "script": "TownSign_Evntscript"
     },
     {
       "type": "sign",
-      "x": 15,
-      "y": 6,
+      "x": 12,
+      "y": 4,
       "elevation": 0,
       "player_facing_dir": "BG_EVENT_PLAYER_FACING_ANY",
       "script": "PokemonCenterMagmaridgeSign_Evntscript"
     },
     {
       "type": "sign",
-      "x": 10,
-      "y": 17,
+      "x": 25,
+      "y": 4,
       "elevation": 0,
       "player_facing_dir": "BG_EVENT_PLAYER_FACING_ANY",
       "script": "PokemonMartMagmaridgeSign_Evntscript"
@@ -66,7 +66,7 @@
     {
       "type": "sign",
       "x": 19,
-      "y": 17,
+      "y": 22,
       "elevation": 0,
       "player_facing_dir": "BG_EVENT_PLAYER_FACING_ANY",
       "script": "GymMagmaridgeSign_Evntscript"

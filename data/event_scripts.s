@@ -1078,3 +1078,13 @@ Common_EventScript_LegendaryFlewAway::
 	.include "data/maps/MagmaridgeTown/scripts.inc"
 
 	.include "data/maps/OtusTown/scripts.inc"
+
+	.include "data/maps/CaveOfHeatness_1/scripts.inc"
+
+	.include "data/maps/CaveOfHeatness_2/scripts.inc"
+
+	.include "data/maps/CaveOfHeatness_3/scripts.inc"
+
+	.include "data/maps/CaveOfHeatness_4/scripts.inc"
+
+	.include "data/maps/CaveOfHeatness_5/scripts.inc"

@@ -1,4 +1,4 @@
-mapscripts OldaleTown_Mapscripts {}
+mapscripts OldaleTown_MapScripts {}
 
 script MagmaridgeTown_Signscript {
     lockall

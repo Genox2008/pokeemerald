@@ -852,3 +852,25 @@ gTileset_seconddefault::
 	.4byte gMetatiles_seconddefault
 	.4byte gMetatileAttributes_seconddefault
 	.4byte NULL
+
+	.align 2
+gTileset_Magmaridge1::
+	.byte TRUE @ is compressed
+	.byte TRUE @ is secondary
+	.2byte 0
+	.4byte gTilesetTiles_Magmaridge1
+	.4byte gTilesetPalettes_Magmaridge1
+	.4byte gMetatiles_Magmaridge1
+	.4byte gMetatileAttributes_Magmaridge1
+	.4byte NULL
+
+	.align 2
+gTileset_CaveOfHeatness_T1::
+	.byte TRUE @ is compressed
+	.byte FALSE @ is secondary
+	.2byte 0
+	.4byte gTilesetTiles_CaveOfHeatness_T1
+	.4byte gTilesetPalettes_CaveOfHeatness_T1
+	.4byte gMetatiles_CaveOfHeatness_T1
+	.4byte gMetatileAttributes_CaveOfHeatness_T1
+	.4byte NULL
