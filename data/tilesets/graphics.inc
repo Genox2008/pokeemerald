@@ -1809,3 +1809,23 @@ gTilesetPalettes_CaveOfHeatness_T1::
 	.align 2
 gTilesetTiles_CaveOfHeatness_T1::
 	.incbin "data/tilesets/primary/caveofheatness_t1/tiles.4bpp.lz"
+
+	.align 2
+gTilesetPalettes_r4default::
+	.incbin "data/tilesets/primary/r4default/palettes/00.gbapal"
+	.incbin "data/tilesets/primary/r4default/palettes/01.gbapal"
+	.incbin "data/tilesets/primary/r4default/palettes/02.gbapal"
+	.incbin "data/tilesets/primary/r4default/palettes/03.gbapal"
+	.incbin "data/tilesets/primary/r4default/palettes/04.gbapal"
+	.incbin "data/tilesets/primary/r4default/palettes/05.gbapal"
+	.incbin "data/tilesets/primary/r4default/palettes/06.gbapal"
+	.incbin "data/tilesets/primary/r4default/palettes/07.gbapal"
+	.incbin "data/tilesets/primary/r4default/palettes/08.gbapal"
+	.incbin "data/tilesets/primary/r4default/palettes/09.gbapal"
+	.incbin "data/tilesets/primary/r4default/palettes/10.gbapal"
+	.incbin "data/tilesets/primary/r4default/palettes/11.gbapal"
+	.incbin "data/tilesets/primary/r4default/palettes/12.gbapal"
+
+	.align 2
+gTilesetTiles_r4default::
+	.incbin "data/tilesets/primary/r4default/tiles.4bpp.lz"

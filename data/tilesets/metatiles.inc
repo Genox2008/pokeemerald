@@ -586,3 +586,10 @@ gMetatiles_CaveOfHeatness_T1::
 	.align 1
 gMetatileAttributes_CaveOfHeatness_T1::
 	.incbin "data/tilesets/primary/caveofheatness_t1/metatile_attributes.bin"
+	.align 1
+gMetatiles_r4default::
+	.incbin "data/tilesets/primary/r4default/metatiles.bin"
+
+	.align 1
+gMetatileAttributes_r4default::
+	.incbin "data/tilesets/primary/r4default/metatile_attributes.bin"

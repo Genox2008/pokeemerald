@@ -874,3 +874,14 @@ gTileset_CaveOfHeatness_T1::
 	.4byte gMetatiles_CaveOfHeatness_T1
 	.4byte gMetatileAttributes_CaveOfHeatness_T1
 	.4byte NULL
+
+	.align 2
+gTileset_r4default::
+	.byte TRUE @ is compressed
+	.byte FALSE @ is secondary
+	.2byte 0
+	.4byte gTilesetTiles_r4default
+	.4byte gTilesetPalettes_r4default
+	.4byte gMetatiles_r4default
+	.4byte gMetatileAttributes_r4default
+	.4byte NULL

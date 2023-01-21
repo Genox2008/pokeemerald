@@ -4476,7 +4476,7 @@
       "name": "Route4_Layout",
       "width": 20,
       "height": 20,
-      "primary_tileset": "gTileset_otusdefault",
+      "primary_tileset": "gTileset_r4default",
       "secondary_tileset": "gTileset_seconddefault",
       "border_filepath": "data/layouts/Route4/border.bin",
       "blockdata_filepath": "data/layouts/Route4/map.bin"
