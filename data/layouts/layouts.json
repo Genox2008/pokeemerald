@@ -4505,7 +4505,7 @@
       "id": "LAYOUT_MAGMARIDGE_TOWN",
       "name": "MagmaridgeTown_Layout",
       "width": 34,
-      "height": 30,
+      "height": 38,
       "primary_tileset": "gTileset_otusdefault",
       "secondary_tileset": "gTileset_Magmaridge1",
       "border_filepath": "data/layouts/MagmaridgeTown/border.bin",
