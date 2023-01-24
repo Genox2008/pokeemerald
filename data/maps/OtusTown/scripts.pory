@@ -1,4 +1,5 @@
-mapscripts OtusTown_MapScripts {}
+mapscripts OtusTown_MapScripts {
+}
 
 script PlayerHouse_Signscript {
     lockall
@@ -24,7 +25,20 @@ script SpruceLab_Signscript {
 script Boy1_Eventscript {
     lockall
     faceplayer
-    msgbox("Prof. Spruce lives here because of\nthe nature like scenery.\pOtus Town reaally is a perfect place for\nhim.")
+    msgbox("Prof. Spruce lives here because of\nthe nature like scenery.\pOtus Town really is a perfect place for\nhim.")
     releaseall
     end
+}
+
+script StopFromGoingTo_R1 {
+    lockall
+    msgbox("Mom said that going out of town is\ndangerous!")
+    waitmessage
+    applymovement(OBJ_EVENT_ID_PLAYER, StopPlayer_R1)
+    waitmovement(0)
+    releaseall
+}
+
+movement StopPlayer_R1 {
+    walk_up
 }

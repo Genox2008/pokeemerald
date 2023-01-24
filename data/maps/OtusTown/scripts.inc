@@ -31,6 +31,20 @@ Boy1_Eventscript::
 	end
 
 
+StopFromGoingTo_R1::
+	lockall
+	msgbox StopFromGoingTo_R1_Text_0
+	waitmessage
+	applymovement OBJ_EVENT_ID_PLAYER, StopPlayer_R1
+	waitmovement 0
+	releaseall
+	return
+
+
+StopPlayer_R1:
+	walk_up
+	step_end
+
 PlayerHouse_Signscript_Text_0:
 	.string "{PLAYER}'s house.$"
 
@@ -41,4 +55,7 @@ SpruceLab_Signscript_Text_0:
 	.string "Prof. Spruce's POKéMON lab.$"
 
 Boy1_Eventscript_Text_0:
-	.string "Prof. Spruce lives here because of\nthe nature like scenery.\pOtus Town reaally is a perfect place for\nhim.$"
+	.string "Prof. Spruce lives here because of\nthe nature like scenery.\pOtus Town really is a perfect place for\nhim.$"
+
+StopFromGoingTo_R1_Text_0:
+	.string "Mom said that going out of town is\ndangerous!$"

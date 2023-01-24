@@ -73,6 +73,7 @@ script Pokemon_Chimchar_get{
             removeobject(5)
             call(NicknamePartyMon)
             setflag(FLAG_GOT_POKEMON)
+            setvar(VAR_IF_MON_TO_R1, 1)
         }
         elif(var(VAR_RESULT) == MON_GIVEN_TO_PC){
             playfanfare(MUS_OBTAIN_ITEM)
@@ -81,6 +82,7 @@ script Pokemon_Chimchar_get{
             removeobject(5)
             call(NicknameBoxMon)
             setflag(FLAG_GOT_POKEMON)
+            setvar(VAR_IF_MON_TO_R1, 1)
         }
         else{
             hidemonpic
@@ -116,6 +118,7 @@ script Pokemon_Piplup_get{
             removeobject(6)
             call(NicknamePartyMon)
             setflag(FLAG_GOT_POKEMON)
+            setvar(VAR_IF_MON_TO_R1, 1)
         }
         elif(var(VAR_RESULT) == MON_GIVEN_TO_PC){
             playfanfare(MUS_OBTAIN_ITEM)
@@ -124,6 +127,7 @@ script Pokemon_Piplup_get{
             removeobject(6)
             call(NicknameBoxMon)
             setflag(FLAG_GOT_POKEMON)
+            setvar(VAR_IF_MON_TO_R1, 1)
         }
 
         else{
@@ -160,6 +164,7 @@ script Pokemon_Turtwig_get{
             removeobject(4)
             call(NicknamePartyMon)
             setflag(FLAG_GOT_POKEMON)
+            setvar(VAR_IF_MON_TO_R1, 1)
         }
         elif(var(VAR_RESULT) == MON_GIVEN_TO_PC){
             playfanfare(MUS_OBTAIN_ITEM)
@@ -168,6 +173,7 @@ script Pokemon_Turtwig_get{
             removeobject(4)
             call(NicknameBoxMon)
             setflag(FLAG_GOT_POKEMON)
+            setvar(VAR_IF_MON_TO_R1, 1)
         }
         else{
             hidemonpic

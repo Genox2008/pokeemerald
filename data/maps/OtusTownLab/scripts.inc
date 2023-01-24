@@ -98,6 +98,7 @@ Pokemon_Chimchar_get_8:
 	removeobject 5
 	call NicknamePartyMon
 	setflag FLAG_GOT_POKEMON
+	setvar VAR_IF_MON_TO_R1, 1
 	goto Pokemon_Chimchar_get_4
 
 Pokemon_Chimchar_get_9:
@@ -107,6 +108,7 @@ Pokemon_Chimchar_get_9:
 	removeobject 5
 	call NicknameBoxMon
 	setflag FLAG_GOT_POKEMON
+	setvar VAR_IF_MON_TO_R1, 1
 	goto Pokemon_Chimchar_get_4
 
 
@@ -146,6 +148,7 @@ Pokemon_Piplup_get_8:
 	removeobject 6
 	call NicknamePartyMon
 	setflag FLAG_GOT_POKEMON
+	setvar VAR_IF_MON_TO_R1, 1
 	goto Pokemon_Piplup_get_4
 
 Pokemon_Piplup_get_9:
@@ -155,6 +158,7 @@ Pokemon_Piplup_get_9:
 	removeobject 6
 	call NicknameBoxMon
 	setflag FLAG_GOT_POKEMON
+	setvar VAR_IF_MON_TO_R1, 1
 	goto Pokemon_Piplup_get_4
 
 
@@ -194,6 +198,7 @@ Pokemon_Turtwig_get_8:
 	removeobject 4
 	call NicknamePartyMon
 	setflag FLAG_GOT_POKEMON
+	setvar VAR_IF_MON_TO_R1, 1
 	goto Pokemon_Turtwig_get_4
 
 Pokemon_Turtwig_get_9:
@@ -203,6 +208,7 @@ Pokemon_Turtwig_get_9:
 	removeobject 4
 	call NicknameBoxMon
 	setflag FLAG_GOT_POKEMON
+	setvar VAR_IF_MON_TO_R1, 1
 	goto Pokemon_Turtwig_get_4
 
 

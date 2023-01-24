@@ -4570,6 +4570,16 @@
       "secondary_tileset": "gTileset_Petalburg",
       "border_filepath": "data/layouts/CaveOfHeatness_5/border.bin",
       "blockdata_filepath": "data/layouts/CaveOfHeatness_5/map.bin"
+    },
+    {
+      "id": "LAYOUT_PLAYER_HOUSE_MOM_2F",
+      "name": "PlayerHouse_Mom_2F_Layout",
+      "width": 15,
+      "height": 10,
+      "primary_tileset": "gTileset_Building",
+      "secondary_tileset": "gTileset_BrendansMaysHouse",
+      "border_filepath": "data/layouts/PlayerHouse_Mom_2F/border.bin",
+      "blockdata_filepath": "data/layouts/PlayerHouse_Mom_2F/map.bin"
     }
   ]
 }
