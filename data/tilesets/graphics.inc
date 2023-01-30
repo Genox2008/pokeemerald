@@ -1829,3 +1829,23 @@ gTilesetPalettes_r4default::
 	.align 2
 gTilesetTiles_r4default::
 	.incbin "data/tilesets/primary/r4default/tiles.4bpp.lz"
+
+	.align 2
+gTilesetPalettes_OceanportCity::
+	.incbin "data/tilesets/secondary/oceanportcity/palettes/00.gbapal"
+	.incbin "data/tilesets/secondary/oceanportcity/palettes/01.gbapal"
+	.incbin "data/tilesets/secondary/oceanportcity/palettes/02.gbapal"
+	.incbin "data/tilesets/secondary/oceanportcity/palettes/03.gbapal"
+	.incbin "data/tilesets/secondary/oceanportcity/palettes/04.gbapal"
+	.incbin "data/tilesets/secondary/oceanportcity/palettes/05.gbapal"
+	.incbin "data/tilesets/secondary/oceanportcity/palettes/06.gbapal"
+	.incbin "data/tilesets/secondary/oceanportcity/palettes/07.gbapal"
+	.incbin "data/tilesets/secondary/oceanportcity/palettes/08.gbapal"
+	.incbin "data/tilesets/secondary/oceanportcity/palettes/09.gbapal"
+	.incbin "data/tilesets/secondary/oceanportcity/palettes/10.gbapal"
+	.incbin "data/tilesets/secondary/oceanportcity/palettes/11.gbapal"
+	.incbin "data/tilesets/secondary/oceanportcity/palettes/12.gbapal"
+
+	.align 2
+gTilesetTiles_OceanportCity::
+	.incbin "data/tilesets/secondary/oceanportcity/tiles.4bpp.lz"

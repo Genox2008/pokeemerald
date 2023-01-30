@@ -862,7 +862,7 @@ gTileset_Magmaridge1::
 	.4byte gTilesetPalettes_Magmaridge1
 	.4byte gMetatiles_Magmaridge1
 	.4byte gMetatileAttributes_Magmaridge1
-	.4byte NULL
+	.4byte InitTilesetAnim_magmaridge1
 
 	.align 2
 gTileset_CaveOfHeatness_T1::
@@ -884,4 +884,15 @@ gTileset_r4default::
 	.4byte gTilesetPalettes_r4default
 	.4byte gMetatiles_r4default
 	.4byte gMetatileAttributes_r4default
+	.4byte NULL
+
+	.align 2
+gTileset_OceanportCity::
+	.byte TRUE @ is compressed
+	.byte TRUE @ is secondary
+	.2byte 0
+	.4byte gTilesetTiles_OceanportCity
+	.4byte gTilesetPalettes_OceanportCity
+	.4byte gMetatiles_OceanportCity
+	.4byte gMetatileAttributes_OceanportCity
 	.4byte NULL

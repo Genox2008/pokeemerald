@@ -4475,9 +4475,9 @@
       "id": "LAYOUT_ROUTE4",
       "name": "Route4_Layout",
       "width": 40,
-      "height": 64,
+      "height": 72,
       "primary_tileset": "gTileset_r4default",
-      "secondary_tileset": "gTileset_seconddefault",
+      "secondary_tileset": "gTileset_OceanportCity",
       "border_filepath": "data/layouts/Route4/border.bin",
       "blockdata_filepath": "data/layouts/Route4/map.bin"
     },

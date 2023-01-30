@@ -593,3 +593,10 @@ gMetatiles_r4default::
 	.align 1
 gMetatileAttributes_r4default::
 	.incbin "data/tilesets/primary/r4default/metatile_attributes.bin"
+	.align 1
+gMetatiles_OceanportCity::
+	.incbin "data/tilesets/secondary/oceanportcity/metatiles.bin"
+
+	.align 1
+gMetatileAttributes_OceanportCity::
+	.incbin "data/tilesets/secondary/oceanportcity/metatile_attributes.bin"
