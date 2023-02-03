@@ -15,7 +15,7 @@ script PlayerMom_1 {
         closemessage
         applymovement(1, MomToPlayer_1)
         waitmovement(0)
-        msgbox("Professor Spruce asked me to tell you\nthat he has a little gift for you!\n He's expecting you in his lab.")
+        msgbox("RIVAL was here and asked to see you\nat his house!")
         closemessage
         applymovement(1, MomBack_1)
         waitmovement(0)
@@ -23,6 +23,10 @@ script PlayerMom_1 {
         releaseall
     }
     else {
+        lockall
+        faceplayer
+        msgbox("I remember you where born like\nit was yesterday...")
+        releaseall
         end
     }
 }

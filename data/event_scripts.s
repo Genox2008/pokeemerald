@@ -1090,3 +1090,7 @@ Common_EventScript_LegendaryFlewAway::
 	.include "data/maps/CaveOfHeatness_5/scripts.inc"
 
 	.include "data/maps/PlayerHouse_Mom_2F/scripts.inc"
+
+	.include "data/maps/RivalHouse_1F/scripts.inc"
+
+	.include "data/maps/RivalHouse_2F/scripts.inc"

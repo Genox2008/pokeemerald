@@ -87,6 +87,8 @@
 #define MAP_PLAYER_HOUSE_1F                      (6 | (1 << 8))
 #define MAP_OTUS_TOWN_LAB                        (7 | (1 << 8))
 #define MAP_PLAYER_HOUSE_MOM_2F                  (8 | (1 << 8))
+#define MAP_RIVAL_HOUSE_1F                       (9 | (1 << 8))
+#define MAP_RIVAL_HOUSE_2F                       (10 | (1 << 8))
 
 // gMapGroup_IndoorOldale
 #define MAP_OLDALE_TOWN_HOUSE1            (0 | (2 << 8))

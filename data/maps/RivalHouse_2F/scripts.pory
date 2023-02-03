@@ -1,0 +1,62 @@
+// \n is next line
+// \l next line (smooth)
+// \p next textbox
+
+mapscripts RivalHouse_2F_MapScripts {
+MAP_SCRIPT_ON_FRAME_TABLE [
+        VAR_RIVAL, 1: RivalShowsPC
+    ]
+}
+
+script RivalShowsPC {
+    lockall
+    applymovement(1, FaceRivalToSmth_1)
+    waitmovement(0)
+    msgbox("What took you so late!\nI wanna show you something \limportant!")
+    closemessage
+    applymovement(1, FaceRivalToSmth_2)
+    waitmovement(0)
+    applymovement(0xFF, PlayerToRival_1)
+    waitmovement(0)
+    applymovement(1, FaceRivalToSmth_2)
+    waitmovement(0)
+    msgbox("Look what it says here!\p")
+    closemessage
+    applymovement(1, Left)
+    applymovement(0xFF, Left)
+    waitmovement(0)
+    applymovement(1, FaceRivalToSmth_1)
+    waitmovement(0)
+    applymovement(0xFF, FaceRivalToSmth_2)
+    waitmovement(0)
+    msgbox("Do you want to start your own\nPOKéMON adventure?\pIf so,\ncome to my LAB in Otus Town!\l -Prof. Spruce")
+    closemessage
+    applymovement(0xFF, FaceRivalToSmth_3)
+    waitmovement(0)
+    msgbox("Isn't that what we wanted since\nwe were best Friends?\lLets go {PLAYER}!")
+    setvar(VAR_RIVAL, 2)
+    waitmessage
+    releaseall
+}
+
+movement FaceRivalToSmth_1 {
+    face_right
+}
+
+movement FaceRivalToSmth_2 {
+    face_up
+}
+
+movement FaceRivalToSmth_3 {
+    face_left
+}
+
+movement PlayerToRival_1 {
+    walk_left
+    walk_down
+    walk_left * 2
+}
+
+movement Left {
+    walk_left
+}

@@ -10,6 +10,10 @@ PlayerHouse_1F_MapScripts_MAP_SCRIPT_ON_FRAME_TABLE:
 PlayerMom_1::
 	compare VAR_PlayerHouse_F1, 0
 	goto_if_eq PlayerMom_1_1
+	lockall
+	faceplayer
+	msgbox PlayerMom_1_Text_2
+	releaseall
 	end
 
 PlayerMom_1_1:
@@ -57,4 +61,7 @@ PlayerMom_1_Text_0:
 	.string "Good morning honey!$"
 
 PlayerMom_1_Text_1:
-	.string "Professor Spruce asked me to tell you\nthat he has a little gift for you!\n He's expecting you in his lab.$"
+	.string "RIVAL was here and asked to see you\nat his house!$"
+
+PlayerMom_1_Text_2:
+	.string "I remember you where born like\nit was yesterday...$"

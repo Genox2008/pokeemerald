@@ -4580,6 +4580,26 @@
       "secondary_tileset": "gTileset_BrendansMaysHouse",
       "border_filepath": "data/layouts/PlayerHouse_Mom_2F/border.bin",
       "blockdata_filepath": "data/layouts/PlayerHouse_Mom_2F/map.bin"
+    },
+    {
+      "id": "LAYOUT_RIVAL_HOUSE_1F",
+      "name": "RivalHouse_1F_Layout",
+      "width": 16,
+      "height": 10,
+      "primary_tileset": "gTileset_Building",
+      "secondary_tileset": "gTileset_BrendansMaysHouse",
+      "border_filepath": "data/layouts/RivalHouse_1F/border.bin",
+      "blockdata_filepath": "data/layouts/RivalHouse_1F/map.bin"
+    },
+    {
+      "id": "LAYOUT_RIVAL_HOUSE_2F",
+      "name": "RivalHouse_2F_Layout",
+      "width": 11,
+      "height": 8,
+      "primary_tileset": "gTileset_Building",
+      "secondary_tileset": "gTileset_BrendansMaysHouse",
+      "border_filepath": "data/layouts/RivalHouse_2F/border.bin",
+      "blockdata_filepath": "data/layouts/RivalHouse_2F/map.bin"
     }
   ]
 }
