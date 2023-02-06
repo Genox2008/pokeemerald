@@ -7405,18 +7405,18 @@ const struct Trainer gTrainers[] = {
         .party = {.NoItemDefaultMoves = sParty_BrendanRoute119Torchic},
     },
 
-    [TRAINER_MAY_ROUTE_103_MUDKIP] =
+    [TRAINER_MAY_OTUSTOWNLAB_OSHAWOTT] =
     {
         .partyFlags = 0,
         .trainerClass = TRAINER_CLASS_RIVAL,
         .encounterMusic_gender = F_TRAINER_FEMALE | TRAINER_ENCOUNTER_MUSIC_FEMALE,
         .trainerPic = TRAINER_PIC_MAY,
-        .trainerName = _("MAY"),
+        .trainerName = _("RIVAL"),
         .items = {},
         .doubleBattle = FALSE,
         .aiFlags = AI_SCRIPT_CHECK_BAD_MOVE | AI_SCRIPT_TRY_TO_FAINT | AI_SCRIPT_CHECK_VIABILITY,
-        .partySize = ARRAY_COUNT(sParty_MayRoute103Mudkip),
-        .party = {.NoItemDefaultMoves = sParty_MayRoute103Mudkip},
+        .partySize = ARRAY_COUNT(sParty_MayOtusTownLabOshawott),
+        .party = {.NoItemDefaultMoves = sParty_MayOtusTownLabOshawott},
     },
 
     [TRAINER_MAY_ROUTE_110_MUDKIP] =

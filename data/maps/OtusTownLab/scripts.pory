@@ -1,6 +1,107 @@
 mapscripts OtusTownLab_MapScripts {
-    MAP_SCRIPT_ON_TRANSITION {call(CallIfPokemonGot_Dis)}
+    MAP_SCRIPT_ON_TRANSITION {call(CallIfPokemonGot_Dis)
+                              call(OtusTownLab_RemoveAllObjects)
+    }
+    MAP_SCRIPT_ON_FRAME_TABLE [
+        VAR_PMP_RIVAL, 1: GetPokemonWithRival  
+    ]
 }
+
+script OtusTownLab_TriggerPokeball_1 {
+    lockall
+    msgbox("RIVAL: Where are you going\n{PLAYER}? Get your POKéMON!")
+    closemessage
+    applymovement(0xFF, OtusTownLab_TriggerWalkBack_1)
+    waitmovement(0)
+    releaseall
+    end
+}
+
+script OtusTownLab_TriggerPokeball_2 {
+    lockall
+    msgbox("RIVAL: Where are you going\n{PLAYER}? Get your POKéMON!")
+    closemessage
+    applymovement(0xFF, OtusTownLab_TriggerWalkBack_2)
+    waitmovement(0)
+    releaseall
+    end
+}
+
+script OtusTownLab_RemoveAllObjects {
+    if(var(VAR_PMP_OTUSTOWNLAB) == 0) {
+        setflag(FLAG_POKEBALL_DISA)
+        setflag(FLAG_HIDE_OTUSLAB_1)
+    }
+    elif(var(VAR_PMP_OTUSTOWNLAB) == 1) {
+        clearflag(FLAG_POKEBALL_DISA)
+        clearflag(FLAG_HIDE_OTUSLAB_1)
+    }
+    else {
+        end
+    }
+}
+
+script GetPokemonWithRival {
+    lockall
+    applymovement(0xFF, PlayerToRival_2)
+    waitmovement(0)
+    special(SpawnCameraObject)
+    applymovement(OBJ_EVENT_ID_CAMERA, CamMove_1)
+    waitmovement(0)
+    msgbox("Prof. Spruce: Eh...\nSo only two kiddos I guess!\pAs a scientist I got much work to\ndo, but what I like the most are\lthe POKéMON and I want to study\lthem!")
+    closemessage
+    msgbox("That's why I need your help.\nPlease take one of those POKéMON as\lyour partner and travel the world!")
+    closemessage
+    applymovement(3, ProfOutOfWay)
+    waitmovement(0)
+    applymovement(OBJ_EVENT_ID_CAMERA, CamMoveBack_1)
+    waitmovement(0)
+    applymovement(8, FacePlayerRival)
+    waitmovement(0)
+    msgbox("That's so exciting!\nYou are gonna be the first person\lto get a POKéMON.\p Go ahead {PLAYER}!")
+    closemessage
+    applymovement(8, FaceRivalUp)
+    waitmovement(0)
+    special(RemoveCameraObject)
+    setvar(VAR_PMP_RIVAL, 2)
+    releaseall
+    end
+}
+
+movement PlayerToRival_2 {
+    walk_up * 5
+}
+
+movement CamMove_1 {
+    walk_right
+    walk_up
+}
+
+movement CamMoveBack_1 {
+    walk_down
+    walk_left
+}
+
+movement FacePlayerRival {
+    face_left
+}
+
+movement FaceRivalUp {
+    face_up
+}
+
+movement ProfOutOfWay {
+    walk_right * 2
+    face_down
+}
+
+ movement OtusTownLab_TriggerWalkBack_1 {
+    walk_up
+ }
+
+movement OtusTownLab_TriggerWalkBack_2 {
+    walk_left
+ }
 
 script Scientist1_EventScript {
     lockall 
@@ -20,7 +121,7 @@ script Scientist2_EventScript {
 
 script Bookshelf_Scientist2 {
     lockall
-    msgbox("A bookshelf full of old books and\nmanuscripts!\pBetter not touch it!")
+    msgbox("A bookshelf full of old books and\nmanuscripts!\pBetter not touch anything!")
     releaseall
     end
 }
@@ -46,7 +147,7 @@ script HiddenMan_XX {
 }
 
 script CallIfPokemonGot_Dis {
-    if(flag(FLAG_GOT_POKEMON)) {
+    if(var(VAR_IF_MON_TO_R1) == 1) {
         setflag(FLAG_POKEBALL_DISA)
         removeobject(4)
         removeobject(5)
@@ -54,35 +155,44 @@ script CallIfPokemonGot_Dis {
     }
 }
 
-script Pokemon_Chimchar_get{
+script Pokemon_Tepig_get{
 
     lockall
-    if(flag(FLAG_GOT_POKEMON)) { 
+    if(var(VAR_IF_MON_TO_R1) == 1) { 
         msgbox("Remember, you can get only one POKéMON!")
         releaseall
         end
     }
-    showmonpic(SPECIES_CHIMCHAR, 10, 3)
-    msgbox("Do you want to choose Chimchar?", MSGBOX_YESNO)
+    showmonpic(SPECIES_TEPIG, 10, 3)
+    msgbox("Do you want to choose Tepig?", MSGBOX_YESNO)
     if(var(VAR_RESULT) == YES){
-        givemon(SPECIES_CHIMCHAR, 5, 0)
+        givemon(SPECIES_TEPIG, 5, 0)
         if(var(VAR_RESULT) == MON_GIVEN_TO_PARTY){
             playfanfare(MUS_OBTAIN_ITEM)
-            msgbox("{PLAYER} received Chimchar!")
+            msgbox("{PLAYER} received Tepig!")
             setflag(FLAG_SYS_POKEMON_GET)
             removeobject(5)
             call(NicknamePartyMon)
-            setflag(FLAG_GOT_POKEMON)
+            applymovement(8 , OtusTownLab_RivalToOshawott)
+            waitmovement(0)
+            msgbox("Imma choose you!")
+            closemessage
+            removeobject(6)
+            applymovement(8, OtusTownLab_RivalToOshawottTepigToPlayer)
+            msgbox("Finally! We have our first POKéMON! Come on {PLAYER}, lets battle!")
+            trainerbattle_no_intro(TRAINER_MAY_OTUSTOWNLAB_OSHAWOTT, Route103_Text_MayDefeated)
+            setvar(VAR_PMP_RIVAL, 3)
             setvar(VAR_IF_MON_TO_R1, 1)
+            setvar(VAR_PMP_OTUSTOWNLAB, 2)
         }
         elif(var(VAR_RESULT) == MON_GIVEN_TO_PC){
             playfanfare(MUS_OBTAIN_ITEM)
-            msgbox("{PLAYER} received Chimchar!")
+            msgbox("{PLAYER} received Tepig!")
             setflag(FLAG_SYS_POKEMON_GET)
             removeobject(5)
             call(NicknameBoxMon)
-            setflag(FLAG_GOT_POKEMON)
             setvar(VAR_IF_MON_TO_R1, 1)
+            setvar(VAR_PMP_OTUSTOWNLAB, 2)
         }
         else{
             hidemonpic
@@ -99,35 +209,35 @@ script Pokemon_Chimchar_get{
 
 }
 
-script Pokemon_Piplup_get{
+script Pokemon_Oshawott_get{
 
     lockall
-    if(flag(FLAG_GOT_POKEMON)) { 
+    if(var(VAR_IF_MON_TO_R1) == 1) { 
         msgbox("Remember, you can get only one POKéMON!")
         releaseall
         end
     }
-    showmonpic(SPECIES_PIPLUP, 10, 3)
-    msgbox("Do you want to choose Piplup?", MSGBOX_YESNO)
+    showmonpic(SPECIES_OSHAWOTT, 10, 3)
+    msgbox("Do you want to choose Oshawott?", MSGBOX_YESNO)
     if(var(VAR_RESULT) == YES){
-        givemon(SPECIES_PIPLUP, 5, 0)
+        givemon(SPECIES_OSHAWOTT, 5, 0)
         if(var(VAR_RESULT) == MON_GIVEN_TO_PARTY){
             playfanfare(MUS_OBTAIN_ITEM)
-            msgbox("{PLAYER} received Piplup!")
+            msgbox("{PLAYER} received Oshawott!")
             setflag(FLAG_SYS_POKEMON_GET)
             removeobject(6)
             call(NicknamePartyMon)
-            setflag(FLAG_GOT_POKEMON)
             setvar(VAR_IF_MON_TO_R1, 1)
+            setvar(VAR_PMP_OTUSTOWNLAB, 2)
         }
         elif(var(VAR_RESULT) == MON_GIVEN_TO_PC){
             playfanfare(MUS_OBTAIN_ITEM)
-            msgbox("{PLAYER} received Piplup!")
+            msgbox("{PLAYER} received Oshawott!")
             setflag(FLAG_SYS_POKEMON_GET)
             removeobject(6)
             call(NicknameBoxMon)
-            setflag(FLAG_GOT_POKEMON)
             setvar(VAR_IF_MON_TO_R1, 1)
+            setvar(VAR_PMP_OTUSTOWNLAB, 2)
         }
 
         else{
@@ -145,35 +255,35 @@ script Pokemon_Piplup_get{
 
 }
 
-script Pokemon_Turtwig_get{
+script Pokemon_Snivy_get{
 
     lockall
-    if(flag(FLAG_GOT_POKEMON)) { 
+    if(var(VAR_IF_MON_TO_R1) == 1) { 
         msgbox("Remember, you can get only one POKéMON!")
         releaseall
         end
     }
-    showmonpic(SPECIES_TURTWIG, 10, 3)
-    msgbox("Do you want to choose Turtwig?", MSGBOX_YESNO)
+    showmonpic(SPECIES_SNIVY, 10, 3)
+    msgbox("Do you want to choose Snivy?", MSGBOX_YESNO)
     if(var(VAR_RESULT) == YES){
-        givemon(SPECIES_TURTWIG, 5, 0)
+        givemon(SPECIES_SNIVY, 5, 0)
         if(var(VAR_RESULT) == MON_GIVEN_TO_PARTY){
             playfanfare(MUS_OBTAIN_ITEM)
-            msgbox("{PLAYER} received Turtwig!")
+            msgbox("{PLAYER} received Snivy!")
             setflag(FLAG_SYS_POKEMON_GET)
             removeobject(4)
             call(NicknamePartyMon)
-            setflag(FLAG_GOT_POKEMON)
             setvar(VAR_IF_MON_TO_R1, 1)
+            setvar(VAR_PMP_OTUSTOWNLAB, 2)
         }
         elif(var(VAR_RESULT) == MON_GIVEN_TO_PC){
             playfanfare(MUS_OBTAIN_ITEM)
-            msgbox("{PLAYER} received Turtwig!")
+            msgbox("{PLAYER} received Snivy!")
             setflag(FLAG_SYS_POKEMON_GET)
             removeobject(4)
             call(NicknameBoxMon)
-            setflag(FLAG_GOT_POKEMON)
             setvar(VAR_IF_MON_TO_R1, 1)
+            setvar(VAR_PMP_OTUSTOWNLAB, 2)
         }
         else{
             hidemonpic
@@ -213,4 +323,29 @@ script NicknameBoxMon{
     }
     call(Common_EventScript_TransferredToPC)
 
+}
+
+movement OtusTownLab_RivalToOshawott {
+    walk_up
+    walk_right
+    walk_up
+}
+
+movement OtusTownLab_RivalToOshawottTepigToPlayer {
+    face_left
+}
+
+movement OtusTownLab_RivalToTepig {
+    walk_up
+    walk_up
+}
+
+movement OtusTownLab_RivalToSnivy {
+    walk_up
+    walk_left
+    walk_up
+}
+
+movement OtusTownLab_RivalToSnivyToPlayer {
+    walk_left * 2
 }

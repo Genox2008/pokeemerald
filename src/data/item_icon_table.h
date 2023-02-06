@@ -803,6 +803,7 @@ const u32 *const gItemIconTable[][2] =
     [ITEM_TEA] = {gItemIcon_Tea, gItemIconPalette_Tea},
     [ITEM_RUBY] = {gItemIcon_Gem, gItemIconPalette_Ruby},
     [ITEM_SAPPHIRE] = {gItemIcon_Gem, gItemIconPalette_Sapphire},
+    [PMP_ITEM_MAGMA_STONE] = {gPMPItemIcon_MagmaStone, gPMPItemIconPalette_MagmaStone},
     // Return to field arrow
     [ITEM_FIELD_ARROW] = {gItemIcon_ReturnToFieldArrow, gItemIconPalette_ReturnToFieldArrow},
 };

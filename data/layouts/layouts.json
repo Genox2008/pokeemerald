@@ -4414,7 +4414,7 @@
     {
       "id": "LAYOUT_ROUTE1",
       "name": "Route1_Layout",
-      "width": 30,
+      "width": 24,
       "height": 44,
       "primary_tileset": "gTileset_otusdefault",
       "secondary_tileset": "gTileset_Magmaridge1",

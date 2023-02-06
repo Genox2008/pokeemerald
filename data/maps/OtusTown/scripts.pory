@@ -1,22 +1,4 @@
 mapscripts OtusTown_MapScripts {
-        MAP_SCRIPT_ON_FRAME_TABLE [
-        VAR_RIVAL, 0: Rival_1
-    ]
-}
-
-script Rival_1 {
-    lockall
-    applymovement(3, RivalWalk_1)
-    waitmovement(0)
-    msgbox("Hey there you are!\nCome over to my house\lI got some great news!")
-    closemessage
-    applymovement(3,RivalWalk_1_Back)
-    waitmovement(0)
-    setflag(FLAG_HIDE_OTUSTOWN_RIVAL)
-    setvar(VAR_RIVAL, 1)
-    removeobject(3)
-    releaseall
-    end
 }
 
 script PlayerHouse_Signscript {
@@ -45,6 +27,7 @@ script Boy1_Eventscript {
     faceplayer
     msgbox("Prof. Spruce lives here because of\nthe nature like scenery.\pOtus Town really is a perfect place for\nhim.")
     //giveitem(ITEM_TOWN_MAP)
+    giveitem(PMP_ITEM_MAGMA_STONE)
     releaseall
     end
 }

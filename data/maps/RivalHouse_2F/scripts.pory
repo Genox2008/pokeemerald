@@ -4,7 +4,7 @@
 
 mapscripts RivalHouse_2F_MapScripts {
 MAP_SCRIPT_ON_FRAME_TABLE [
-        VAR_RIVAL, 1: RivalShowsPC
+        VAR_PMP_RIVAL, 0: RivalShowsPC
     ]
 }
 
@@ -12,7 +12,7 @@ script RivalShowsPC {
     lockall
     applymovement(1, FaceRivalToSmth_1)
     waitmovement(0)
-    msgbox("What took you so late!\nI wanna show you something \limportant!")
+    msgbox("RIVAL: {COLOR RED}What took you so long!?\nI wanna show you something important!")
     closemessage
     applymovement(1, FaceRivalToSmth_2)
     waitmovement(0)
@@ -20,7 +20,7 @@ script RivalShowsPC {
     waitmovement(0)
     applymovement(1, FaceRivalToSmth_2)
     waitmovement(0)
-    msgbox("Look what it says here!\p")
+    msgbox("RIVAL: {COLOR RED}Look what it says here.")
     closemessage
     applymovement(1, Left)
     applymovement(0xFF, Left)
@@ -29,12 +29,23 @@ script RivalShowsPC {
     waitmovement(0)
     applymovement(0xFF, FaceRivalToSmth_2)
     waitmovement(0)
-    msgbox("Do you want to start your own\nPOKéMON adventure?\pIf so,\ncome to my LAB in Otus Town!\l -Prof. Spruce")
+    msgbox("{COLOR DARK_GRAY}Do you want to start your own\nPOKéMON adventure?\pIf so, come to my LAB in Otus Town!\n- Prof. Spruce")
     closemessage
     applymovement(0xFF, FaceRivalToSmth_3)
     waitmovement(0)
-    msgbox("Isn't that what we wanted since\nwe were best Friends?\lLets go {PLAYER}!")
-    setvar(VAR_RIVAL, 2)
+    msgbox("RIVAL: {COLOR RED}Isn't that what we wanted since\nwe were best friends?\pLets go {PLAYER}!")
+    closemessage
+    applymovement(1, RivelEnd_1)
+    waitmovement(0)
+    msgbox("RIVAL: {COLOR RED}Come on! What're you waiting for?\nThe first one to come to the LAB wins!")
+    closemessage
+    applymovement(1, RivalEnd_2)
+    waitmovement(0)
+    applymovement(1, Right)
+    removeobject(1)
+    setflag(FLAG_HIDE_RIVALHOUSE_RIVAL)
+    setvar(VAR_PMP_RIVAL, 1)
+    setvar(VAR_PMP_OTUSTOWNLAB, 1)
     waitmessage
     releaseall
 }
@@ -59,4 +70,20 @@ movement PlayerToRival_1 {
 
 movement Left {
     walk_left
+}
+
+movement RivelEnd_1 {
+    walk_down
+    walk_right *4
+    walk_up * 2
+    walk_right
+    face_left
+}
+
+movement RivalEnd_2 {
+    face_right
+}
+
+movement Right {
+    walk_right
 }

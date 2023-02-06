@@ -11,24 +11,47 @@ script PlayerMom_1 {
         lockall
         applymovement(1, LookLeft)
         waitmovement(0)
-        msgbox("Good morning honey!")
+        msgbox("MOM: Good morning honey!")
         closemessage
         applymovement(1, MomToPlayer_1)
         waitmovement(0)
-        msgbox("RIVAL was here and asked to see you\nat his house!")
+        msgbox("MOM: RIVAL was here and asked to see you\nat his house!")
         closemessage
         applymovement(1, MomBack_1)
         waitmovement(0)
         setvar(VAR_PlayerHouse_F1, 1)
         releaseall
     }
-    else {
-        lockall
-        faceplayer
-        msgbox("I remember you where born like\nit was yesterday...")
-        releaseall
-        end
-    }
+}
+
+script PlayerMom_2 {
+    lockall
+    msgbox("MOM: Oh dear! I almost forgot!")
+    closemessage
+    applymovement(1, RunningShoes)
+    waitmovement(0)
+    applymovement(0xFF, FaceToMom)
+    waitmovement(0)
+    msgbox("MOM: I bought you those yesterday.\nPlease try them on.")
+    closemessage
+    setflag(FLAG_SYS_B_DASH)
+    playfanfare(MUS_OBTAIN_ITEM)
+    msgbox("{PLAYER} received Running Shoes!")
+    msgbox("MOM: They fit perfect! The manual says\nthat you need to hold 'B' to sprint.\lWhatever that means...\pHave a great day!")
+    closemessage
+    applymovement(1, BackRunningShoes)
+    waitmovement(0)
+    setvar(VAR_PMP_MOM, 1)
+    releaseall
+    end
+}
+
+script PlayerMom_3 {
+    lockall
+    faceplayer
+    msgbox("MOM: I remember you where born like\nit was yesterday...")
+    releaseall
+    end
 }
 
 movement MomToPlayer_1 {
@@ -45,4 +68,18 @@ movement MomBack_1 {
 
 movement LookLeft {
     face_left
+}
+
+movement RunningShoes {
+    walk_down * 3
+    walk_left * 3
+}
+
+movement BackRunningShoes {
+    walk_right*3
+    walk_up*3
+}
+
+movement FaceToMom {
+    face_right
 }

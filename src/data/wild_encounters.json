@@ -11511,12 +11511,17 @@
               {
                 "min_level": 2,
                 "max_level": 3,
-                "species": "SPECIES_ZIGZAGOON"
+                "species": "SPECIES_BIDOOF"
               },
               {
                 "min_level": 2,
                 "max_level": 3,
-                "species": "SPECIES_ZIGZAGOON"
+                "species": "SPECIES_LILLIPUP"
+              },
+              {
+                "min_level": 2,
+                "max_level": 3,
+                "species": "SPECIES_LILLIPUP"
               },
               {
                 "min_level": 2,
@@ -11531,32 +11536,27 @@
               {
                 "min_level": 2,
                 "max_level": 3,
-                "species": "SPECIES_PATRAT"
+                "species": "SPECIES_STARLY"
               },
               {
                 "min_level": 2,
                 "max_level": 3,
-                "species": "SPECIES_PATRAT"
+                "species": "SPECIES_BUDEW"
               },
               {
                 "min_level": 2,
                 "max_level": 3,
-                "species": "SPECIES_PIDGEY"
+                "species": "SPECIES_SHINX"
               },
               {
                 "min_level": 2,
                 "max_level": 3,
-                "species": "SPECIES_PIDGEY"
+                "species": "SPECIES_SEWADDLE"
               },
               {
                 "min_level": 2,
                 "max_level": 3,
-                "species": "SPECIES_SPEAROW"
-              },
-              {
-                "min_level": 2,
-                "max_level": 3,
-                "species": "SPECIES_SPEAROW"
+                "species": "SPECIES_PURRLOIN"
               }
             ]
           }

@@ -3,7 +3,7 @@ RivalHouse_2F_MapScripts::
 	.byte 0
 
 RivalHouse_2F_MapScripts_MAP_SCRIPT_ON_FRAME_TABLE:
-	map_script_2 VAR_RIVAL, 1, RivalShowsPC
+	map_script_2 VAR_PMP_RIVAL, 0, RivalShowsPC
 	.2byte 0
 
 
@@ -33,7 +33,18 @@ RivalShowsPC::
 	applymovement 0xFF, FaceRivalToSmth_3
 	waitmovement 0
 	msgbox RivalShowsPC_Text_3
-	setvar VAR_RIVAL, 2
+	closemessage
+	applymovement 1, RivelEnd_1
+	waitmovement 0
+	msgbox RivalShowsPC_Text_4
+	closemessage
+	applymovement 1, RivalEnd_2
+	waitmovement 0
+	applymovement 1, Right
+	removeobject 1
+	setflag FLAG_HIDE_RIVALHOUSE_RIVAL
+	setvar VAR_PMP_RIVAL, 1
+	setvar VAR_PMP_OTUSTOWNLAB, 1
 	waitmessage
 	releaseall
 	return
@@ -62,14 +73,37 @@ Left:
 	walk_left
 	step_end
 
+RivelEnd_1:
+	walk_down
+	walk_right
+	walk_right
+	walk_right
+	walk_right
+	walk_up
+	walk_up
+	walk_right
+	face_left
+	step_end
+
+RivalEnd_2:
+	face_right
+	step_end
+
+Right:
+	walk_right
+	step_end
+
 RivalShowsPC_Text_0:
-	.string "What took you so late!\nI wanna show you something \limportant!$"
+	.string "RIVAL: {COLOR RED}What took you so long!?\nI wanna show you something important!$"
 
 RivalShowsPC_Text_1:
-	.string "Look what it says here!\p$"
+	.string "RIVAL: {COLOR RED}Look what it says here.$"
 
 RivalShowsPC_Text_2:
-	.string "Do you want to start your own\nPOKéMON adventure?\pIf so,\ncome to my LAB in Otus Town!\l -Prof. Spruce$"
+	.string "{COLOR DARK_GRAY}Do you want to start your own\nPOKéMON adventure?\pIf so, come to my LAB in Otus Town!\n- Prof. Spruce$"
 
 RivalShowsPC_Text_3:
-	.string "Isn't that what we wanted since\nwe were best Friends?\l Lets go {PLAYER}!$"
+	.string "RIVAL: {COLOR RED}Isn't that what we wanted since\nwe were best friends?\pLets go {PLAYER}!$"
+
+RivalShowsPC_Text_4:
+	.string "RIVAL: {COLOR RED}Come on! What're you waiting for?\nThe first one to come to the LAB wins!$"

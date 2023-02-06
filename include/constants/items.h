@@ -928,7 +928,9 @@
 #define ITEM_RUBY 756
 #define ITEM_SAPPHIRE 757
 
-#define ITEMS_COUNT 758
+#define PMP_ITEM_MAGMA_STONE 758
+
+#define ITEMS_COUNT 759
 #define ITEM_FIELD_ARROW ITEMS_COUNT
 
 // Range of berries given out by various NPCS

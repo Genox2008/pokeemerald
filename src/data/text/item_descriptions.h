@@ -3792,3 +3792,9 @@ static const u8 sSapphireDesc[] = _(
     "A brilliant blue gem\n"
     "that symbolizes\n"
     "honesty.");
+
+static const u8 sPMPMagmaStoneDesc[] = _(
+    "A stone made out of\n"
+    "magma, its nucleus\n"
+    "is fluid.");
+
