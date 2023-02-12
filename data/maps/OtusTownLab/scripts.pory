@@ -48,9 +48,19 @@ script GetPokemonWithRival {
     special(SpawnCameraObject)
     applymovement(OBJ_EVENT_ID_CAMERA, CamMove_1)
     waitmovement(0)
-    msgbox("Prof. Spruce: Eh...\nSo only two kiddos I guess!\pAs a scientist I got much work to\ndo, but what I like the most are\lthe POKéMON and I want to study\lthem!")
+    msgbox("Prof. Spruce: Eh...\nSo only two kids I guess!\pAs a scientist I got much work to\ndo, but what I like the most are\lthe POKéMON and I want to study\lthem!")
     closemessage
-    msgbox("That's why I need your help.\nPlease take one of those POKéMON as\lyour partner and travel the world!")
+    msgbox("That's why I need your help.\nPlease take one POKéDEX as\la help for me! TODO")
+    closemessage
+    applymovement(3, OtusTownLab_ProfDown)
+    waitmovement(0)
+    applymovement(3, OtusTownLab_ProfLeftDown)
+    waitmovement(0)
+    playfanfare(MUS_OBTAIN_ITEM)
+    msgbox("{PLAYER} received POKéDEX!")
+    applymovement(3, OtusTownLab_ProfBackToOriginPos)
+    waitmovement(0)
+    msgbox("And to help you with your journey\nchoose one of those POKéMON.")
     closemessage
     applymovement(3, ProfOutOfWay)
     waitmovement(0)
@@ -92,6 +102,21 @@ movement FaceRivalUp {
 
 movement ProfOutOfWay {
     walk_right * 2
+    face_down
+}
+
+movement OtusTownLab_ProfDown {
+    walk_down
+}
+
+movement OtusTownLab_ProfLeftDown {
+    walk_left
+    face_down
+}
+
+movement OtusTownLab_ProfBackToOriginPos {
+    walk_right
+    walk_up
     face_down
 }
 
@@ -171,6 +196,10 @@ script Pokemon_Tepig_get{
             playfanfare(MUS_OBTAIN_ITEM)
             msgbox("{PLAYER} received Tepig!")
             setflag(FLAG_SYS_POKEMON_GET)
+            setflag(FLAG_SYS_POKEDEX_GET)
+            setflag(FLAG_ADVENTURE_STARTED)
+            special(SetUnlockedPokedexFlags)
+            setflag(FLAG_RECEIVED_POKEDEX_FROM_BIRCH)
             removeobject(5)
             call(NicknamePartyMon)
             applymovement(8 , OtusTownLab_RivalToOshawott)
@@ -179,7 +208,7 @@ script Pokemon_Tepig_get{
             closemessage
             removeobject(6)
             applymovement(8, OtusTownLab_RivalToOshawottTepigToPlayer)
-            msgbox("Finally! We have our first POKéMON! Come on {PLAYER}, lets battle!")
+            msgbox("Finally! We have our first POKéMON!\nCome on {PLAYER},\llets battle!")
             trainerbattle_no_intro(TRAINER_MAY_OTUSTOWNLAB_OSHAWOTT, Route103_Text_MayDefeated)
             setvar(VAR_PMP_RIVAL, 3)
             setvar(VAR_IF_MON_TO_R1, 1)

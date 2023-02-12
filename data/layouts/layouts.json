@@ -4600,6 +4600,26 @@
       "secondary_tileset": "gTileset_BrendansMaysHouse",
       "border_filepath": "data/layouts/RivalHouse_2F/border.bin",
       "blockdata_filepath": "data/layouts/RivalHouse_2F/map.bin"
+    },
+    {
+      "id": "LAYOUT_OTUS_TOWN_HOUSE_1",
+      "name": "OtusTownHouse_1_Layout",
+      "width": 11,
+      "height": 8,
+      "primary_tileset": "gTileset_Building",
+      "secondary_tileset": "gTileset_BrendansMaysHouse",
+      "border_filepath": "data/layouts/OtusTownHouse_1/border.bin",
+      "blockdata_filepath": "data/layouts/OtusTownHouse_1/map.bin"
+    },
+    {
+      "id": "LAYOUT_OTUS_TOWN_HOUSE_2",
+      "name": "OtusTownHouse_2_Layout",
+      "width": 10,
+      "height": 8,
+      "primary_tileset": "gTileset_Building",
+      "secondary_tileset": "gTileset_BrendansMaysHouse",
+      "border_filepath": "data/layouts/OtusTownHouse_2/border.bin",
+      "blockdata_filepath": "data/layouts/OtusTownHouse_2/map.bin"
     }
   ]
 }

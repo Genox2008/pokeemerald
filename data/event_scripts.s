@@ -1094,3 +1094,7 @@ Common_EventScript_LegendaryFlewAway::
 	.include "data/maps/RivalHouse_1F/scripts.inc"
 
 	.include "data/maps/RivalHouse_2F/scripts.inc"
+
+	.include "data/maps/OtusTownHouse_1/scripts.inc"
+
+	.include "data/maps/OtusTownHouse_2/scripts.inc"

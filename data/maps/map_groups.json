@@ -119,7 +119,9 @@
     "OtusTownLab",
     "PlayerHouse_Mom_2F",
     "RivalHouse_1F",
-    "RivalHouse_2F"
+    "RivalHouse_2F",
+    "OtusTownHouse_1",
+    "OtusTownHouse_2"
   ],
   "gMapGroup_IndoorOldale": [
     "OldaleTown_House1",

@@ -62,13 +62,23 @@ GetPokemonWithRival::
 	closemessage
 	msgbox GetPokemonWithRival_Text_1
 	closemessage
+	applymovement 3, OtusTownLab_ProfDown
+	waitmovement 0
+	applymovement 3, OtusTownLab_ProfLeftDown
+	waitmovement 0
+	playfanfare MUS_OBTAIN_ITEM
+	msgbox GetPokemonWithRival_Text_2
+	applymovement 3, OtusTownLab_ProfBackToOriginPos
+	waitmovement 0
+	msgbox GetPokemonWithRival_Text_3
+	closemessage
 	applymovement 3, ProfOutOfWay
 	waitmovement 0
 	applymovement OBJ_EVENT_ID_CAMERA, CamMoveBack_1
 	waitmovement 0
 	applymovement 8, FacePlayerRival
 	waitmovement 0
-	msgbox GetPokemonWithRival_Text_2
+	msgbox GetPokemonWithRival_Text_4
 	closemessage
 	applymovement 8, FaceRivalUp
 	waitmovement 0
@@ -107,6 +117,21 @@ FaceRivalUp:
 ProfOutOfWay:
 	walk_right
 	walk_right
+	face_down
+	step_end
+
+OtusTownLab_ProfDown:
+	walk_down
+	step_end
+
+OtusTownLab_ProfLeftDown:
+	walk_left
+	face_down
+	step_end
+
+OtusTownLab_ProfBackToOriginPos:
+	walk_right
+	walk_up
 	face_down
 	step_end
 
@@ -208,6 +233,10 @@ Pokemon_Tepig_get_8:
 	playfanfare MUS_OBTAIN_ITEM
 	msgbox Pokemon_Tepig_get_Text_2
 	setflag FLAG_SYS_POKEMON_GET
+	setflag FLAG_SYS_POKEDEX_GET
+	setflag FLAG_ADVENTURE_STARTED
+	special SetUnlockedPokedexFlags
+	setflag FLAG_RECEIVED_POKEDEX_FROM_BIRCH
 	removeobject 5
 	call NicknamePartyMon
 	applymovement 8, OtusTownLab_RivalToOshawott
@@ -393,12 +422,18 @@ OtusTownLab_TriggerPokeball_1_Text_0:
 	.string "RIVAL: Where are you going\n{PLAYER}? Get your POKéMON!$"
 
 GetPokemonWithRival_Text_0:
-	.string "Prof. Spruce: Eh...\nSo only two kiddos I guess!\pAs a scientist I got much work to\ndo, but what I like the most are\lthe POKéMON and I want to study\lthem!$"
+	.string "Prof. Spruce: Eh...\nSo only two kids I guess!\pAs a scientist I got much work to\ndo, but what I like the most are\lthe POKéMON and I want to study\lthem!$"
 
 GetPokemonWithRival_Text_1:
-	.string "That's why I need your help.\nPlease take one of those POKéMON as\lyour partner and travel the world!$"
+	.string "That's why I need your help.\nPlease take one POKéDEX as\la help for me! TODO$"
 
 GetPokemonWithRival_Text_2:
+	.string "{PLAYER} received POKéDEX!$"
+
+GetPokemonWithRival_Text_3:
+	.string "And to help you with your journey\nchoose one of those POKéMON.$"
+
+GetPokemonWithRival_Text_4:
 	.string "That's so exciting!\nYou are gonna be the first person\lto get a POKéMON.\p Go ahead {PLAYER}!$"
 
 Scientist1_EventScript_Text_0:
@@ -435,7 +470,7 @@ Pokemon_Tepig_get_Text_3:
 	.string "Imma choose you!$"
 
 Pokemon_Tepig_get_Text_4:
-	.string "Finally! We have our first POKéMON! Come on {PLAYER}, lets battle!$"
+	.string "Finally! We have our first POKéMON!\nCome on {PLAYER},\llets battle!$"
 
 Pokemon_Tepig_get_Text_5:
 	.string "There's no room in your POKéMON party.$"
