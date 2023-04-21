@@ -104,10 +104,10 @@
     {
       "id": "LAYOUT_OLDALE_TOWN",
       "name": "OldaleTown_Layout",
-      "width": 46,
-      "height": 36,
+      "width": 34,
+      "height": 38,
       "primary_tileset": "gTileset_otusdefault",
-      "secondary_tileset": "gTileset_seconddefault",
+      "secondary_tileset": "gTileset_Magmaridge1",
       "border_filepath": "data/layouts/OldaleTown/border.bin",
       "blockdata_filepath": "data/layouts/OldaleTown/map.bin"
     },
@@ -604,7 +604,7 @@
     {
       "id": "LAYOUT_POKEMON_CENTER_1F",
       "name": "PokemonCenter_1F_Layout",
-      "width": 14,
+      "width": 15,
       "height": 9,
       "primary_tileset": "gTileset_Building",
       "secondary_tileset": "gTileset_PokemonCenter",
@@ -4434,8 +4434,8 @@
     {
       "id": "LAYOUT_ROUTE3",
       "name": "Route3_Layout",
-      "width": 40,
-      "height": 36,
+      "width": 100,
+      "height": 64,
       "primary_tileset": "gTileset_otusdefault",
       "secondary_tileset": "gTileset_Magmaridge1",
       "border_filepath": "data/layouts/Route3/border.bin",
@@ -4505,7 +4505,7 @@
       "id": "LAYOUT_MAGMARIDGE_TOWN",
       "name": "MagmaridgeTown_Layout",
       "width": 34,
-      "height": 38,
+      "height": 48,
       "primary_tileset": "gTileset_otusdefault",
       "secondary_tileset": "gTileset_Magmaridge1",
       "border_filepath": "data/layouts/MagmaridgeTown/border.bin",

@@ -430,7 +430,6 @@
 #define METATILE_PokemonCenter_Escalator2F_Tile2_Frame1  0x2AA
 #define METATILE_PokemonCenter_Escalator2F_Tile2_Frame2  0x2AC
 #define METATILE_PokemonCenter_Floor_Plain_Alt           0x2E4
-#define METATILE_PokemonCenter_Floor_ShadowTop           0x21E
 #define METATILE_PokemonCenter_Floor_ShadowTop_Alt       0x2DC
 
 // gTileset_RS
