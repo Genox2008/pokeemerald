@@ -85,8 +85,8 @@
       "x": 12,
       "y": 12,
       "elevation": 0,
-      "dest_map": "MAP_PLAYER_HOUSE_1F",
-      "dest_warp_id": 1
+      "dest_map": "MAP_LITTLEROOT_TOWN_MAYS_HOUSE_1F",
+      "dest_warp_id": "1"
     },
     {
       "x": 30,
