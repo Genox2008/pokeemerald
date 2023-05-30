@@ -159,8 +159,8 @@ u8 AddCustomItemIconSprite(const struct SpriteTemplate *customSpriteTemplate, u1
 
 const void *GetItemIconPicOrPalette(u16 itemId, u8 which)
 {
-    if (itemId == ITEM_LIST_END)
-        itemId = ITEMS_COUNT; // Use last icon, the "return to field" arrow
+    if (itemId == 0xFFFF)
+        itemId = ITEM_FIELD_ARROW;
     else if (itemId >= ITEMS_COUNT)
         itemId = 0;
 

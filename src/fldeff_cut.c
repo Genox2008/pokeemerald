@@ -191,12 +191,7 @@ bool8 SetUpFieldMove_Cut(void)
                         sHyperCutTiles[6 + (i * 5) + j] = TRUE;
                         ret = TRUE;
                     }
-                #ifdef BUGFIX
-                    // Collision has a range 0-3, any value != 0 is impassable
-                    if (MapGridGetCollisionAt(x, y))
-                #else
-                    if (MapGridGetCollisionAt(x, y) == 1)
-                #endif
+                    if (MapGridIsImpassableAt(x, y) == TRUE)
                     {
                         cutTiles[i * 3 + j] = FALSE;
                     }
@@ -294,7 +289,7 @@ bool8 FldEff_UseCutOnGrass(void)
 static void FieldCallback_CutTree(void)
 {
     gFieldEffectArguments[0] = GetCursorSelectionMonId();
-    ScriptContext_SetupScript(EventScript_UseCut);
+    ScriptContext1_SetupScript(EventScript_UseCut);
 }
 
 bool8 FldEff_UseCutOnTree(void)
@@ -583,10 +578,10 @@ static void CutGrassSpriteCallbackEnd(struct Sprite *sprite)
     FieldEffectStop(&gSprites[sCutGrassSpriteArrayPtr[0]], FLDEFF_CUT_GRASS);
     FREE_AND_SET_NULL(sCutGrassSpriteArrayPtr);
     ScriptUnfreezeObjectEvents();
-    UnlockPlayerFieldControls();
+    ScriptContext2_Disable();
 
     if (IsMewPlayingHideAndSeek() == TRUE)
-        ScriptContext_SetupScript(FarawayIsland_Interior_EventScript_HideMewWhenGrassCut);
+        ScriptContext1_SetupScript(FarawayIsland_Interior_EventScript_HideMewWhenGrassCut);
 }
 
 void FixLongGrassMetatilesWindowTop(s16 x, s16 y)
@@ -643,5 +638,5 @@ static void StartCutTreeFieldEffect(void)
 {
     PlaySE(SE_M_CUT);
     FieldEffectActiveListRemove(FLDEFF_USE_CUT_ON_TREE);
-    ScriptContext_Enable();
+    EnableBothScriptContexts();
 }

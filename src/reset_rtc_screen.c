@@ -49,11 +49,6 @@ enum {
     SELECTION_NONE
 };
 
-enum {
-    WIN_TIME,
-    WIN_MSG,
-};
-
 struct ResetRtcInputMap
 {
     /*0x0*/ u8 dataIndex;
@@ -84,7 +79,7 @@ static const struct BgTemplate sBgTemplates[] =
 
 static const struct WindowTemplate sWindowTemplates[] =
 {
-    [WIN_TIME] = {
+    {
         .bg = 0,
         .tilemapLeft = 1,
         .tilemapTop = 1,
@@ -93,7 +88,7 @@ static const struct WindowTemplate sWindowTemplates[] =
         .paletteNum = 15,
         .baseBlock = 0x155
     },
-    [WIN_MSG] = {
+    {
         .bg = 0,
         .tilemapLeft = 2,
         .tilemapTop = 15,
@@ -567,8 +562,8 @@ static void VBlankCB(void)
 
 static void ShowMessage(const u8 *str)
 {
-    DrawDialogFrameWithCustomTileAndPalette(WIN_MSG, FALSE, 0x200, 0xF);
-    AddTextPrinterParameterized(WIN_MSG, FONT_NORMAL, str, 0, 1, 0, NULL);
+    DrawDialogFrameWithCustomTileAndPalette(1, FALSE, 0x200, 0xF);
+    AddTextPrinterParameterized(1, FONT_NORMAL, str, 0, 1, 0, NULL);
     ScheduleBgCopyTilemapToVram(0);
 }
 
@@ -581,11 +576,11 @@ static void Task_ShowResetRtcPrompt(u8 taskId)
     switch (tState)
     {
     case 0:
-        DrawStdFrameWithCustomTileAndPalette(WIN_TIME, FALSE, 0x214, 0xE);
+        DrawStdFrameWithCustomTileAndPalette(0, FALSE, 0x214, 0xE);
 
-        AddTextPrinterParameterized(WIN_TIME, FONT_NORMAL, gText_PresentTime, 0, 1, TEXT_SKIP_DRAW, 0);
+        AddTextPrinterParameterized(0, FONT_NORMAL, gText_PresentTime, 0, 1, TEXT_SKIP_DRAW, 0);
         PrintTime(
-            WIN_TIME,
+            0,
             0,
             17,
             gLocalTime.days,
@@ -593,9 +588,9 @@ static void Task_ShowResetRtcPrompt(u8 taskId)
             gLocalTime.minutes,
             gLocalTime.seconds);
 
-        AddTextPrinterParameterized(WIN_TIME, FONT_NORMAL, gText_PreviousTime, 0, 33, TEXT_SKIP_DRAW, 0);
+        AddTextPrinterParameterized(0, FONT_NORMAL, gText_PreviousTime, 0, 33, TEXT_SKIP_DRAW, 0);
         PrintTime(
-            WIN_TIME,
+            0,
             0,
             49,
             gSaveBlock2Ptr->lastBerryTreeUpdate.days,
@@ -604,7 +599,7 @@ static void Task_ShowResetRtcPrompt(u8 taskId)
             gSaveBlock2Ptr->lastBerryTreeUpdate.seconds);
 
         ShowMessage(gText_ResetRTCConfirmCancel);
-        CopyWindowToVram(WIN_TIME, COPYWIN_GFX);
+        CopyWindowToVram(0, COPYWIN_GFX);
         ScheduleBgCopyTilemapToVram(0);
         tState++;
     case 1:
@@ -671,7 +666,7 @@ static void Task_ResetRtcScreen(u8 taskId)
         // Wait for A or B press on prompt first
         if (gTasks[tSubTaskId].isActive != TRUE)
         {
-            ClearStdWindowAndFrameToTransparent(WIN_TIME, FALSE);
+            ClearStdWindowAndFrameToTransparent(0, FALSE);
             ShowMessage(gText_PleaseResetTime);
             gLocalTime = gSaveBlock2Ptr->lastBerryTreeUpdate;
             tSubTaskId = CreateTask(Task_ResetRtc_Init, 80);

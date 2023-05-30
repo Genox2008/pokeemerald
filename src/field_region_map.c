@@ -23,15 +23,9 @@
  *  For the fly map, and utility functions all of the maps use, see region_map.c
  */
 
-enum {
-    WIN_MAPSEC_NAME,
-    WIN_TITLE,
-};
+// Static type declarations
 
-enum {
-    TAG_PLAYER_ICON,
-    TAG_CURSOR,
-};
+// Static RAM declarations
 
 static EWRAM_DATA struct {
     MainCallback callback;
@@ -40,11 +34,15 @@ static EWRAM_DATA struct {
     u16 state;
 } *sFieldRegionMapHandler = NULL;
 
+// Static ROM declarations
+
 static void MCB2_InitRegionMapRegisters(void);
 static void VBCB_FieldUpdateRegionMap(void);
 static void MCB2_FieldUpdateRegionMap(void);
 static void FieldUpdateRegionMap(void);
 static void PrintRegionMapSecName(void);
+
+// .rodata
 
 static const struct BgTemplate sFieldRegionMapBgTemplates[] = {
     {
@@ -68,7 +66,7 @@ static const struct BgTemplate sFieldRegionMapBgTemplates[] = {
 
 static const struct WindowTemplate sFieldRegionMapWindowTemplates[] =
 {
-    [WIN_MAPSEC_NAME] = {
+    {
         .bg = 0,
         .tilemapLeft = 17,
         .tilemapTop = 17,
@@ -77,7 +75,7 @@ static const struct WindowTemplate sFieldRegionMapWindowTemplates[] =
         .paletteNum = 15,
         .baseBlock = 1
     },
-    [WIN_TITLE] = {
+    {
         .bg = 0,
         .tilemapLeft = 22,
         .tilemapTop = 1,
@@ -89,10 +87,12 @@ static const struct WindowTemplate sFieldRegionMapWindowTemplates[] =
     DUMMY_WIN_TEMPLATE
 };
 
+// .text
+
 void FieldInitRegionMap(MainCallback callback)
 {
     SetVBlankCallback(NULL);
-    sFieldRegionMapHandler = Alloc(sizeof(*sFieldRegionMapHandler));
+    sFieldRegionMapHandler = malloc(sizeof(*sFieldRegionMapHandler));
     sFieldRegionMapHandler->state = 0;
     sFieldRegionMapHandler->callback = callback;
     SetMainCallback2(MCB2_InitRegionMapRegisters);
@@ -115,7 +115,7 @@ static void MCB2_InitRegionMapRegisters(void)
     InitBgsFromTemplates(1, sFieldRegionMapBgTemplates, ARRAY_COUNT(sFieldRegionMapBgTemplates));
     InitWindows(sFieldRegionMapWindowTemplates);
     DeactivateAllTextPrinters();
-    LoadUserWindowBorderGfx(0, 0x27, BG_PLTT_ID(13));
+    LoadUserWindowBorderGfx(0, 0x27, 0xd0);
     ClearScheduledBgCopiesToVram();
     SetMainCallback2(MCB2_FieldUpdateRegionMap);
     SetVBlankCallback(VBCB_FieldUpdateRegionMap);
@@ -145,8 +145,8 @@ static void FieldUpdateRegionMap(void)
     {
         case 0:
             InitRegionMap(&sFieldRegionMapHandler->regionMap, FALSE);
-            CreateRegionMapPlayerIcon(TAG_PLAYER_ICON, TAG_PLAYER_ICON);
-            CreateRegionMapCursor(TAG_CURSOR, TAG_CURSOR);
+            CreateRegionMapPlayerIcon(0, 0);
+            CreateRegionMapCursor(1, 1);
             sFieldRegionMapHandler->state++;
             break;
         case 1:
@@ -154,7 +154,7 @@ static void FieldUpdateRegionMap(void)
             //offset = GetStringCenterAlignXOffset(FONT_NORMAL, gText_Hoenn, 0x38);
             //AddTextPrinterParameterized(1, FONT_NORMAL, gText_Hoenn, offset, 1, 0, NULL);
             ScheduleBgCopyTilemapToVram(0);
-            DrawStdFrameWithCustomTileAndPalette(WIN_MAPSEC_NAME, FALSE, 0x27, 0xd);
+            DrawStdFrameWithCustomTileAndPalette(0, FALSE, 0x27, 0xd);
             PrintRegionMapSecName();
             BeginNormalPaletteFade(PALETTES_ALL, 0, 16, 0, RGB_BLACK);
             sFieldRegionMapHandler->state++;
@@ -203,13 +203,13 @@ static void PrintRegionMapSecName(void)
 {
     if (sFieldRegionMapHandler->regionMap.mapSecType != MAPSECTYPE_NONE)
     {
-        FillWindowPixelBuffer(WIN_MAPSEC_NAME, PIXEL_FILL(1));
-        AddTextPrinterParameterized(WIN_MAPSEC_NAME, FONT_NORMAL, sFieldRegionMapHandler->regionMap.mapSecName, 0, 1, 0, NULL);
-        ScheduleBgCopyTilemapToVram(WIN_MAPSEC_NAME);
+        FillWindowPixelBuffer(0, PIXEL_FILL(1));
+        AddTextPrinterParameterized(0, FONT_NORMAL, sFieldRegionMapHandler->regionMap.mapSecName, 0, 1, 0, NULL);
+        ScheduleBgCopyTilemapToVram(0);
     }
     else
     {
-        FillWindowPixelBuffer(WIN_MAPSEC_NAME, PIXEL_FILL(1));
-        CopyWindowToVram(WIN_MAPSEC_NAME, COPYWIN_FULL);
+        FillWindowPixelBuffer(0, PIXEL_FILL(1));
+        CopyWindowToVram(0, COPYWIN_FULL);
     }
 }

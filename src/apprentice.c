@@ -132,9 +132,9 @@ void BufferApprenticeChallengeText(u8 saveApprenticeId)
     StringExpandPlaceholders(gStringVar4, challengeText);
 }
 
-void Apprentice_ScriptContext_Enable(void)
+void Apprentice_EnableBothScriptContexts(void)
 {
-    ScriptContext_Enable();
+    EnableBothScriptContexts();
 }
 
 void ResetApprenticeStruct(struct Apprentice *apprentice)
@@ -679,7 +679,7 @@ static void Task_ChooseAnswer(u8 taskId)
 
     RemoveAndHideWindow(tWindowId);
     DestroyTask(taskId);
-    ScriptContext_Enable();
+    EnableBothScriptContexts();
 }
 
 static u8 CreateAndShowWindow(u8 left, u8 top, u8 width, u8 height)
@@ -815,9 +815,9 @@ static void Task_WaitForPrintingMessage(u8 taskId)
     {
         DestroyTask(taskId);
         if (gSpecialVar_0x8005)
-            ExecuteFuncAfterButtonPress(ScriptContext_Enable);
+            ExecuteFuncAfterButtonPress(EnableBothScriptContexts);
         else
-            ScriptContext_Enable();
+            EnableBothScriptContexts();
     }
 }
 
@@ -895,7 +895,7 @@ static void PrintApprenticeMessage(void)
     }
     else
     {
-        ScriptContext_Enable();
+        EnableBothScriptContexts();
         return;
     }
 
@@ -906,7 +906,7 @@ static void PrintApprenticeMessage(void)
 
 static void Script_PrintApprenticeMessage(void)
 {
-    LockPlayerFieldControls();
+    ScriptContext2_Enable();
     FreezeObjectEvents();
     PlayerFreeze();
     StopPlayerAvatar();

@@ -14,14 +14,14 @@
   "battle_scene": "MAP_BATTLE_SCENE_NORMAL",
   "connections": [
     {
-      "map": "MAP_SAFARI_ZONE_NORTH",
+      "direction": "right",
       "offset": 0,
-      "direction": "right"
+      "map": "MAP_SAFARI_ZONE_NORTH"
     },
     {
-      "map": "MAP_SAFARI_ZONE_SOUTHWEST",
+      "direction": "down",
       "offset": 0,
-      "direction": "down"
+      "map": "MAP_SAFARI_ZONE_SOUTHWEST"
     }
   ],
   "object_events": [
@@ -49,7 +49,7 @@
       "trainer_type": "TRAINER_TYPE_NONE",
       "trainer_sight_or_berry_tree_id": "0",
       "script": "SafariZone_Northwest_EventScript_ItemTM22",
-      "flag": "FLAG_ITEM_SAFARI_ZONE_NORTH_WEST_TM22"
+      "flag": "FLAG_ITEM_SAFARI_ZONE_NORTH_WEST_TM_22"
     }
   ],
   "warp_events": [],

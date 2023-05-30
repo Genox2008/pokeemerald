@@ -27,8 +27,6 @@
 
 #define WAVEFORM_WINDOW_HEIGHT 56
 
-#define TAG_NEEDLE 0x2000
-
 struct PokedexCryMeterNeedle {
     s8 rotation;
     s8 targetRotation;
@@ -204,8 +202,8 @@ static const struct OamData sOamData_CryMeterNeedle =
 
 static const struct SpriteTemplate sCryMeterNeedleSpriteTemplate =
 {
-    .tileTag = TAG_NEEDLE,
-    .paletteTag = TAG_NEEDLE,
+    .tileTag = 0x2000,
+    .paletteTag = 0x2000,
     .oam = &sOamData_CryMeterNeedle,
     .anims = sSpriteAnimTable_CryMeterNeedle,
     .images = NULL,
@@ -215,13 +213,13 @@ static const struct SpriteTemplate sCryMeterNeedleSpriteTemplate =
 
 static const struct SpriteSheet sCryMeterNeedleSpriteSheets[] =
 {
-    {sCryMeterNeedle_Gfx, sizeof(sCryMeterNeedle_Gfx), TAG_NEEDLE},
+    {sCryMeterNeedle_Gfx, 0x800, 0x2000},
     {}
 };
 
 static const struct SpritePalette sCryMeterNeedleSpritePalettes[] =
 {
-    {sCryMeterNeedle_Pal, TAG_NEEDLE},
+    {sCryMeterNeedle_Pal, 0x2000},
     {}
 };
 
@@ -260,7 +258,7 @@ bool8 LoadCryWaveformWindow(struct CryScreenWindow *window, u8 windowId)
         break;
     case 2:
         DrawWaveformWindow(windowId);
-        LoadPalette(sCryScreenBg_Pal, BG_PLTT_ID(window->paletteNo), PLTT_SIZE_4BPP);
+        LoadPalette(sCryScreenBg_Pal, window->paletteNo * 16, 32);
         finished = TRUE;
         break;
     }
@@ -460,7 +458,7 @@ bool8 LoadCryMeter(struct CryScreenWindow *window, u8 windowId)
             sCryMeterNeedle = AllocZeroed(sizeof(*sCryMeterNeedle));
 
         CopyToWindowPixelBuffer(windowId, sCryMeter_Gfx, 0, 0);
-        LoadPalette(sCryMeter_Pal, BG_PLTT_ID(window->paletteNo), PLTT_SIZE_4BPP);
+        LoadPalette(sCryMeter_Pal, window->paletteNo * 16, 32);
         gDexCryScreenState++;
         break;
     case 1:

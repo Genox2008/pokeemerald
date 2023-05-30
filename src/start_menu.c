@@ -562,7 +562,7 @@ void ShowStartMenu(void)
         StopPlayerAvatar();
     }
     CreateStartMenuTask(Task_ShowStartMenu);
-    LockPlayerFieldControls();
+    ScriptContext2_Enable();
 }
 
 static bool8 HandleStartMenuInput(void)
@@ -763,7 +763,7 @@ void ShowBattlePyramidStartMenu(void)
     ClearDialogWindowAndFrameToTransparent(0, FALSE);
     ScriptUnfreezeObjectEvents();
     CreateStartMenuTask(Task_ShowStartMenu);
-    LockPlayerFieldControls();
+    ScriptContext2_Enable();
 }
 
 static bool8 StartMenuBattlePyramidBagCallback(void)
@@ -804,7 +804,7 @@ static bool8 SaveCallback(void)
     case SAVE_ERROR:    // Close start menu
         ClearDialogWindowAndFrameToTransparent(0, TRUE);
         ScriptUnfreezeObjectEvents();
-        UnlockPlayerFieldControls();
+        ScriptContext2_Disable();
         SoftResetInBattlePyramid();
         return TRUE;
     }
@@ -841,8 +841,8 @@ static bool8 BattlePyramidRetireCallback(void)
     case SAVE_CANCELED: // Yes (Retire from battle pyramid)
         ClearDialogWindowAndFrameToTransparent(0, TRUE);
         ScriptUnfreezeObjectEvents();
-        UnlockPlayerFieldControls();
-        ScriptContext_SetupScript(BattlePyramid_Retire);
+        ScriptContext2_Disable();
+        ScriptContext1_SetupScript(BattlePyramid_Retire);
         return TRUE;
     }
 
@@ -901,7 +901,7 @@ static void SaveGameTask(u8 taskId)
     }
 
     DestroyTask(taskId);
-    ScriptContext_Enable();
+    EnableBothScriptContexts();
 }
 
 static void HideSaveMessageWindow(void)
@@ -996,7 +996,7 @@ static u8 SaveConfirmInputCallback(void)
             sSaveDialogCallback = SaveFileExistsCallback;
             return SAVE_IN_PROGRESS;
         }
-    case MENU_B_PRESSED:
+    case -1: // B Button
     case 1: // No
         HideSaveInfoWindow();
         HideSaveMessageWindow();
@@ -1042,7 +1042,7 @@ static u8 SaveOverwriteInputCallback(void)
     case 0: // Yes
         sSaveDialogCallback = SaveSavingMessageCallback;
         return SAVE_IN_PROGRESS;
-    case MENU_B_PRESSED:
+    case -1: // B Button
     case 1: // No
         HideSaveInfoWindow();
         HideSaveMessageWindow();
@@ -1161,7 +1161,7 @@ static u8 BattlePyramidRetireInputCallback(void)
     {
     case 0: // Yes
         return SAVE_CANCELED;
-    case MENU_B_PRESSED:
+    case -1: // B Button
     case 1: // No
         HideSaveMessageWindow();
         return SAVE_SUCCESS;
@@ -1196,8 +1196,8 @@ static bool32 InitSaveWindowAfterLinkBattle(u8 *state)
         ResetBgsAndClearDma3BusyFlags(0);
         InitBgsFromTemplates(0, sBgTemplates_LinkBattleSave, ARRAY_COUNT(sBgTemplates_LinkBattleSave));
         InitWindows(sWindowTemplates_LinkBattleSave);
-        LoadUserWindowBorderGfx_(0, 8, BG_PLTT_ID(14));
-        Menu_LoadStdPalAt(BG_PLTT_ID(15));
+        LoadUserWindowBorderGfx_(0, 8, 224);
+        Menu_LoadStdPalAt(240);
         break;
     case 3:
         ShowBg(0);
@@ -1264,7 +1264,7 @@ static void Task_SaveAfterLinkBattle(u8 taskId)
             }
             else
             {
-                gSoftResetDisabled = TRUE;
+                gSoftResetDisabled = 1;
                 *state = 1;
             }
             break;
@@ -1278,7 +1278,7 @@ static void Task_SaveAfterLinkBattle(u8 taskId)
             {
                 ClearContinueGameWarpStatus2();
                 *state = 3;
-                gSoftResetDisabled = FALSE;
+                gSoftResetDisabled = 0;
             }
             break;
         case 3:
@@ -1378,7 +1378,7 @@ static void Task_WaitForBattleTowerLinkSave(u8 taskId)
     if (!FuncIsActiveTask(Task_LinkFullSave))
     {
         DestroyTask(taskId);
-        ScriptContext_Enable();
+        EnableBothScriptContexts();
     }
 }
 
@@ -1398,7 +1398,7 @@ static void HideStartMenuWindow(void)
     ClearStdWindowAndFrame(GetStartMenuWindowId(), TRUE);
     RemoveStartMenuWindow();
     ScriptUnfreezeObjectEvents();
-    UnlockPlayerFieldControls();
+    ScriptContext2_Disable();
 }
 
 void HideStartMenu(void)

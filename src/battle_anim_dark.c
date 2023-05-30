@@ -426,7 +426,7 @@ void AnimTask_MoveAttackerMementoShadow(u8 taskId)
         GetBattleAnimBg1Data(&animBg);
         task->data[10] = gBattle_BG1_Y;
         SetGpuReg(REG_OFFSET_BLDCNT, BLDCNT_TGT2_ALL | BLDCNT_EFFECT_BLEND | BLDCNT_TGT1_BG1);
-        FillPalette(RGB_BLACK, BG_PLTT_ID(animBg.paletteId), PLTT_SIZE_4BPP);
+        FillPalette(RGB_BLACK, animBg.paletteId * 16, 32);
         scanlineParams.dmaDest = &REG_BG1VOFS;
         var0 = WINOUT_WIN01_BG1;
         if (!IsContest())
@@ -436,7 +436,7 @@ void AnimTask_MoveAttackerMementoShadow(u8 taskId)
     {
         task->data[10] = gBattle_BG2_Y;
         SetGpuReg(REG_OFFSET_BLDCNT, BLDCNT_TGT2_ALL | BLDCNT_EFFECT_BLEND | BLDCNT_TGT1_BG2);
-        FillPalette(RGB_BLACK, BG_PLTT_ID(9), PLTT_SIZE_4BPP);
+        FillPalette(RGB_BLACK, 144, 32);
         scanlineParams.dmaDest = &REG_BG2VOFS;
         var0 = WINOUT_WIN01_BG2;
         if (!IsContest())
@@ -566,12 +566,12 @@ void AnimTask_MoveTargetMementoShadow(u8 taskId)
         {
             GetBattleAnimBg1Data(&animBg);
             task->data[10] = gBattle_BG1_Y;
-            FillPalette(RGB_BLACK, BG_PLTT_ID(animBg.paletteId), PLTT_SIZE_4BPP);
+            FillPalette(RGB_BLACK, animBg.paletteId * 16, 32);
         }
         else
         {
             task->data[10] = gBattle_BG2_Y;
-            FillPalette(RGB_BLACK, BG_PLTT_ID(9), PLTT_SIZE_4BPP);
+            FillPalette(RGB_BLACK, 9 * 16, 32);
         }
 
         SetAllBattlersSpritePriority(3);
@@ -777,8 +777,8 @@ void AnimTask_InitMementoShadow(u8 taskId)
 
     if (IsBattlerSpriteVisible(BATTLE_PARTNER(gBattleAnimAttacker)))
     {
-        MoveBattlerSpriteToBG(BATTLE_PARTNER(gBattleAnimAttacker), toBG2 ^ 1, TRUE);
-        gSprites[gBattlerSpriteIds[BATTLE_PARTNER(gBattleAnimAttacker)]].invisible = FALSE;
+        MoveBattlerSpriteToBG(gBattleAnimAttacker ^ 2, toBG2 ^ 1, TRUE);
+        gSprites[gBattlerSpriteIds[gBattleAnimAttacker ^ 2]].invisible = FALSE;
     }
 
     DestroyAnimVisualTask(taskId);
@@ -863,7 +863,7 @@ void AnimTask_MetallicShine(u8 taskId)
     GetBattleAnimBg1Data(&animBg);
     AnimLoadCompressedBgTilemap(animBg.bgId, gMetalShineTilemap);
     AnimLoadCompressedBgGfx(animBg.bgId, gMetalShineGfx, animBg.tilesOffset);
-    LoadCompressedPalette(gMetalShinePalette, BG_PLTT_ID(animBg.paletteId), PLTT_SIZE_4BPP);
+    LoadCompressedPalette(gMetalShinePalette, animBg.paletteId * 16, 32);
 
     gBattle_BG1_X = -gSprites[spriteId].x + 96;
     gBattle_BG1_Y = -gSprites[spriteId].y + 32;
@@ -872,7 +872,7 @@ void AnimTask_MetallicShine(u8 taskId)
     if (gBattleAnimArgs[1] == 0)
         SetGrayscaleOrOriginalPalette(paletteNum, FALSE);
     else
-        BlendPalette(BG_PLTT_ID(paletteNum), 16, 11, gBattleAnimArgs[2]);
+        BlendPalette(paletteNum * 16, 16, 11, gBattleAnimArgs[2]);
 
     gTasks[taskId].data[0] = newSpriteId;
     gTasks[taskId].data[1] = gBattleAnimArgs[0];
@@ -943,19 +943,19 @@ void AnimTask_SetGrayscaleOrOriginalPal(u8 taskId)
     case ANIM_DEF_PARTNER:
         spriteId = GetAnimBattlerSpriteId(gBattleAnimArgs[0]);
         break;
-    case ANIM_PLAYER_LEFT:
+    case 4:
         position = B_POSITION_PLAYER_LEFT;
         calcSpriteId = TRUE;
         break;
-    case ANIM_PLAYER_RIGHT:
+    case 5:
         position = B_POSITION_PLAYER_RIGHT;
         calcSpriteId = TRUE;
         break;
-    case ANIM_OPPONENT_LEFT:
+    case 6:
         position = B_POSITION_OPPONENT_LEFT;
         calcSpriteId = TRUE;
         break;
-    case ANIM_OPPONENT_RIGHT:
+    case 7:
         position = B_POSITION_OPPONENT_RIGHT;
         calcSpriteId = TRUE;
         break;

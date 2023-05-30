@@ -10,7 +10,7 @@ static const u16 sFrontierExchangeCorner_Decor1[] =
     DECOR_CYNDAQUIL_DOLL,
     DECOR_CHIKORITA_DOLL,
     DECOR_TOTODILE_DOLL,
-    ITEM_LIST_END
+    0xFFFF
 };
 
 static const u16 sFrontierExchangeCorner_Decor2[] =
@@ -20,7 +20,7 @@ static const u16 sFrontierExchangeCorner_Decor2[] =
     DECOR_VENUSAUR_DOLL,
     DECOR_CHARIZARD_DOLL,
     DECOR_BLASTOISE_DOLL,
-    ITEM_LIST_END
+    0xFFFF
 };
 
 static const u16 sFrontierExchangeCorner_Vitamins[] =
@@ -31,7 +31,7 @@ static const u16 sFrontierExchangeCorner_Vitamins[] =
     ITEM_ZINC,
     ITEM_CARBOS,
     ITEM_HP_UP,
-    ITEM_LIST_END
+    0xFFFF
 };
 
 static const u16 sFrontierExchangeCorner_HoldItems[] =
@@ -45,7 +45,7 @@ static const u16 sFrontierExchangeCorner_HoldItems[] =
     ITEM_KINGS_ROCK,
     ITEM_FOCUS_BAND,
     ITEM_SCOPE_LENS,
-    ITEM_LIST_END
+    0xFFFF
 };
 
 static const u8 *const sFrontierExchangeCorner_Decor1Descriptions[] =

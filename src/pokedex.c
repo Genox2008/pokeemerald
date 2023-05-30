@@ -93,13 +93,6 @@ enum
     NAME_YZ,
 };
 
-enum {
-    WIN_INFO,
-    WIN_FOOTPRINT,
-    WIN_CRY_WAVE,
-    WIN_VU_METER,
-};
-
 // For scrolling search parameter
 #define MAX_SEARCH_PARAM_ON_SCREEN   6
 #define MAX_SEARCH_PARAM_CURSOR_POS  (MAX_SEARCH_PARAM_ON_SCREEN - 1)
@@ -893,6 +886,11 @@ static const struct BgTemplate sInfoScreen_BgTemplate[] =
         .baseTile = 0
     }
 };
+
+#define WIN_INFO 0
+#define WIN_FOOTPRINT 1
+#define WIN_CRY_WAVE 2
+#define WIN_VU_METER 3
 
 static const struct WindowTemplate sInfoScreen_WindowTemplates[] =
 {
@@ -2144,12 +2142,12 @@ static bool8 LoadPokedexListPage(u8 page)
 static void LoadPokedexBgPalette(bool8 isSearchResults)
 {
     if (isSearchResults == TRUE)
-        LoadPalette(gPokedexSearchResults_Pal + 1, BG_PLTT_ID(0) + 1, PLTT_SIZEOF(6 * 16 - 1));
+        LoadPalette(gPokedexSearchResults_Pal + 1, 1, 0xBE);
     else if (!IsNationalPokedexEnabled())
-        LoadPalette(gPokedexBgHoenn_Pal + 1, BG_PLTT_ID(0) + 1, PLTT_SIZEOF(6 * 16 - 1));
+        LoadPalette(gPokedexBgHoenn_Pal + 1, 1, 0xBE);
     else
-        LoadPalette(gPokedexBgNational_Pal + 1, BG_PLTT_ID(0) + 1, PLTT_SIZEOF(6 * 16 - 1));
-    LoadPalette(GetOverworldTextboxPalettePtr(), BG_PLTT_ID(15), PLTT_SIZE_4BPP);
+        LoadPalette(gPokedexBgNational_Pal + 1, 1, 0xBE);
+    LoadPalette(GetOverworldTextboxPalettePtr(), 0xF0, 32);
 }
 
 static void FreeWindowAndBgBuffers(void)
@@ -3263,7 +3261,7 @@ static void Task_LoadInfoScreen(u8 taskId)
     case 4:
         PrintMonInfo(sPokedexListItem->dexNum, sPokedexView->dexMode == DEX_MODE_HOENN ? FALSE : TRUE, sPokedexListItem->owned, 0);
         if (!sPokedexListItem->owned)
-            LoadPalette(&gPlttBufferUnfaded[BG_PLTT_ID(0) + 1], BG_PLTT_ID(3) + 1, PLTT_SIZEOF(16 - 1));
+            LoadPalette(gPlttBufferUnfaded + 1, 0x31, 0x1E);
         CopyWindowToVram(WIN_INFO, COPYWIN_FULL);
         CopyBgTilemapBufferToVram(1);
         CopyBgTilemapBufferToVram(2);
@@ -3712,7 +3710,7 @@ static void LoadPlayArrowPalette(bool8 cryPlaying)
         color = RGB(18, 28, 0);
     else
         color = RGB(15, 21, 0);
-    LoadPalette(&color, BG_PLTT_ID(5) + 13, PLTT_SIZEOF(1));
+    LoadPalette(&color, 0x5D, 2);
 }
 
 static void Task_LoadSizeScreen(u8 taskId)
@@ -3767,7 +3765,7 @@ static void Task_LoadSizeScreen(u8 taskId)
         gSprites[spriteId].oam.priority = 0;
         gSprites[spriteId].y2 = gPokedexEntries[sPokedexListItem->dexNum].trainerOffset;
         SetOamMatrix(1, gPokedexEntries[sPokedexListItem->dexNum].trainerScale, 0, 0, gPokedexEntries[sPokedexListItem->dexNum].trainerScale);
-        LoadPalette(sSizeScreenSilhouette_Pal, OBJ_PLTT_ID2(gSprites[spriteId].oam.paletteNum), PLTT_SIZE_4BPP);
+        LoadPalette(sSizeScreenSilhouette_Pal, (gSprites[spriteId].oam.paletteNum + 16) * 16, 0x20);
         gTasks[taskId].tTrainerSpriteId = spriteId;
         gMain.state++;
         break;
@@ -3778,7 +3776,7 @@ static void Task_LoadSizeScreen(u8 taskId)
         gSprites[spriteId].oam.priority = 0;
         gSprites[spriteId].y2 = gPokedexEntries[sPokedexListItem->dexNum].pokemonOffset;
         SetOamMatrix(2, gPokedexEntries[sPokedexListItem->dexNum].pokemonScale, 0, 0, gPokedexEntries[sPokedexListItem->dexNum].pokemonScale);
-        LoadPalette(sSizeScreenSilhouette_Pal, OBJ_PLTT_ID2(gSprites[spriteId].oam.paletteNum), PLTT_SIZE_4BPP);
+        LoadPalette(sSizeScreenSilhouette_Pal, (gSprites[spriteId].oam.paletteNum + 16) * 16, 0x20);
         gTasks[taskId].tMonSpriteId = spriteId;
         CopyWindowToVram(WIN_INFO, COPYWIN_FULL);
         CopyBgTilemapBufferToVram(1);
@@ -4029,11 +4027,11 @@ static void Task_HandleCaughtMonPageInput(u8 taskId)
     // Flicker caught screen color
     else if (++gTasks[taskId].tPalTimer & 16)
     {
-        LoadPalette(gPokedexBgHoenn_Pal + 1, BG_PLTT_ID(3) + 1, PLTT_SIZEOF(7));
+        LoadPalette(gPokedexBgHoenn_Pal + 1, 0x31, 14);
     }
     else
     {
-        LoadPalette(gPokedexCaughtScreen_Pal + 1, BG_PLTT_ID(3) + 1, PLTT_SIZEOF(7));
+        LoadPalette(gPokedexCaughtScreen_Pal + 1, 0x31, 14);
     }
 }
 
@@ -4062,7 +4060,7 @@ static void Task_ExitCaughtMonPage(u8 taskId)
         personality = ((u16)gTasks[taskId].tPersonalityHi << 16) | (u16)gTasks[taskId].tPersonalityLo;
         paletteNum = gSprites[gTasks[taskId].tMonSpriteId].oam.paletteNum;
         lzPaletteData = GetMonSpritePalFromSpeciesAndPersonality(species, otId, personality);
-        LoadCompressedPalette(lzPaletteData, OBJ_PLTT_ID(paletteNum), PLTT_SIZE_4BPP);
+        LoadCompressedPalette(lzPaletteData, 0x100 | paletteNum * 16, 32);
         DestroyTask(taskId);
     }
 }
@@ -4539,15 +4537,9 @@ static void UnusedPrintDecimalNum(u8 windowId, u16 b, u8 left, u8 top)
     PrintInfoSubMenuText(windowId, str, left, top);
 }
 
-// The footprints are drawn on WIN_FOOTPRINT, which uses BG palette 15 (loaded with graphics/text_window/message_box.gbapal)
-// The footprint pixels are stored as 1BPP, and set to the below color index in this palette when converted to 4BPP.
-#define FOOTPRINT_COLOR_IDX  2
-
-#define NUM_FOOTPRINT_TILES  4
-
 static void DrawFootprint(u8 windowId, u16 dexNum)
 {
-    u8 footprint4bpp[TILE_SIZE_4BPP * NUM_FOOTPRINT_TILES];
+    u8 footprint[32 * 4] = {0};
     const u8 * footprintGfx = gMonFootprintTable[NationalPokedexNumToSpecies(dexNum)];
     u32 i, j, tileIdx = 0;
 
@@ -4561,12 +4553,12 @@ static void DrawFootprint(u8 windowId, u16 dexNum)
                 u8 value = ((tile >> (2 * j)) & 1 ? 2 : 0);
                 if (tile & (2 << (2 * j)))
                     value |= 0x20;
-                footprint4bpp[tileIdx] = value;
+                footprint[tileIdx] = value;
                 tileIdx++;
             }
         }
     }
-    CopyToWindowPixelBuffer(windowId, footprint4bpp, sizeof(footprint4bpp), 0);
+    CopyToWindowPixelBuffer(windowId, footprint, sizeof(footprint), 0);
 }
 
 // Unused Ruby/Sapphire function.
@@ -4678,7 +4670,7 @@ static int DoPokedexSearch(u8 dexMode, u8 order, u8 abcGroup, u8 bodyColor, u8 t
         {
             species = NationalPokedexNumToSpecies(sPokedexView->pokedexList[i].dexNum);
 
-            if (bodyColor == gSpeciesInfo[species].bodyColor)
+            if (bodyColor == gBaseStats[species].bodyColor)
             {
                 sPokedexView->pokedexList[resultsCount] = sPokedexView->pokedexList[i];
                 resultsCount++;
@@ -4704,8 +4696,8 @@ static int DoPokedexSearch(u8 dexMode, u8 order, u8 abcGroup, u8 bodyColor, u8 t
                 {
                     species = NationalPokedexNumToSpecies(sPokedexView->pokedexList[i].dexNum);
 
-                    types[0] = gSpeciesInfo[species].types[0];
-                    types[1] = gSpeciesInfo[species].types[1];
+                    types[0] = gBaseStats[species].type1;
+                    types[1] = gBaseStats[species].type2;
                     if (types[0] == type1 || types[1] == type1)
                     {
                         sPokedexView->pokedexList[resultsCount] = sPokedexView->pokedexList[i];
@@ -4722,8 +4714,8 @@ static int DoPokedexSearch(u8 dexMode, u8 order, u8 abcGroup, u8 bodyColor, u8 t
                 {
                     species = NationalPokedexNumToSpecies(sPokedexView->pokedexList[i].dexNum);
 
-                    types[0] = gSpeciesInfo[species].types[0];
-                    types[1] = gSpeciesInfo[species].types[1];
+                    types[0] = gBaseStats[species].type1;
+                    types[1] = gBaseStats[species].type2;
                     if ((types[0] == type1 && types[1] == type2) || (types[0] == type2 && types[1] == type1))
                     {
                         sPokedexView->pokedexList[resultsCount] = sPokedexView->pokedexList[i];
@@ -4813,7 +4805,7 @@ static void Task_LoadSearchMenu(u8 taskId)
                 CopyToBgTilemapBuffer(3, gPokedexSearchMenuHoenn_Tilemap, 0, 0);
             else
                 CopyToBgTilemapBuffer(3, gPokedexSearchMenuNational_Tilemap, 0, 0);
-            LoadPalette(gPokedexSearchMenu_Pal + 1, BG_PLTT_ID(0) + 1, PLTT_SIZEOF(4 * 16 - 1));
+            LoadPalette(gPokedexSearchMenu_Pal + 1, 1, 0x7E);
             gMain.state = 1;
         }
         break;

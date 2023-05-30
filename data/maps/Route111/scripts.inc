@@ -144,7 +144,7 @@ Route111_EventScript_RootFossilDisappeared::
 
 @ Unused
 Route111_Movement_PlayerFall::
-	lock_anim
+	store_lock_anim
 	walk_fast_down
 	walk_fast_down
 	walk_fast_down
@@ -260,7 +260,7 @@ Route111_EventScript_SunTrigger::
 
 Route111_EventScript_SandstormTrigger::
 	setweather WEATHER_SANDSTORM
-	fadenewbgm MUS_DESERT
+	fadenewbgm MUS_ROUTE111
 	doweather
 	end
 

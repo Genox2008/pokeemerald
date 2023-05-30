@@ -73,7 +73,7 @@ static void CB2_ReshowBattleScreenAfterMenu(void)
         break;
     case 4:
         FreeAllSpritePalettes();
-        gReservedSpritePaletteCount = MAX_BATTLERS_COUNT;
+        gReservedSpritePaletteCount = 4;
         break;
     case 5:
         ClearSpritesHealthboxAnimData();
@@ -149,7 +149,7 @@ static void CB2_ReshowBattleScreenAfterMenu(void)
 
             ActionSelectionCreateCursorAt(gActionSelectionCursor[gBattlerInMenuId], 0);
 
-            if (gWirelessCommType != 0 && gReceivedRemoteLinkPlayers)
+            if (gWirelessCommType != 0 && gReceivedRemoteLinkPlayers != 0)
             {
                 LoadWirelessStatusIndicatorSpriteGfx();
                 CreateWirelessStatusIndicatorSprite(0, 0);

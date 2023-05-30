@@ -95,7 +95,7 @@ static void Task_WaitWeather(u8 taskId)
 {
     if (IsWeatherChangeComplete())
     {
-        ScriptContext_Enable();
+        EnableBothScriptContexts();
         DestroyTask(taskId);
     }
 }

@@ -21,9 +21,9 @@
 
 enum
 {
-    COLOR_MAP_NONE,
-    COLOR_MAP_DARK_CONTRAST,
-    COLOR_MAP_CONTRAST,
+    GAMMA_NONE,
+    GAMMA_NORMAL,
+    GAMMA_ALT,
 };
 
 struct RGBColor
@@ -31,6 +31,11 @@ struct RGBColor
     u16 r:5;
     u16 g:5;
     u16 b:5;
+};
+
+struct WeatherPaletteData
+{
+    u16 gammaShiftColors[8][0x1000]; // 0x1000 is the number of bytes that make up all palettes.
 };
 
 struct WeatherCallbacks
@@ -43,11 +48,11 @@ struct WeatherCallbacks
 
 // This file's functions.
 static bool8 LightenSpritePaletteInFog(u8);
-static void BuildColorMaps(void);
-static void UpdateWeatherColorMap(void);
-static void ApplyColorMap(u8 startPalIndex, u8 numPalettes, s8 colorMapIndex);
-static void ApplyColorMapWithBlend(u8 startPalIndex, u8 numPalettes, s8 colorMapIndex, u8 blendCoeff, u16 blendColor);
-static void ApplyDroughtColorMapWithBlend(s8 colorMapIndex, u8 blendCoeff, u16 blendColor);
+static void BuildGammaShiftTables(void);
+static void UpdateWeatherGammaShift(void);
+static void ApplyGammaShift(u8 startPalIndex, u8 numPalettes, s8 gammaIndex);
+static void ApplyGammaShiftWithBlend(u8 startPalIndex, u8 numPalettes, s8 gammaIndex, u8 blendCoeff, u16 blendColor);
+static void ApplyDroughtGammaShiftWithBlend(s8 gammaIndex, u8 blendCoeff, u16 blendColor);
 static void ApplyFogBlend(u8 blendCoeff, u16 blendColor);
 static bool8 FadeInScreen_RainShowShade(void);
 static bool8 FadeInScreen_Drought(void);
@@ -61,9 +66,9 @@ static void None_Main(void);
 static u8 None_Finish(void);
 
 EWRAM_DATA struct Weather gWeather = {0};
-EWRAM_DATA static u8 sFieldEffectPaletteColorMapTypes[32] = {0};
+EWRAM_DATA static u8 sFieldEffectPaletteGammaTypes[32] = {0};
 
-static const u8 *sPaletteColorMapTypes;
+static const u8 *sPaletteGammaTypes;
 
 // The drought weather effect uses a precalculated color lookup table. Presumably this
 // is because the underlying color shift calculation is slow.
@@ -103,50 +108,50 @@ static const struct WeatherCallbacks sWeatherFuncs[] =
 
 void (*const gWeatherPalStateFuncs[])(void) =
 {
-    [WEATHER_PAL_STATE_CHANGING_WEATHER]  = UpdateWeatherColorMap,
+    [WEATHER_PAL_STATE_CHANGING_WEATHER]  = UpdateWeatherGammaShift,
     [WEATHER_PAL_STATE_SCREEN_FADING_IN]  = FadeInScreenWithWeather,
     [WEATHER_PAL_STATE_SCREEN_FADING_OUT] = DoNothing,
     [WEATHER_PAL_STATE_IDLE]              = DoNothing,
 };
 
-// This table specifies which of the color maps should be
+// This table specifies which of the gamma shift tables should be
 // applied to each of the background and sprite palettes.
-static const u8 sBasePaletteColorMapTypes[32] =
+static const u8 sBasePaletteGammaTypes[32] =
 {
     // background palettes
-    COLOR_MAP_DARK_CONTRAST,
-    COLOR_MAP_DARK_CONTRAST,
-    COLOR_MAP_DARK_CONTRAST,
-    COLOR_MAP_DARK_CONTRAST,
-    COLOR_MAP_DARK_CONTRAST,
-    COLOR_MAP_DARK_CONTRAST,
-    COLOR_MAP_DARK_CONTRAST,
-    COLOR_MAP_DARK_CONTRAST,
-    COLOR_MAP_DARK_CONTRAST,
-    COLOR_MAP_DARK_CONTRAST,
-    COLOR_MAP_DARK_CONTRAST,
-    COLOR_MAP_DARK_CONTRAST,
-    COLOR_MAP_DARK_CONTRAST,
-    COLOR_MAP_DARK_CONTRAST,
-    COLOR_MAP_NONE,
-    COLOR_MAP_NONE,
+    GAMMA_NORMAL,
+    GAMMA_NORMAL,
+    GAMMA_NORMAL,
+    GAMMA_NORMAL,
+    GAMMA_NORMAL,
+    GAMMA_NORMAL,
+    GAMMA_NORMAL,
+    GAMMA_NORMAL,
+    GAMMA_NORMAL,
+    GAMMA_NORMAL,
+    GAMMA_NORMAL,
+    GAMMA_NORMAL,
+    GAMMA_NORMAL,
+    GAMMA_NORMAL,
+    GAMMA_NONE,
+    GAMMA_NONE,
     // sprite palettes
-    COLOR_MAP_CONTRAST,
-    COLOR_MAP_DARK_CONTRAST,
-    COLOR_MAP_CONTRAST,
-    COLOR_MAP_CONTRAST,
-    COLOR_MAP_CONTRAST,
-    COLOR_MAP_CONTRAST,
-    COLOR_MAP_DARK_CONTRAST,
-    COLOR_MAP_DARK_CONTRAST,
-    COLOR_MAP_DARK_CONTRAST,
-    COLOR_MAP_DARK_CONTRAST,
-    COLOR_MAP_CONTRAST,
-    COLOR_MAP_DARK_CONTRAST,
-    COLOR_MAP_DARK_CONTRAST,
-    COLOR_MAP_DARK_CONTRAST,
-    COLOR_MAP_DARK_CONTRAST,
-    COLOR_MAP_DARK_CONTRAST,
+    GAMMA_ALT,
+    GAMMA_NORMAL,
+    GAMMA_ALT,
+    GAMMA_ALT,
+    GAMMA_ALT,
+    GAMMA_ALT,
+    GAMMA_NORMAL,
+    GAMMA_NORMAL,
+    GAMMA_NORMAL,
+    GAMMA_NORMAL,
+    GAMMA_ALT,
+    GAMMA_NORMAL,
+    GAMMA_NORMAL,
+    GAMMA_NORMAL,
+    GAMMA_NORMAL,
+    GAMMA_NORMAL,
 };
 
 const u16 gFogPalette[] = INCBIN_U16("graphics/weather/fog.gbapal");
@@ -155,10 +160,10 @@ void StartWeather(void)
 {
     if (!FuncIsActiveTask(Task_WeatherMain))
     {
-        u8 index = AllocSpritePalette(PALTAG_WEATHER);
-        CpuCopy32(gFogPalette, &gPlttBufferUnfaded[OBJ_PLTT_ID(index)], PLTT_SIZE_4BPP);
-        BuildColorMaps();
-        gWeatherPtr->contrastColorMapSpritePalIndex = index;
+        u8 index = AllocSpritePalette(TAG_WEATHER_START);
+        CpuCopy32(gFogPalette, &gPlttBufferUnfaded[0x100 + index * 16], 32);
+        BuildGammaShiftTables();
+        gWeatherPtr->altGammaSpritePalIndex = index;
         gWeatherPtr->weatherPicSpritePalIndex = AllocSpritePalette(PALTAG_WEATHER_2);
         gWeatherPtr->rainSpriteCount = 0;
         gWeatherPtr->curRainSpriteIndex = 0;
@@ -233,7 +238,7 @@ static void Task_WeatherMain(u8 taskId)
         {
             // Finished cleaning up previous weather. Now transition to next weather.
             sWeatherFuncs[gWeatherPtr->nextWeather].initVars();
-            gWeatherPtr->colorMapStepCounter = 0;
+            gWeatherPtr->gammaStepFrameCounter = 0;
             gWeatherPtr->palProcessingState = WEATHER_PAL_STATE_CHANGING_WEATHER;
             gWeatherPtr->currWeather = gWeatherPtr->nextWeather;
             gWeatherPtr->weatherChangeComplete = TRUE;
@@ -249,8 +254,8 @@ static void Task_WeatherMain(u8 taskId)
 
 static void None_Init(void)
 {
-    gWeatherPtr->targetColorMapIndex = 0;
-    gWeatherPtr->colorMapStepDelay = 0;
+    gWeatherPtr->gammaTargetIndex = 0;
+    gWeatherPtr->gammaStepDelay = 0;
 }
 
 static void None_Main(void)
@@ -262,82 +267,70 @@ static u8 None_Finish(void)
     return 0;
 }
 
-// Builds two tables that contain color maps, used for directly transforming
-// palette colors in weather effects. The colors maps are a spectrum of
-// brightness + contrast mappings. By transitioning between the maps, weather
-// effects like lightning are created.
+// Builds two tables that contain gamma shifts for palette colors.
 // It's unclear why the two tables aren't declared as const arrays, since
 // this function always builds the same two tables.
-static void BuildColorMaps(void)
+static void BuildGammaShiftTables(void)
 {
-    u16 i;
-    u8 (*colorMaps)[32];
-    u16 colorVal;
-    u16 curBrightness;
-    u16 brightnessDelta;
-    u16 colorMapIndex;
-    u16 baseBrightness;
-    u32 remainingBrightness;
-    s16 diff;
+    u16 v0;
+    u8 (*gammaTable)[32];
+    u16 v2;
+    u16 v4;
+    u16 v5;
+    u16 gammaIndex;
+    u16 v9;
+    u32 v10;
+    u16 v11;
+    s16 dunno;
 
-    sPaletteColorMapTypes = sBasePaletteColorMapTypes;
-    for (i = 0; i < 2; i++)
+    sPaletteGammaTypes = sBasePaletteGammaTypes;
+    for (v0 = 0; v0 <= 1; v0++)
     {
-        if (i == 0)
-            colorMaps = gWeatherPtr->darkenedContrastColorMaps;
+        if (v0 == 0)
+            gammaTable = gWeatherPtr->gammaShifts;
         else
-            colorMaps = gWeatherPtr->contrastColorMaps;
+            gammaTable = gWeatherPtr->altGammaShifts;
 
-        for (colorVal = 0; colorVal < 32; colorVal++)
+        for (v2 = 0; v2 < 32; v2++)
         {
-            curBrightness = colorVal << 8;
-            if (i == 0)
-                brightnessDelta = (colorVal << 8) / 16;
+            v4 = v2 << 8;
+            if (v0 == 0)
+                v5 = (v2 << 8) / 16;
             else
-                brightnessDelta = 0;
-
-            // First three color mappings are simple brightness modifiers which are
-            // progressively darker, according to brightnessDelta.
-            for (colorMapIndex = 0; colorMapIndex < 3; colorMapIndex++)
+                v5 = 0;
+            for (gammaIndex = 0; gammaIndex <= 2; gammaIndex++)
             {
-                curBrightness -= brightnessDelta;
-                colorMaps[colorMapIndex][colorVal] = curBrightness >> 8;
+                v4 = (v4 - v5);
+                gammaTable[gammaIndex][v2] = v4 >> 8;
             }
-
-            baseBrightness = curBrightness;
-            remainingBrightness = 0x1f00 - curBrightness;
-            if ((0x1f00 - curBrightness) < 0)
-                remainingBrightness += 0xf;
-
-            brightnessDelta = remainingBrightness / (NUM_WEATHER_COLOR_MAPS - 3);
-            if (colorVal < 12)
+            v9 = v4;
+            v10 = 0x1f00 - v4;
+            if ((0x1f00 - v4) < 0)
             {
-                // For shadows (color values < 12), the remaining color mappings are
-                // brightness modifiers, which are increased at a significantly lower rate
-                // than the midtones and highlights (color values >= 12). This creates a
-                // high contrast effect, used in the thunderstorm weather.
-                for (; colorMapIndex < NUM_WEATHER_COLOR_MAPS; colorMapIndex++)
+                v10 += 0xf;
+            }
+            v11 = v10 >> 4;
+            if (v2 < 12)
+            {
+                for (; gammaIndex < 19; gammaIndex++)
                 {
-                    curBrightness += brightnessDelta;
-                    diff = curBrightness - baseBrightness;
-                    if (diff > 0)
-                        curBrightness -= diff / 2;
-                    colorMaps[colorMapIndex][colorVal] = curBrightness >> 8;
-                    if (colorMaps[colorMapIndex][colorVal] > 31)
-                        colorMaps[colorMapIndex][colorVal] = 31;
+                    v4 += v11;
+                    dunno = v4 - v9;
+                    if (dunno > 0)
+                        v4 -= (dunno + ((u16)dunno >> 15)) >> 1;
+                    gammaTable[gammaIndex][v2] = v4 >> 8;
+                    if (gammaTable[gammaIndex][v2] > 0x1f)
+                        gammaTable[gammaIndex][v2] = 0x1f;
                 }
             }
             else
             {
-                // For midtones and highlights (color values >= 12), the remaining
-                // color mappings are simple brightness modifiers which are
-                // progressively brighter, hitting exactly 31 at the last mapping.
-                for (; colorMapIndex < NUM_WEATHER_COLOR_MAPS; colorMapIndex++)
+                for (; gammaIndex < 19; gammaIndex++)
                 {
-                    curBrightness += brightnessDelta;
-                    colorMaps[colorMapIndex][colorVal] = curBrightness >> 8;
-                    if (colorMaps[colorMapIndex][colorVal] > 31)
-                        colorMaps[colorMapIndex][colorVal] = 31;
+                    v4 += v11;
+                    gammaTable[gammaIndex][v2] = v4 >> 8;
+                    if (gammaTable[gammaIndex][v2] > 0x1f)
+                        gammaTable[gammaIndex][v2] = 0x1f;
                 }
             }
         }
@@ -345,26 +338,26 @@ static void BuildColorMaps(void)
 }
 
 // When the weather is changing, it gradually updates the palettes
-// towards the desired color map.
-static void UpdateWeatherColorMap(void)
+// towards the desired gamma shift.
+static void UpdateWeatherGammaShift(void)
 {
     if (gWeatherPtr->palProcessingState != WEATHER_PAL_STATE_SCREEN_FADING_OUT)
     {
-        if (gWeatherPtr->colorMapIndex == gWeatherPtr->targetColorMapIndex)
+        if (gWeatherPtr->gammaIndex == gWeatherPtr->gammaTargetIndex)
         {
             gWeatherPtr->palProcessingState = WEATHER_PAL_STATE_IDLE;
         }
         else
         {
-            if (++gWeatherPtr->colorMapStepCounter >= gWeatherPtr->colorMapStepDelay)
+            if (++gWeatherPtr->gammaStepFrameCounter >= gWeatherPtr->gammaStepDelay)
             {
-                gWeatherPtr->colorMapStepCounter = 0;
-                if (gWeatherPtr->colorMapIndex < gWeatherPtr->targetColorMapIndex)
-                    gWeatherPtr->colorMapIndex++;
+                gWeatherPtr->gammaStepFrameCounter = 0;
+                if (gWeatherPtr->gammaIndex < gWeatherPtr->gammaTargetIndex)
+                    gWeatherPtr->gammaIndex++;
                 else
-                    gWeatherPtr->colorMapIndex--;
+                    gWeatherPtr->gammaIndex--;
 
-                ApplyColorMap(0, 32, gWeatherPtr->colorMapIndex);
+                ApplyGammaShift(0, 32, gWeatherPtr->gammaIndex);
             }
         }
     }
@@ -384,21 +377,21 @@ static void FadeInScreenWithWeather(void)
     case WEATHER_SHADE:
         if (FadeInScreen_RainShowShade() == FALSE)
         {
-            gWeatherPtr->colorMapIndex = 3;
+            gWeatherPtr->gammaIndex = 3;
             gWeatherPtr->palProcessingState = WEATHER_PAL_STATE_IDLE;
         }
         break;
     case WEATHER_DROUGHT:
         if (FadeInScreen_Drought() == FALSE)
         {
-            gWeatherPtr->colorMapIndex = -6;
+            gWeatherPtr->gammaIndex = -6;
             gWeatherPtr->palProcessingState = WEATHER_PAL_STATE_IDLE;
         }
         break;
     case WEATHER_FOG_HORIZONTAL:
         if (FadeInScreen_FogHorizontal() == FALSE)
         {
-            gWeatherPtr->colorMapIndex = 0;
+            gWeatherPtr->gammaIndex = 0;
             gWeatherPtr->palProcessingState = WEATHER_PAL_STATE_IDLE;
         }
         break;
@@ -409,7 +402,7 @@ static void FadeInScreenWithWeather(void)
     default:
         if (!gPaletteFade.active)
         {
-            gWeatherPtr->colorMapIndex = gWeatherPtr->targetColorMapIndex;
+            gWeatherPtr->gammaIndex = gWeatherPtr->gammaTargetIndex;
             gWeatherPtr->palProcessingState = WEATHER_PAL_STATE_IDLE;
         }
         break;
@@ -423,12 +416,12 @@ static bool8 FadeInScreen_RainShowShade(void)
 
     if (++gWeatherPtr->fadeScreenCounter >= 16)
     {
-        ApplyColorMap(0, 32, 3);
+        ApplyGammaShift(0, 32, 3);
         gWeatherPtr->fadeScreenCounter = 16;
         return FALSE;
     }
 
-    ApplyColorMapWithBlend(0, 32, 3, 16 - gWeatherPtr->fadeScreenCounter, gWeatherPtr->fadeDestColor);
+    ApplyGammaShiftWithBlend(0, 32, 3, 16 - gWeatherPtr->fadeScreenCounter, gWeatherPtr->fadeDestColor);
     return TRUE;
 }
 
@@ -439,12 +432,12 @@ static bool8 FadeInScreen_Drought(void)
 
     if (++gWeatherPtr->fadeScreenCounter >= 16)
     {
-        ApplyColorMap(0, 32, -6);
+        ApplyGammaShift(0, 32, -6);
         gWeatherPtr->fadeScreenCounter = 16;
         return FALSE;
     }
 
-    ApplyDroughtColorMapWithBlend(-6, 16 - gWeatherPtr->fadeScreenCounter, gWeatherPtr->fadeDestColor);
+    ApplyDroughtGammaShiftWithBlend(-6, 16 - gWeatherPtr->fadeScreenCounter, gWeatherPtr->fadeDestColor);
     return TRUE;
 }
 
@@ -461,45 +454,45 @@ static bool8 FadeInScreen_FogHorizontal(void)
 static void DoNothing(void)
 { }
 
-static void ApplyColorMap(u8 startPalIndex, u8 numPalettes, s8 colorMapIndex)
+static void ApplyGammaShift(u8 startPalIndex, u8 numPalettes, s8 gammaIndex)
 {
     u16 curPalIndex;
     u16 palOffset;
-    u8 *colorMap;
+    u8 *gammaTable;
     u16 i;
 
-    if (colorMapIndex > 0)
+    if (gammaIndex > 0)
     {
-        colorMapIndex--;
-        palOffset = PLTT_ID(startPalIndex);
+        gammaIndex--;
+        palOffset = startPalIndex * 16;
         numPalettes += startPalIndex;
         curPalIndex = startPalIndex;
 
-        // Loop through the specified palette range and apply necessary color maps.
+        // Loop through the speficied palette range and apply necessary gamma shifts to the colors.
         while (curPalIndex < numPalettes)
         {
-            if (sPaletteColorMapTypes[curPalIndex] == COLOR_MAP_NONE)
+            if (sPaletteGammaTypes[curPalIndex] == GAMMA_NONE)
             {
                 // No palette change.
-                CpuFastCopy(&gPlttBufferUnfaded[palOffset], &gPlttBufferFaded[palOffset], PLTT_SIZE_4BPP);
+                CpuFastCopy(gPlttBufferUnfaded + palOffset, gPlttBufferFaded + palOffset, 16 * sizeof(u16));
                 palOffset += 16;
             }
             else
             {
                 u8 r, g, b;
 
-                if (sPaletteColorMapTypes[curPalIndex] == COLOR_MAP_CONTRAST || curPalIndex - 16 == gWeatherPtr->contrastColorMapSpritePalIndex)
-                    colorMap = gWeatherPtr->contrastColorMaps[colorMapIndex];
+                if (sPaletteGammaTypes[curPalIndex] == GAMMA_ALT || curPalIndex - 16 == gWeatherPtr->altGammaSpritePalIndex)
+                    gammaTable = gWeatherPtr->altGammaShifts[gammaIndex];
                 else
-                    colorMap = gWeatherPtr->darkenedContrastColorMaps[colorMapIndex];
+                    gammaTable = gWeatherPtr->gammaShifts[gammaIndex];
 
                 for (i = 0; i < 16; i++)
                 {
-                    // Apply color map to the original color.
+                    // Apply gamma shift to the original color.
                     struct RGBColor baseColor = *(struct RGBColor *)&gPlttBufferUnfaded[palOffset];
-                    r = colorMap[baseColor.r];
-                    g = colorMap[baseColor.g];
-                    b = colorMap[baseColor.b];
+                    r = gammaTable[baseColor.r];
+                    g = gammaTable[baseColor.g];
+                    b = gammaTable[baseColor.b];
                     gPlttBufferFaded[palOffset++] = RGB2(r, g, b);
                 }
             }
@@ -507,27 +500,27 @@ static void ApplyColorMap(u8 startPalIndex, u8 numPalettes, s8 colorMapIndex)
             curPalIndex++;
         }
     }
-    else if (colorMapIndex < 0)
+    else if (gammaIndex < 0)
     {
         // A negative gammIndex value means that the blending will come from the special Drought weather's palette tables.
-        colorMapIndex = -colorMapIndex - 1;
-        palOffset = PLTT_ID(startPalIndex);
+        gammaIndex = -gammaIndex - 1;
+        palOffset = startPalIndex * 16;
         numPalettes += startPalIndex;
         curPalIndex = startPalIndex;
 
         while (curPalIndex < numPalettes)
         {
-            if (sPaletteColorMapTypes[curPalIndex] == COLOR_MAP_NONE)
+            if (sPaletteGammaTypes[curPalIndex] == GAMMA_NONE)
             {
                 // No palette change.
-                CpuFastCopy(&gPlttBufferUnfaded[palOffset], &gPlttBufferFaded[palOffset], PLTT_SIZE_4BPP);
+                CpuFastCopy(gPlttBufferUnfaded + palOffset, gPlttBufferFaded + palOffset, 16 * sizeof(u16));
                 palOffset += 16;
             }
             else
             {
                 for (i = 0; i < 16; i++)
                 {
-                    gPlttBufferFaded[palOffset] = sDroughtWeatherColors[colorMapIndex][DROUGHT_COLOR_INDEX(gPlttBufferUnfaded[palOffset])];
+                    gPlttBufferFaded[palOffset] = sDroughtWeatherColors[gammaIndex][DROUGHT_COLOR_INDEX(gPlttBufferUnfaded[palOffset])];
                     palOffset++;
                 }
             }
@@ -538,11 +531,11 @@ static void ApplyColorMap(u8 startPalIndex, u8 numPalettes, s8 colorMapIndex)
     else
     {
         // No palette blending.
-        CpuFastCopy(&gPlttBufferUnfaded[PLTT_ID(startPalIndex)], &gPlttBufferFaded[PLTT_ID(startPalIndex)], numPalettes * PLTT_SIZE_4BPP);
+        CpuFastCopy(gPlttBufferUnfaded + startPalIndex * 16, gPlttBufferFaded + startPalIndex * 16, numPalettes * 16 * sizeof(u16));
     }
 }
 
-static void ApplyColorMapWithBlend(u8 startPalIndex, u8 numPalettes, s8 colorMapIndex, u8 blendCoeff, u16 blendColor)
+static void ApplyGammaShiftWithBlend(u8 startPalIndex, u8 numPalettes, s8 gammaIndex, u8 blendCoeff, u16 blendColor)
 {
     u16 palOffset;
     u16 curPalIndex;
@@ -552,36 +545,36 @@ static void ApplyColorMapWithBlend(u8 startPalIndex, u8 numPalettes, s8 colorMap
     u8 gBlend = color.g;
     u8 bBlend = color.b;
 
-    palOffset = PLTT_ID(startPalIndex);
+    palOffset = startPalIndex * 16;
     numPalettes += startPalIndex;
-    colorMapIndex--;
+    gammaIndex--;
     curPalIndex = startPalIndex;
 
     while (curPalIndex < numPalettes)
     {
-        if (sPaletteColorMapTypes[curPalIndex] == COLOR_MAP_NONE)
+        if (sPaletteGammaTypes[curPalIndex] == GAMMA_NONE)
         {
-            // No color map. Simply blend the colors.
+            // No gamma shift. Simply blend the colors.
             BlendPalette(palOffset, 16, blendCoeff, blendColor);
             palOffset += 16;
         }
         else
         {
-            u8 *colorMap;
+            u8 *gammaTable;
 
-            if (sPaletteColorMapTypes[curPalIndex] == COLOR_MAP_DARK_CONTRAST)
-                colorMap = gWeatherPtr->darkenedContrastColorMaps[colorMapIndex];
+            if (sPaletteGammaTypes[curPalIndex] == GAMMA_NORMAL)
+                gammaTable = gWeatherPtr->gammaShifts[gammaIndex];
             else
-                colorMap = gWeatherPtr->contrastColorMaps[colorMapIndex];
+                gammaTable = gWeatherPtr->altGammaShifts[gammaIndex];
 
             for (i = 0; i < 16; i++)
             {
                 struct RGBColor baseColor = *(struct RGBColor *)&gPlttBufferUnfaded[palOffset];
-                u8 r = colorMap[baseColor.r];
-                u8 g = colorMap[baseColor.g];
-                u8 b = colorMap[baseColor.b];
+                u8 r = gammaTable[baseColor.r];
+                u8 g = gammaTable[baseColor.g];
+                u8 b = gammaTable[baseColor.b];
 
-                // Apply color map and target blend color to the original color.
+                // Apply gamma shift and target blend color to the original color.
                 r += ((rBlend - r) * blendCoeff) >> 4;
                 g += ((gBlend - g) * blendCoeff) >> 4;
                 b += ((bBlend - b) * blendCoeff) >> 4;
@@ -593,7 +586,7 @@ static void ApplyColorMapWithBlend(u8 startPalIndex, u8 numPalettes, s8 colorMap
     }
 }
 
-static void ApplyDroughtColorMapWithBlend(s8 colorMapIndex, u8 blendCoeff, u16 blendColor)
+static void ApplyDroughtGammaShiftWithBlend(s8 gammaIndex, u8 blendCoeff, u16 blendColor)
 {
     struct RGBColor color;
     u8 rBlend;
@@ -603,7 +596,7 @@ static void ApplyDroughtColorMapWithBlend(s8 colorMapIndex, u8 blendCoeff, u16 b
     u16 palOffset;
     u16 i;
 
-    colorMapIndex = -colorMapIndex - 1;
+    gammaIndex = -gammaIndex - 1;
     color = *(struct RGBColor *)&blendColor;
     rBlend = color.r;
     gBlend = color.g;
@@ -611,9 +604,9 @@ static void ApplyDroughtColorMapWithBlend(s8 colorMapIndex, u8 blendCoeff, u16 b
     palOffset = 0;
     for (curPalIndex = 0; curPalIndex < 32; curPalIndex++)
     {
-        if (sPaletteColorMapTypes[curPalIndex] == COLOR_MAP_NONE)
+        if (sPaletteGammaTypes[curPalIndex] == GAMMA_NONE)
         {
-            // No color map. Simply blend the colors.
+            // No gamma shift. Simply blend the colors.
             BlendPalette(palOffset, 16, blendCoeff, blendColor);
             palOffset += 16;
         }
@@ -633,7 +626,7 @@ static void ApplyDroughtColorMapWithBlend(s8 colorMapIndex, u8 blendCoeff, u16 b
                 b1 = color1.b;
 
                 offset = ((b1 & 0x1E) << 7) | ((g1 & 0x1E) << 3) | ((r1 & 0x1E) >> 1);
-                color2 = *(struct RGBColor *)&sDroughtWeatherColors[colorMapIndex][offset];
+                color2 = *(struct RGBColor *)&sDroughtWeatherColors[gammaIndex][offset];
                 r2 = color2.r;
                 g2 = color2.g;
                 b2 = color2.b;
@@ -656,7 +649,7 @@ static void ApplyFogBlend(u8 blendCoeff, u16 blendColor)
     u8 bBlend;
     u16 curPalIndex;
 
-    BlendPalette(BG_PLTT_ID(0), 16 * 16, blendCoeff, blendColor);
+    BlendPalette(0, 256, blendCoeff, blendColor);
     color = *(struct RGBColor *)&blendColor;
     rBlend = color.r;
     gBlend = color.g;
@@ -666,8 +659,8 @@ static void ApplyFogBlend(u8 blendCoeff, u16 blendColor)
     {
         if (LightenSpritePaletteInFog(curPalIndex))
         {
-            u16 palEnd = PLTT_ID(curPalIndex + 1);
-            u16 palOffset = PLTT_ID(curPalIndex);
+            u16 palEnd = (curPalIndex + 1) * 16;
+            u16 palOffset = curPalIndex * 16;
 
             while (palOffset < palEnd)
             {
@@ -690,7 +683,7 @@ static void ApplyFogBlend(u8 blendCoeff, u16 blendColor)
         }
         else
         {
-            BlendPalette(PLTT_ID(curPalIndex), 16, blendCoeff, blendColor);
+            BlendPalette(curPalIndex * 16, 16, blendCoeff, blendColor);
         }
     }
 }
@@ -717,25 +710,25 @@ static bool8 LightenSpritePaletteInFog(u8 paletteIndex)
     return FALSE;
 }
 
-void ApplyWeatherColorMapIfIdle(s8 colorMapIndex)
+void ApplyWeatherGammaShiftIfIdle(s8 gammaIndex)
 {
     if (gWeatherPtr->palProcessingState == WEATHER_PAL_STATE_IDLE)
     {
-        ApplyColorMap(0, 32, colorMapIndex);
-        gWeatherPtr->colorMapIndex = colorMapIndex;
+        ApplyGammaShift(0, 32, gammaIndex);
+        gWeatherPtr->gammaIndex = gammaIndex;
     }
 }
 
-void ApplyWeatherColorMapIfIdle_Gradual(u8 colorMapIndex, u8 targetColorMapIndex, u8 colorMapStepDelay)
+void ApplyWeatherGammaShiftIfIdle_Gradual(u8 gammaIndex, u8 gammaTargetIndex, u8 gammaStepDelay)
 {
     if (gWeatherPtr->palProcessingState == WEATHER_PAL_STATE_IDLE)
     {
         gWeatherPtr->palProcessingState = WEATHER_PAL_STATE_CHANGING_WEATHER;
-        gWeatherPtr->colorMapIndex = colorMapIndex;
-        gWeatherPtr->targetColorMapIndex = targetColorMapIndex;
-        gWeatherPtr->colorMapStepCounter = 0;
-        gWeatherPtr->colorMapStepDelay = colorMapStepDelay;
-        ApplyWeatherColorMapIfIdle(colorMapIndex);
+        gWeatherPtr->gammaIndex = gammaIndex;
+        gWeatherPtr->gammaTargetIndex = gammaTargetIndex;
+        gWeatherPtr->gammaStepFrameCounter = 0;
+        gWeatherPtr->gammaStepDelay = gammaStepDelay;
+        ApplyWeatherGammaShiftIfIdle(gammaIndex);
     }
 }
 
@@ -786,7 +779,7 @@ void FadeScreen(u8 mode, s8 delay)
     if (fadeOut)
     {
         if (useWeatherPal)
-            CpuFastCopy(gPlttBufferFaded, gPlttBufferUnfaded, PLTT_SIZE);
+            CpuFastCopy(gPlttBufferFaded, gPlttBufferUnfaded, PLTT_BUFFER_SIZE * 2);
 
         BeginNormalPaletteFade(PALETTES_ALL, delay, 0, 16, fadeColor);
         gWeatherPtr->palProcessingState = WEATHER_PAL_STATE_SCREEN_FADING_OUT;
@@ -824,14 +817,14 @@ void UpdateSpritePaletteWithWeather(u8 spritePaletteIndex)
         {
             if (gWeatherPtr->currWeather == WEATHER_FOG_HORIZONTAL)
                 MarkFogSpritePalToLighten(paletteIndex);
-            paletteIndex = PLTT_ID(paletteIndex);
+            paletteIndex *= 16;
             for (i = 0; i < 16; i++)
                 gPlttBufferFaded[paletteIndex + i] = gWeatherPtr->fadeDestColor;
         }
         break;
     case WEATHER_PAL_STATE_SCREEN_FADING_OUT:
-        paletteIndex = PLTT_ID(paletteIndex);
-        CpuFastCopy(&gPlttBufferFaded[paletteIndex], &gPlttBufferUnfaded[paletteIndex], PLTT_SIZE_4BPP);
+        paletteIndex *= 16;
+        CpuFastCopy(gPlttBufferFaded + paletteIndex, gPlttBufferUnfaded + paletteIndex, 32);
         BlendPalette(paletteIndex, 16, gPaletteFade.y, gPaletteFade.blendColor);
         break;
     // WEATHER_PAL_STATE_CHANGING_WEATHER
@@ -839,20 +832,20 @@ void UpdateSpritePaletteWithWeather(u8 spritePaletteIndex)
     default:
         if (gWeatherPtr->currWeather != WEATHER_FOG_HORIZONTAL)
         {
-            ApplyColorMap(paletteIndex, 1, gWeatherPtr->colorMapIndex);
+            ApplyGammaShift(paletteIndex, 1, gWeatherPtr->gammaIndex);
         }
         else
         {
-            paletteIndex = PLTT_ID(paletteIndex);
+            paletteIndex *= 16;
             BlendPalette(paletteIndex, 16, 12, RGB(28, 31, 28));
         }
         break;
     }
 }
 
-void ApplyWeatherColorMapToPal(u8 paletteIndex)
+void ApplyWeatherGammaShiftToPal(u8 paletteIndex)
 {
-    ApplyColorMap(paletteIndex, 1, gWeatherPtr->colorMapIndex);
+    ApplyGammaShift(paletteIndex, 1, gWeatherPtr->gammaIndex);
 }
 
 // Unused
@@ -866,7 +859,7 @@ static bool8 IsFirstFrameOfWeatherFadeIn(void)
 
 void LoadCustomWeatherSpritePalette(const u16 *palette)
 {
-    LoadPalette(palette, OBJ_PLTT_ID(gWeatherPtr->weatherPicSpritePalIndex), PLTT_SIZE_4BPP);
+    LoadPalette(palette, 0x100 + gWeatherPtr->weatherPicSpritePalIndex * 16, 32);
     UpdateSpritePaletteWithWeather(gWeatherPtr->weatherPicSpritePalIndex);
 }
 
@@ -893,9 +886,9 @@ bool8 LoadDroughtWeatherPalettes(void)
     return FALSE;
 }
 
-static void SetDroughtColorMap(s8 colorMapIndex)
+static void SetDroughtGamma(s8 gammaIndex)
 {
-    ApplyWeatherColorMapIfIdle(-colorMapIndex - 1);
+    ApplyWeatherGammaShiftIfIdle(-gammaIndex - 1);
 }
 
 void DroughtStateInit(void)
@@ -914,7 +907,7 @@ void DroughtStateRun(void)
         if (++gWeatherPtr->droughtTimer > 5)
         {
             gWeatherPtr->droughtTimer = 0;
-            SetDroughtColorMap(gWeatherPtr->droughtBrightnessStage++);
+            SetDroughtGamma(gWeatherPtr->droughtBrightnessStage++);
             if (gWeatherPtr->droughtBrightnessStage > 5)
             {
                 gWeatherPtr->droughtLastBrightnessStage = gWeatherPtr->droughtBrightnessStage;
@@ -927,14 +920,14 @@ void DroughtStateRun(void)
         gWeatherPtr->droughtTimer = (gWeatherPtr->droughtTimer + 3) & 0x7F;
         gWeatherPtr->droughtBrightnessStage = ((gSineTable[gWeatherPtr->droughtTimer] - 1) >> 6) + 2;
         if (gWeatherPtr->droughtBrightnessStage != gWeatherPtr->droughtLastBrightnessStage)
-            SetDroughtColorMap(gWeatherPtr->droughtBrightnessStage);
+            SetDroughtGamma(gWeatherPtr->droughtBrightnessStage);
         gWeatherPtr->droughtLastBrightnessStage = gWeatherPtr->droughtBrightnessStage;
         break;
     case 2:
         if (++gWeatherPtr->droughtTimer > 5)
         {
             gWeatherPtr->droughtTimer = 0;
-            SetDroughtColorMap(--gWeatherPtr->droughtBrightnessStage);
+            SetDroughtGamma(--gWeatherPtr->droughtBrightnessStage);
             if (gWeatherPtr->droughtBrightnessStage == 3)
                 gWeatherPtr->droughtState = 0;
         }
@@ -1100,12 +1093,12 @@ void SetWeatherPalStateIdle(void)
 
 void PreservePaletteInWeather(u8 preservedPalIndex)
 {
-    CpuCopy16(sBasePaletteColorMapTypes, sFieldEffectPaletteColorMapTypes, 32);
-    sFieldEffectPaletteColorMapTypes[preservedPalIndex] = COLOR_MAP_NONE;
-    sPaletteColorMapTypes = sFieldEffectPaletteColorMapTypes;
+    CpuCopy16(sBasePaletteGammaTypes, sFieldEffectPaletteGammaTypes, 32);
+    sFieldEffectPaletteGammaTypes[preservedPalIndex] = GAMMA_NONE;
+    sPaletteGammaTypes = sFieldEffectPaletteGammaTypes;
 }
 
 void ResetPreservedPalettesInWeather(void)
 {
-    sPaletteColorMapTypes = sBasePaletteColorMapTypes;
+    sPaletteGammaTypes = sBasePaletteGammaTypes;
 }

@@ -14,14 +14,14 @@
   "battle_scene": "MAP_BATTLE_SCENE_NORMAL",
   "connections": [
     {
-      "map": "MAP_ROUTE133",
+      "direction": "left",
       "offset": 0,
-      "direction": "left"
+      "map": "MAP_ROUTE133"
     },
     {
-      "map": "MAP_PACIFIDLOG_TOWN",
+      "direction": "right",
       "offset": 0,
-      "direction": "right"
+      "map": "MAP_PACIFIDLOG_TOWN"
     }
   ],
   "object_events": [

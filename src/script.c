@@ -14,18 +14,12 @@ enum {
     SCRIPT_MODE_NATIVE,
 };
 
-enum {
-    CONTEXT_RUNNING,
-    CONTEXT_WAITING,
-    CONTEXT_SHUTDOWN,
-};
+extern const u8* gRamScriptRetAddr;
 
-extern const u8 *gRamScriptRetAddr;
-
-static u8 sGlobalScriptContextStatus;
-static struct ScriptContext sGlobalScriptContext;
-static struct ScriptContext sImmediateScriptContext;
-static bool8 sLockFieldControls;
+static u8 sScriptContext1Status;
+static struct ScriptContext sScriptContext1;
+static struct ScriptContext sScriptContext2;
+static bool8 sScriptContext2Enabled;
 
 extern ScrCmdFunc gScriptCmdTable[];
 extern ScrCmdFunc gScriptCmdTableEnd[];
@@ -179,94 +173,79 @@ u32 ScriptReadWord(struct ScriptContext *ctx)
     return (((((value3 << 8) + value2) << 8) + value1) << 8) + value0;
 }
 
-void LockPlayerFieldControls(void)
+void ScriptContext2_Enable(void)
 {
-    sLockFieldControls = TRUE;
+    sScriptContext2Enabled = TRUE;
 }
 
-void UnlockPlayerFieldControls(void)
+void ScriptContext2_Disable(void)
 {
-    sLockFieldControls = FALSE;
+    sScriptContext2Enabled = FALSE;
 }
 
-bool8 ArePlayerFieldControlsLocked(void)
+bool8 ScriptContext2_IsEnabled(void)
 {
-    return sLockFieldControls;
+    return sScriptContext2Enabled;
 }
 
-// The ScriptContext_* functions work with the primary script context,
-// which yields control back to native code should the script make a wait call.
-
-// Checks if the global script context is able to be run right now.
-bool8 ScriptContext_IsEnabled(void)
+bool8 ScriptContext1_IsScriptSetUp(void)
 {
-    if (sGlobalScriptContextStatus == CONTEXT_RUNNING)
+    if (sScriptContext1Status == 0)
         return TRUE;
     else
         return FALSE;
 }
 
-// Re-initializes the global script context to zero.
-void ScriptContext_Init(void)
+void ScriptContext1_Init(void)
 {
-    InitScriptContext(&sGlobalScriptContext, gScriptCmdTable, gScriptCmdTableEnd);
-    sGlobalScriptContextStatus = CONTEXT_SHUTDOWN;
+    InitScriptContext(&sScriptContext1, gScriptCmdTable, gScriptCmdTableEnd);
+    sScriptContext1Status = 2;
 }
 
-// Runs the script until the script makes a wait* call, then returns true if
-// there's more script to run, or false if the script has hit the end.
-// This function also returns false if the context is finished
-// or waiting (after a call to _Stop)
-bool8 ScriptContext_RunScript(void)
+bool8 ScriptContext2_RunScript(void)
 {
-    if (sGlobalScriptContextStatus == CONTEXT_SHUTDOWN)
+    if (sScriptContext1Status == 2)
         return FALSE;
 
-    if (sGlobalScriptContextStatus == CONTEXT_WAITING)
+    if (sScriptContext1Status == 1)
         return FALSE;
 
-    LockPlayerFieldControls();
+    ScriptContext2_Enable();
 
-    if (!RunScriptCommand(&sGlobalScriptContext))
+    if (!RunScriptCommand(&sScriptContext1))
     {
-        sGlobalScriptContextStatus = CONTEXT_SHUTDOWN;
-        UnlockPlayerFieldControls();
+        sScriptContext1Status = 2;
+        ScriptContext2_Disable();
         return FALSE;
     }
 
     return TRUE;
 }
 
-// Sets up a new script in the global context and enables the context
-void ScriptContext_SetupScript(const u8 *ptr)
+void ScriptContext1_SetupScript(const u8 *ptr)
 {
-    InitScriptContext(&sGlobalScriptContext, gScriptCmdTable, gScriptCmdTableEnd);
-    SetupBytecodeScript(&sGlobalScriptContext, ptr);
-    LockPlayerFieldControls();
-    sGlobalScriptContextStatus = CONTEXT_RUNNING;
+    InitScriptContext(&sScriptContext1, gScriptCmdTable, gScriptCmdTableEnd);
+    SetupBytecodeScript(&sScriptContext1, ptr);
+    ScriptContext2_Enable();
+    sScriptContext1Status = 0;
 }
 
-// Puts the script into waiting mode; usually called from a wait* script command.
-void ScriptContext_Stop(void)
+void ScriptContext1_Stop(void)
 {
-    sGlobalScriptContextStatus = CONTEXT_WAITING;
+    sScriptContext1Status = 1;
 }
 
-// Puts the script into running mode.
-void ScriptContext_Enable(void)
+void EnableBothScriptContexts(void)
 {
-    sGlobalScriptContextStatus = CONTEXT_RUNNING;
-    LockPlayerFieldControls();
+    sScriptContext1Status = 0;
+    ScriptContext2_Enable();
 }
 
-// Sets up and runs a script in its own context immediately. The script will be
-// finished when this function returns. Used mainly by all of the map header
-// scripts (except the frame table scripts).
-void RunScriptImmediately(const u8 *ptr)
+void ScriptContext2_RunNewScript(const u8 *ptr)
 {
-    InitScriptContext(&sImmediateScriptContext, gScriptCmdTable, gScriptCmdTableEnd);
-    SetupBytecodeScript(&sImmediateScriptContext, ptr);
-    while (RunScriptCommand(&sImmediateScriptContext) == TRUE);
+    InitScriptContext(&sScriptContext2, gScriptCmdTable, gScriptCmdTableEnd);
+    SetupBytecodeScript(&sScriptContext2, ptr);
+    while (RunScriptCommand(&sScriptContext2) == TRUE);
 }
 
 u8 *MapHeaderGetScriptTable(u8 tag)
@@ -293,7 +272,7 @@ void MapHeaderRunScriptType(u8 tag)
 {
     u8 *ptr = MapHeaderGetScriptTable(tag);
     if (ptr)
-        RunScriptImmediately(ptr);
+        ScriptContext2_RunNewScript(ptr);
 }
 
 u8 *MapHeaderCheckScriptTable(u8 tag)
@@ -357,7 +336,7 @@ bool8 TryRunOnFrameMapScript(void)
     if (!ptr)
         return FALSE;
 
-    ScriptContext_SetupScript(ptr);
+    ScriptContext1_SetupScript(ptr);
     return TRUE;
 }
 
@@ -365,7 +344,7 @@ void TryRunOnWarpIntoMapScript(void)
 {
     u8 *ptr = MapHeaderCheckScriptTable(MAP_SCRIPT_ON_WARP_INTO_MAP_TABLE);
     if (ptr)
-        RunScriptImmediately(ptr);
+        ScriptContext2_RunNewScript(ptr);
 }
 
 u32 CalculateRamScriptChecksum(void)

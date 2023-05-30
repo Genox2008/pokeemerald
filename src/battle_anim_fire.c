@@ -2,7 +2,6 @@
 #include "battle_anim.h"
 #include "constants/rgb.h"
 #include "constants/songs.h"
-#include "palette.h"
 #include "sound.h"
 #include "util.h"
 #include "task.h"
@@ -927,7 +926,7 @@ static void CreateEruptionLaunchRocks(u8 spriteId, u8 taskId, u8 activeSpritesId
     u16 y = GetEruptionLaunchRockInitialYPos(spriteId);
     u16 x = gSprites[spriteId].x;
 
-    if(GetBattlerSide(gBattleAnimAttacker) == B_SIDE_PLAYER)
+    if(!GetBattlerSide(gBattleAnimAttacker))
     {
         x -= 12;
         sign = 1;
@@ -1228,8 +1227,8 @@ void AnimTask_MoveHeatWaveTargets(u8 taskId)
 {
     struct Task *task = &gTasks[taskId];
 
-    task->data[12] = GetBattlerSide(gBattleAnimAttacker) == B_SIDE_PLAYER ? 1 : -1;
-    task->data[13] = IsBattlerSpriteVisible(BATTLE_PARTNER(gBattleAnimTarget)) + 1;
+    task->data[12] = !GetBattlerSide(gBattleAnimAttacker) ? 1 : -1;
+    task->data[13] = IsBattlerSpriteVisible(gBattleAnimTarget ^ 2) + 1;
     task->data[14] = GetAnimBattlerSpriteId(ANIM_TARGET);
     task->data[15] = GetAnimBattlerSpriteId(ANIM_DEF_PARTNER);
 
@@ -1330,7 +1329,7 @@ void AnimTask_BlendBackground(u8 taskId)
 {
     struct BattleAnimBgData animBg;
     GetBattleAnimBg1Data(&animBg);
-    BlendPalette(BG_PLTT_ID(animBg.paletteId), 16, gBattleAnimArgs[0], gBattleAnimArgs[1]);
+    BlendPalette(animBg.paletteId * 16, 16, gBattleAnimArgs[0], gBattleAnimArgs[1]);
     DestroyAnimVisualTask(taskId);
 }
 

@@ -40,7 +40,6 @@ struct Berry2
     u8 bitter;
     u8 sour;
     u8 smoothness;
-    //u8 padding;
 };
 
 struct EnigmaBerry

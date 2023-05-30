@@ -133,7 +133,7 @@ void PadNameString(u8 *dest, u8 padChar)
         while (length < PLAYER_NAME_LENGTH - 1)
         {
             dest[length] = EXT_CTRL_CODE_BEGIN;
-            dest[length + 1] = EXT_CTRL_CODE_RESET_FONT;
+            dest[length + 1] = EXT_CTRL_CODE_RESET_SIZE;
             length += 2;
         }
     }

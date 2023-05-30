@@ -2,10 +2,13 @@
 #define GUARD_ALLOC_H
 
 #define HEAP_SIZE 0x1C000
+#define malloc Alloc
+#define calloc(ct, sz) AllocZeroed((ct) * (sz))
+#define free Free
 
 #define FREE_AND_SET_NULL(ptr)          \
 {                                       \
-    Free(ptr);                          \
+    free(ptr);                          \
     ptr = NULL;                         \
 }
 

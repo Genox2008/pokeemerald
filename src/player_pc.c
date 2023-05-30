@@ -290,9 +290,8 @@ static const struct ListMenuTemplate sListMenuTemplate_ItemStorage =
     .cursorShadowPal = 3,
     .lettersSpacing = FALSE,
     .itemVerticalPadding = 0,
-    .scrollMultiple = LIST_NO_MULTIPLE_SCROLL,
-    .fontId = FONT_NARROW,
-    .cursorKind = CURSOR_BLACK_ARROW,
+    .scrollMultiple = FALSE,
+    .fontId = FONT_NARROW
 };
 
 static const struct WindowTemplate sWindowTemplates_ItemStorage[ITEMPC_WIN_COUNT] =
@@ -490,13 +489,13 @@ static void PlayerPC_TurnOff(u8 taskId)
     if (sTopMenuNumOptions == NUM_BEDROOM_PC_OPTIONS) // Flimsy way to determine if Bedroom PC is in use
     {
         if (gSaveBlock2Ptr->playerGender == MALE)
-            ScriptContext_SetupScript(LittlerootTown_BrendansHouse_2F_EventScript_TurnOffPlayerPC);
+            ScriptContext1_SetupScript(LittlerootTown_BrendansHouse_2F_EventScript_TurnOffPlayerPC);
         else
-            ScriptContext_SetupScript(LittlerootTown_MaysHouse_2F_EventScript_TurnOffPlayerPC);
+            ScriptContext1_SetupScript(LittlerootTown_MaysHouse_2F_EventScript_TurnOffPlayerPC);
     }
     else
     {
-        ScriptContext_Enable();
+        EnableBothScriptContexts();
     }
     DestroyTask(taskId);
 }
@@ -1016,7 +1015,7 @@ static void ItemStorage_MoveCursor(s32 id, bool8 onInit, struct ListMenu *list)
         if (id != LIST_CANCEL)
             ItemStorage_DrawItemIcon(gSaveBlock1Ptr->pcItems[id].itemId);
         else
-            ItemStorage_DrawItemIcon(ITEM_LIST_END);
+            ItemStorage_DrawItemIcon(MSG_GO_BACK_TO_PREV);
         ItemStorage_PrintDescription(id);
     }
 }

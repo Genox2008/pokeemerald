@@ -48,7 +48,7 @@ BattleScript_SafariBallThrow::
 BattleScript_SuccessBallThrow::
 	incrementgamestat GAME_STAT_POKEMON_CAPTURES
 BattleScript_PrintCaughtMonInfo::
-	printstring STRINGID_GOTCHAPKMNCAUGHTPLAYER
+	printstring STRINGID_GOTCHAPKMNCAUGHT
 	trysetcaughtmondexflags BattleScript_TryNicknameCaughtMon
 	printstring STRINGID_PKMNDATAADDEDTODEX
 	waitstate
@@ -70,7 +70,7 @@ BattleScript_SuccessBallThrowEnd::
 	finishturn
 
 BattleScript_WallyBallThrow::
-	printstring STRINGID_GOTCHAPKMNCAUGHTWALLY
+	printstring STRINGID_GOTCHAPKMNCAUGHT2
 	setbyte gBattleOutcome, B_OUTCOME_CAUGHT
 	finishturn
 

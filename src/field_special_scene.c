@@ -251,7 +251,7 @@ static void Task_HandleTruckSequence(u8 taskId)
             DrawWholeMapView();
             PlaySE(SE_TRUCK_DOOR);
             DestroyTask(taskId);
-            UnlockPlayerFieldControls();
+            ScriptContext2_Disable();
         }
         break;
     }
@@ -263,8 +263,8 @@ void ExecuteTruckSequence(void)
     MapGridSetMetatileIdAt(4 + MAP_OFFSET, 2 + MAP_OFFSET, METATILE_InsideOfTruck_DoorClosedFloor_Mid);
     MapGridSetMetatileIdAt(4 + MAP_OFFSET, 3 + MAP_OFFSET, METATILE_InsideOfTruck_DoorClosedFloor_Bottom);
     DrawWholeMapView();
-    LockPlayerFieldControls();
-    CpuFastFill(0, gPlttBufferFaded, PLTT_SIZE);
+    ScriptContext2_Enable();
+    CpuFastFill(0, gPlttBufferFaded, 0x400);
     CreateTask(Task_HandleTruckSequence, 0xA);
 }
 
@@ -371,7 +371,7 @@ void FieldCB_ShowPortholeView(void)
     gObjectEvents[gPlayerAvatar.objectEventId].invisible = TRUE;
     FadeInFromBlack();
     CreateTask(Task_HandlePorthole, 80);
-    LockPlayerFieldControls();
+    ScriptContext2_Enable();
 }
 
 void LookThroughPorthole(void)

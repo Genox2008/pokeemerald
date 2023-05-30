@@ -88,7 +88,7 @@ static void SetupHipster(void)
     struct MauvilleManHipster *hipster = &gSaveBlock1Ptr->oldMan.hipster;
 
     hipster->id = MAUVILLE_MAN_HIPSTER;
-    hipster->taughtWord = FALSE;
+    hipster->alreadySpoken = FALSE;
     hipster->language = gGameLanguage;
 }
 
@@ -222,31 +222,30 @@ static void PrepareSongText(void)
 void PlayBardSong(void)
 {
     StartBardSong(gSpecialVar_0x8004);
-    ScriptContext_Stop();
+    ScriptContext1_Stop();
 }
 
-void HasHipsterTaughtWord(void)
+void GetHipsterSpokenFlag(void)
 {
-    gSpecialVar_Result = (&gSaveBlock1Ptr->oldMan.hipster)->taughtWord;
+    gSpecialVar_Result = (&gSaveBlock1Ptr->oldMan.hipster)->alreadySpoken;
 }
 
-void SetHipsterTaughtWord(void)
+void SetHipsterSpokenFlag(void)
 {
-    (&gSaveBlock1Ptr->oldMan.hipster)->taughtWord = TRUE;
+    (&gSaveBlock1Ptr->oldMan.hipster)->alreadySpoken = TRUE;
 }
 
 void HipsterTryTeachWord(void)
 {
-    u16 word = UnlockRandomTrendySaying();
+    u16 phrase = GetNewHipsterPhraseToTeach();
 
-    if (word == EC_EMPTY_WORD)
+    if (phrase == EC_EMPTY_WORD)
     {
-        // All words already unlocked
         gSpecialVar_Result = FALSE;
     }
     else
     {
-        CopyEasyChatWord(gStringVar1, word);
+        CopyEasyChatWord(gStringVar1, phrase);
         gSpecialVar_Result = TRUE;
     }
 }
@@ -370,7 +369,7 @@ static void ResetBardFlag(void)
 
 static void ResetHipsterFlag(void)
 {
-    (&gSaveBlock1Ptr->oldMan.hipster)->taughtWord = FALSE;
+    (&gSaveBlock1Ptr->oldMan.hipster)->alreadySpoken = FALSE;
 }
 
 static void ResetTraderFlag(void)
@@ -480,7 +479,7 @@ static void BardSing(struct Task *task, struct BardSong *song)
         song->sound = GetWordSounds(word);
         GetWordPhonemes(song, MACRO1(word));
         song->currWord++;
-        if (song->sound->songLengthId != 0xFF)
+        if (song->sound->var00 != 0xFF)
             song->state = 0;
         else
         {
@@ -498,9 +497,9 @@ static void BardSing(struct Task *task, struct BardSong *song)
         {
         case 0:
             song->phonemeTimer = song->phonemes[song->currPhoneme].length;
-            if (sound->songLengthId <= 50)
+            if (sound->var00 <= 50)
             {
-                u8 num = sound->songLengthId / 3;
+                u8 num = sound->var00 / 3;
                 m4aSongNumStart(PH_TRAP_HELD + 3 * num);
             }
             song->state = 2;
@@ -508,7 +507,7 @@ static void BardSing(struct Task *task, struct BardSong *song)
             break;
         case 2:
             song->state = 1;
-            if (sound->songLengthId <= 50)
+            if (sound->var00 <= 50)
             {
                 song->volume = 0x100 + sound->volume * 16;
                 m4aMPlayVolumeControl(&gMPlayInfo_SE2, TRACKS_ALL, song->volume);
@@ -530,7 +529,7 @@ static void BardSing(struct Task *task, struct BardSong *song)
             if (song->phonemeTimer == 0)
             {
                 song->currPhoneme++;
-                if (song->currPhoneme != 6 && song->sound[song->currPhoneme].songLengthId != 0xFF)
+                if (song->currPhoneme != 6 && song->sound[song->currPhoneme].var00 != 0xFF)
                     song->state = 0;
                 else
                 {
@@ -628,7 +627,7 @@ static void Task_BardSong(u8 taskId)
             // End song
             FadeInBGM(6);
             m4aMPlayFadeOutTemporarily(&gMPlayInfo_SE2, 2);
-            ScriptContext_Enable();
+            EnableBothScriptContexts();
             DestroyTask(taskId);
         }
         else if (gStringVar4[task->tCharIndex] == CHAR_SPACE)
@@ -1376,7 +1375,7 @@ static void Task_StoryListMenu(u8 taskId)
         }
         ClearToTransparentAndRemoveWindow(sStorytellerWindowId);
         DestroyTask(taskId);
-        ScriptContext_Enable();
+        EnableBothScriptContexts();
         break;
     }
 }

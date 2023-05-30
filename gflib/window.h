@@ -1,8 +1,6 @@
 #ifndef GUARD_WINDOW_H
 #define GUARD_WINDOW_H
 
-#define WINDOWS_MAX  32
-
 #define PIXEL_FILL(num) ((num) | ((num) << 4))
 
 enum {

@@ -165,30 +165,30 @@ static const u16 sPrizeListAttract[]     = {ITEM_TM45_ATTRACT,     ITEM_ETHER, I
 
 static const u16 *const sPrizeLists1[NUM_TRAINER_HILL_PRIZE_LISTS] =
 {
-    sPrizeListRareCandy1,
-    sPrizeListLuxuryBall1,
-    sPrizeListMaxRevive1,
-    sPrizeListMaxEther1,
-    sPrizeListElixir1,
-    sPrizeListRoar,
-    sPrizeListSludgeBomb,
-    sPrizeListToxic,
-    sPrizeListSunnyDay,
-    sPrizeListEarthQuake
+	sPrizeListRareCandy1,
+	sPrizeListLuxuryBall1,
+	sPrizeListMaxRevive1,
+	sPrizeListMaxEther1,
+	sPrizeListElixir1,
+	sPrizeListRoar,
+	sPrizeListSludgeBomb,
+	sPrizeListToxic,
+	sPrizeListSunnyDay,
+	sPrizeListEarthQuake
 };
 
 static const u16 *const sPrizeLists2[NUM_TRAINER_HILL_PRIZE_LISTS] =
 {
-    sPrizeListRareCandy2,
-    sPrizeListLuxuryBall2,
-    sPrizeListMaxRevive2,
-    sPrizeListMaxEther2,
-    sPrizeListElixir2,
-    sPrizeListBrickBreak,
-    sPrizeListTorment,
-    sPrizeListSkillSwap,
-    sPrizeListGigaDrain,
-    sPrizeListAttract
+	sPrizeListRareCandy2,
+	sPrizeListLuxuryBall2,
+	sPrizeListMaxRevive2,
+	sPrizeListMaxEther2,
+	sPrizeListElixir2,
+	sPrizeListBrickBreak,
+	sPrizeListTorment,
+	sPrizeListSkillSwap,
+	sPrizeListGigaDrain,
+	sPrizeListAttract
 };
 
 static const u16 *const *const sPrizeListSets[] =
@@ -685,8 +685,7 @@ static u16 GetMetatileForFloor(u8 floorId, u32 x, u32 y, u32 floorWidth) // floo
 void GenerateTrainerHillFloorLayout(u16 *mapArg)
 {
     s32 y, x;
-    const u16 *src;
-    u16 *dst;
+    u16 *src, *dst;
     u8 mapId = GetCurrentTrainerHillMapId();
 
     if (mapId == TRAINER_HILL_ENTRANCE)
@@ -925,7 +924,7 @@ u8 GetTrainerEncounterMusicIdInTrainerHill(u16 trainerId)
 static void SetTrainerHillMonLevel(struct Pokemon *mon, u8 level)
 {
     u16 species = GetMonData(mon, MON_DATA_SPECIES, NULL);
-    u32 exp = gExperienceTables[gSpeciesInfo[species].growthRate][level];
+    u32 exp = gExperienceTables[gBaseStats[species].growthRate][level];
 
     SetMonData(mon, MON_DATA_EXP, &exp);
     SetMonData(mon, MON_DATA_LEVEL, &level);
@@ -952,7 +951,7 @@ static void SetAllTrainerFlags(void)
 void TryLoadTrainerHillEReaderPalette(void)
 {
     if (OnTrainerHillEReaderChallengeFloor() == TRUE)
-        LoadPalette(sEReader_Pal, BG_PLTT_ID(7), PLTT_SIZE_4BPP);
+        LoadPalette(sEReader_Pal, 0x70, 0x20);
 }
 
 static void GetGameSaved(void)

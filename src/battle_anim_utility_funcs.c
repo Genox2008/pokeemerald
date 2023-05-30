@@ -97,7 +97,7 @@ void AnimTask_BlendBattleAnimPalExclude(u8 taskId)
     for (battler = 0; battler < MAX_BATTLERS_COUNT; battler++)
     {
         if (battler != animBattlers[0] && battler != animBattlers[1] && IsBattlerSpriteVisible(battler))
-            selectedPalettes |= 0x10000 << GetSpritePalIdxByBattler(battler);
+            selectedPalettes |= 0x10000 << AnimDummyReturnArg(battler);
     }
 
     StartBlendAnimSpriteColor(taskId, selectedPalettes);
@@ -166,7 +166,7 @@ void StartBlendAnimSpriteColor(u8 taskId, u32 selectedPalettes)
 static void AnimTask_BlendSpriteColor_Step2(u8 taskId)
 {
     u32 selectedPalettes;
-    u16 singlePaletteOffset = 0;
+    u16 singlePaletteMask = 0;
 
     if (gTasks[taskId].data[9] == gTasks[taskId].data[2])
     {
@@ -175,8 +175,8 @@ static void AnimTask_BlendSpriteColor_Step2(u8 taskId)
         while (selectedPalettes != 0)
         {
             if (selectedPalettes & 1)
-                BlendPalette(singlePaletteOffset, 16, gTasks[taskId].data[10], gTasks[taskId].data[5]);
-            singlePaletteOffset += 16;
+                BlendPalette(singlePaletteMask, 16, gTasks[taskId].data[10], gTasks[taskId].data[5]);
+            singlePaletteMask += 0x10;
             selectedPalettes >>= 1;
         }
 
@@ -333,7 +333,7 @@ void AnimTask_DrawFallingWhiteLinesOnAttacker(u8 taskId)
     GetBattleAnimBg1Data(&animBgData);
     AnimLoadCompressedBgTilemapHandleContest(&animBgData, gBattleAnimMaskTilemap_Curse, FALSE);
     AnimLoadCompressedBgGfx(animBgData.bgId, gBattleAnimMaskImage_Curse, animBgData.tilesOffset);
-    LoadPalette(sCurseLinesPalette, BG_PLTT_ID(animBgData.paletteId) + 1, PLTT_SIZEOF(1));
+    LoadPalette(sCurseLinesPalette, animBgData.paletteId * 16 + 1, 2);
 
     gBattle_BG1_X = -gSprites[spriteId].x + 32;
     gBattle_BG1_Y = -gSprites[spriteId].y + 32;
@@ -478,28 +478,28 @@ static void StatsChangeAnimation_Step2(u8 taskId)
     switch (sAnimStatsChangeData->data[1])
     {
     case 0:
-        LoadCompressedPalette(gBattleStatMask2_Pal, BG_PLTT_ID(animBgData.paletteId), PLTT_SIZE_4BPP);
+        LoadCompressedPalette(gBattleStatMask2_Pal, animBgData.paletteId * 16, 32);
         break;
     case 1:
-        LoadCompressedPalette(gBattleStatMask1_Pal, BG_PLTT_ID(animBgData.paletteId), PLTT_SIZE_4BPP);
+        LoadCompressedPalette(gBattleStatMask1_Pal, animBgData.paletteId * 16, 32);
         break;
     case 2:
-        LoadCompressedPalette(gBattleStatMask3_Pal, BG_PLTT_ID(animBgData.paletteId), PLTT_SIZE_4BPP);
+        LoadCompressedPalette(gBattleStatMask3_Pal, animBgData.paletteId * 16, 32);
         break;
     case 3:
-        LoadCompressedPalette(gBattleStatMask4_Pal, BG_PLTT_ID(animBgData.paletteId), PLTT_SIZE_4BPP);
+        LoadCompressedPalette(gBattleStatMask4_Pal, animBgData.paletteId * 16, 32);
         break;
     case 4:
-        LoadCompressedPalette(gBattleStatMask6_Pal, BG_PLTT_ID(animBgData.paletteId), PLTT_SIZE_4BPP);
+        LoadCompressedPalette(gBattleStatMask6_Pal, animBgData.paletteId * 16, 32);
         break;
     case 5:
-        LoadCompressedPalette(gBattleStatMask7_Pal, BG_PLTT_ID(animBgData.paletteId), PLTT_SIZE_4BPP);
+        LoadCompressedPalette(gBattleStatMask7_Pal, animBgData.paletteId * 16, 32);
         break;
     case 6:
-        LoadCompressedPalette(gBattleStatMask8_Pal, BG_PLTT_ID(animBgData.paletteId), PLTT_SIZE_4BPP);
+        LoadCompressedPalette(gBattleStatMask8_Pal, animBgData.paletteId * 16, 32);
         break;
     default:
-        LoadCompressedPalette(gBattleStatMask5_Pal, BG_PLTT_ID(animBgData.paletteId), PLTT_SIZE_4BPP);
+        LoadCompressedPalette(gBattleStatMask5_Pal, animBgData.paletteId * 16, 32);
         break;
     }
 
@@ -535,9 +535,9 @@ static void StatsChangeAnimation_Step2(u8 taskId)
     gTasks[taskId].func = StatsChangeAnimation_Step3;
 
     if (sAnimStatsChangeData->data[0] == 0)
-        PlaySE12WithPanning(SE_M_STAT_INCREASE, BattleAnimAdjustPanning2(SOUND_PAN_ATTACKER));
+        PlaySE12WithPanning(SE_M_STAT_INCREASE, BattleAnimAdjustPanning2(-64));
     else
-        PlaySE12WithPanning(SE_M_STAT_DECREASE, BattleAnimAdjustPanning2(SOUND_PAN_ATTACKER));
+        PlaySE12WithPanning(SE_M_STAT_DECREASE, BattleAnimAdjustPanning2(-64));
 }
 
 static void StatsChangeAnimation_Step3(u8 taskId)
@@ -639,10 +639,16 @@ static void AnimTask_Flash_Step(u8 taskId)
             for (i = 0; i < 16; i++)
             {
                 if ((task->data[15] >> i) & 1)
-                    BlendPalette(BG_PLTT_ID(i), 16, task->data[2], 0xFFFF);
+                {
+                    u16 paletteOffset = i * 16;
+                    BlendPalette(paletteOffset, 16, task->data[2], 0xFFFF);
+                }
 
                 if ((task->data[14] >> i) & 1)
-                    BlendPalette(OBJ_PLTT_ID(i), 16, task->data[2], 0);
+                {
+                    u16 paletteOffset = i * 16 + 0x100;
+                    BlendPalette(paletteOffset, 16, task->data[2], 0);
+                }
             }
 
             if (task->data[2] == 0)
@@ -663,7 +669,7 @@ static void SetPalettesToColor(u32 selectedPalettes, u16 color)
     {
         if (selectedPalettes & 1)
         {
-            u16 curOffset = PLTT_ID(i);
+            u16 curOffset = i * 16;
             u16 paletteOffset = curOffset;
             while (curOffset < paletteOffset + 16)
             {
@@ -816,7 +822,7 @@ void StartMonScrollingBgMask(u8 taskId, int unused, u16 scrollSpeed, u8 battler,
     GetBattleAnimBg1Data(&animBgData);
     AnimLoadCompressedBgTilemapHandleContest(&animBgData, tilemap, FALSE);
     AnimLoadCompressedBgGfx(animBgData.bgId, gfx, animBgData.tilesOffset);
-    LoadCompressedPalette(palette, BG_PLTT_ID(animBgData.paletteId), PLTT_SIZE_4BPP);
+    LoadCompressedPalette(palette, animBgData.paletteId * 16, 32);
 
     gBattle_BG1_X = 0;
     gBattle_BG1_Y = 0;
@@ -899,7 +905,7 @@ void AnimTask_GetBattleTerrain(u8 taskId)
 
 void AnimTask_AllocBackupPalBuffer(u8 taskId)
 {
-    gMonSpritesGfxPtr->buffer = AllocZeroed(MON_PIC_SIZE * MAX_MON_PIC_FRAMES);
+    gMonSpritesGfxPtr->buffer = AllocZeroed(0x2000);
     DestroyAnimVisualTask(taskId);
 }
 
@@ -932,7 +938,7 @@ void AnimTask_CopyPalUnfadedToBackup(u8 taskId)
         paletteIndex = gBattleAnimTarget + 16;
     }
 
-    memcpy(&gMonSpritesGfxPtr->buffer[gBattleAnimArgs[1] * 16], &gPlttBufferUnfaded[PLTT_ID(paletteIndex)], PLTT_SIZE_4BPP);
+    memcpy(&gMonSpritesGfxPtr->buffer[gBattleAnimArgs[1] * 16], &gPlttBufferUnfaded[paletteIndex * 16], 32);
     DestroyAnimVisualTask(taskId);
 }
 
@@ -959,7 +965,7 @@ void AnimTask_CopyPalUnfadedFromBackup(u8 taskId)
         paletteIndex = gBattleAnimTarget + 16;
     }
 
-    memcpy(&gPlttBufferUnfaded[PLTT_ID(paletteIndex)], &gMonSpritesGfxPtr->buffer[gBattleAnimArgs[1] * 16], PLTT_SIZE_4BPP);
+    memcpy(&gPlttBufferUnfaded[paletteIndex * 16], &gMonSpritesGfxPtr->buffer[gBattleAnimArgs[1] * 16], 32);
     DestroyAnimVisualTask(taskId);
 }
 
@@ -986,7 +992,7 @@ void AnimTask_CopyPalFadedToUnfaded(u8 taskId)
         paletteIndex = gBattleAnimTarget + 16;
     }
 
-    memcpy(&gPlttBufferUnfaded[PLTT_ID(paletteIndex)], &gPlttBufferFaded[PLTT_ID(paletteIndex)], PLTT_SIZE_4BPP);
+    memcpy(&gPlttBufferUnfaded[paletteIndex * 16], &gPlttBufferFaded[paletteIndex * 16], 32);
     DestroyAnimVisualTask(taskId);
 }
 

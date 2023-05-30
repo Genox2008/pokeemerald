@@ -103,7 +103,7 @@ typedef void (*AffineAnimCmdFunc)(u8 matrixNum, struct Sprite *);
 #define DUMMY_OAM_DATA                      \
 {                                           \
     .y = DISPLAY_HEIGHT,                    \
-    .affineMode = ST_OAM_AFFINE_OFF,        \
+    .affineMode = 0,                        \
     .objMode = 0,                           \
     .mosaic = 0,                            \
     .bpp = 0,                               \
@@ -1600,7 +1600,7 @@ u8 LoadSpritePalette(const struct SpritePalette *palette)
     else
     {
         sSpritePaletteTags[index] = palette->tag;
-        DoLoadSpritePalette(palette->data, PLTT_ID(index));
+        DoLoadSpritePalette(palette->data, index * 16);
         return index;
     }
 }
@@ -1615,7 +1615,7 @@ void LoadSpritePalettes(const struct SpritePalette *palettes)
 
 void DoLoadSpritePalette(const u16 *src, u16 paletteOffset)
 {
-    LoadPalette(src, OBJ_PLTT_OFFSET + paletteOffset, PLTT_SIZE_4BPP);
+    LoadPalette(src, paletteOffset + 0x100, 32);
 }
 
 u8 AllocSpritePalette(u16 tag)

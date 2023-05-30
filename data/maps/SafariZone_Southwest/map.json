@@ -14,14 +14,14 @@
   "battle_scene": "MAP_BATTLE_SCENE_NORMAL",
   "connections": [
     {
-      "map": "MAP_SAFARI_ZONE_NORTHWEST",
+      "direction": "up",
       "offset": 0,
-      "direction": "up"
+      "map": "MAP_SAFARI_ZONE_NORTHWEST"
     },
     {
-      "map": "MAP_SAFARI_ZONE_SOUTH",
+      "direction": "right",
       "offset": 0,
-      "direction": "right"
+      "map": "MAP_SAFARI_ZONE_SOUTH"
     }
   ],
   "object_events": [
@@ -58,7 +58,7 @@
       "y": 7,
       "elevation": 3,
       "dest_map": "MAP_SAFARI_ZONE_REST_HOUSE",
-      "dest_warp_id": "0"
+      "dest_warp_id": 0
     }
   ],
   "coord_events": [],

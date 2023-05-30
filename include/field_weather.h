@@ -19,8 +19,6 @@ enum {
     PALTAG_WEATHER_2
 };
 
-#define NUM_WEATHER_COLOR_MAPS 19
-
 struct Weather
 {
     union
@@ -41,12 +39,12 @@ struct Weather
             struct Sprite *sandstormSprites2[NUM_SWIRL_SANDSTORM_SPRITES];
         } s2;
     } sprites;
-    u8 darkenedContrastColorMaps[NUM_WEATHER_COLOR_MAPS][32];
-    u8 contrastColorMaps[NUM_WEATHER_COLOR_MAPS][32];
-    s8 colorMapIndex;
-    s8 targetColorMapIndex;
-    u8 colorMapStepDelay;
-    u8 colorMapStepCounter;
+    u8 gammaShifts[19][32];
+    u8 altGammaShifts[19][32];
+    s8 gammaIndex;
+    s8 gammaTargetIndex;
+    u8 gammaStepDelay;
+    u8 gammaStepFrameCounter;
     u16 fadeDestColor;
     u8 palProcessingState;
     u8 fadeScreenCounter;
@@ -61,7 +59,7 @@ struct Weather
     u8 weatherGfxLoaded;
     bool8 weatherChangeComplete;
     u8 weatherPicSpritePalIndex;
-    u8 contrastColorMapSpritePalIndex;
+    u8 altGammaSpritePalIndex;
     // Rain
     u16 rainSpriteVisibleCounter;
     u8 curRainSpriteIndex;
@@ -77,12 +75,12 @@ struct Weather
     u8 snowflakeSpriteCount;
     u8 targetSnowflakeSpriteCount;
     // Thunderstorm
-    u16 thunderTimer;        // general-purpose timer for state transitions
-    u16 thunderSETimer;      // timer for thunder sound effect
+    u16 thunderDelay;
+    u16 thunderCounter;
     bool8 thunderAllowEnd;
-    bool8 thunderLongBolt;   // true if this cycle will end in a long lightning bolt
-    u8 thunderShortBolts;    // the number of short bolts this cycle
-    bool8 thunderEnqueued;
+    bool8 thunderSkipShort;
+    u8 thunderShortRetries;
+    bool8 thunderTriggered;
     // Horizontal fog
     u16 fogHScrollPosX;
     u16 fogHScrollCounter;
@@ -148,12 +146,12 @@ void StartWeather(void);
 void SetNextWeather(u8 weather);
 void SetCurrentAndNextWeather(u8 weather);
 void SetCurrentAndNextWeatherNoDelay(u8 weather);
-void ApplyWeatherColorMapIfIdle(s8 colorMapIndex);
-void ApplyWeatherColorMapIfIdle_Gradual(u8 colorMapIndex, u8 targetColorMapIndex, u8 colorMapStepDelay);
+void ApplyWeatherGammaShiftIfIdle(s8 gammaIndex);
+void ApplyWeatherGammaShiftIfIdle_Gradual(u8 gammaIndex, u8 gammaTargetIndex, u8 gammaStepDelay);
 void FadeScreen(u8 mode, s8 delay);
 bool8 IsWeatherNotFadingIn(void);
 void UpdateSpritePaletteWithWeather(u8 spritePaletteIndex);
-void ApplyWeatherColorMapToPal(u8 paletteIndex);
+void ApplyWeatherGammaShiftToPal(u8 paletteIndex);
 void LoadCustomWeatherSpritePalette(const u16 *palette);
 void ResetDroughtWeatherPaletteLoading(void);
 bool8 LoadDroughtWeatherPalettes(void);

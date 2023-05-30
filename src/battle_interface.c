@@ -318,17 +318,10 @@ static const struct SpriteTemplate sHealthbarSpriteTemplates[MAX_BATTLERS_COUNT]
     }
 };
 
-/*   v-- Origin
-[0   +         ][1     ]
-[              ][      ]
-[              ][      ]
-[______________][______]   96x40
-[2     ][3     ][4     ]
-*/
 static const struct Subsprite sUnused_Subsprites_0[] =
 {
     {
-        .x = -16,
+        .x = DISPLAY_WIDTH,
         .y = 0,
         .shape = SPRITE_SHAPE(64x32),
         .size = SPRITE_SIZE(64x32),
@@ -344,7 +337,7 @@ static const struct Subsprite sUnused_Subsprites_0[] =
         .priority = 1
     },
     {
-        .x = -16,
+        .x = DISPLAY_WIDTH,
         .y = 32,
         .shape = SPRITE_SHAPE(32x8),
         .size = SPRITE_SIZE(32x8),
@@ -369,11 +362,10 @@ static const struct Subsprite sUnused_Subsprites_0[] =
     }
 };
 
-// This subsprite table has the same layout as above, but offset by 64 base tiles.
 static const struct Subsprite sUnused_Subsprites_2[] =
 {
     {
-        .x = -16,
+        .x = DISPLAY_WIDTH,
         .y = 0,
         .shape = SPRITE_SHAPE(64x32),
         .size = SPRITE_SIZE(64x32),
@@ -389,7 +381,7 @@ static const struct Subsprite sUnused_Subsprites_2[] =
         .priority = 1
     },
     {
-        .x = -16,
+        .x = DISPLAY_WIDTH,
         .y = 32,
         .shape = SPRITE_SHAPE(32x8),
         .size = SPRITE_SIZE(32x8),
@@ -414,16 +406,10 @@ static const struct Subsprite sUnused_Subsprites_2[] =
     }
 };
 
-/*   v-- Origin
-[0   +         ][1     ]
-[              ][      ]
-[              ][      ]
-[              ][      ]   96x32
-*/
 static const struct Subsprite sUnused_Subsprites_1[] =
 {
     {
-        .x = -16,
+        .x = DISPLAY_WIDTH,
         .y = 0,
         .shape = SPRITE_SHAPE(64x32),
         .size = SPRITE_SIZE(64x32),
@@ -440,11 +426,10 @@ static const struct Subsprite sUnused_Subsprites_1[] =
     }
 };
 
-// Same as above
 static const struct Subsprite sUnused_Subsprites_3[] =
 {
     {
-        .x = -16,
+        .x = DISPLAY_WIDTH,
         .y = 0,
         .shape = SPRITE_SHAPE(64x32),
         .size = SPRITE_SIZE(64x32),
@@ -461,13 +446,10 @@ static const struct Subsprite sUnused_Subsprites_3[] =
     }
 };
 
-/*  v-- Origin
-[0  +  ][1     ]   64x8
-*/
 static const struct Subsprite sHealthBar_Subsprites_Player[] =
 {
     {
-        .x = -16,
+        .x = DISPLAY_WIDTH,
         .y = 0,
         .shape = SPRITE_SHAPE(32x8),
         .size = SPRITE_SIZE(32x8),
@@ -484,14 +466,10 @@ static const struct Subsprite sHealthBar_Subsprites_Player[] =
     }
 };
 
-/*       v-- Origin
-[]  [0  +  ][1     ]   8x8 + 64x8
-2^ ^--- Note 8px space
-*/
 static const struct Subsprite sHealthBar_Subsprites_Opponent[] =
 {
     {
-        .x = -16,
+        .x = DISPLAY_WIDTH,
         .y = 0,
         .shape = SPRITE_SHAPE(32x8),
         .size = SPRITE_SIZE(32x8),
@@ -507,7 +485,7 @@ static const struct Subsprite sHealthBar_Subsprites_Opponent[] =
         .priority = 1
     },
     {
-        .x = -32,
+        .x = DISPLAY_WIDTH - 16,
         .y = 0,
         .shape = SPRITE_SHAPE(8x8),
         .size = SPRITE_SIZE(8x8),
@@ -529,13 +507,11 @@ static const struct SubspriteTable sHealthBar_SubspriteTables[] =
     [B_SIDE_PLAYER]   = {ARRAY_COUNT(sHealthBar_Subsprites_Player), sHealthBar_Subsprites_Player},
     [B_SIDE_OPPONENT] = {ARRAY_COUNT(sHealthBar_Subsprites_Opponent), sHealthBar_Subsprites_Opponent}
 };
-/*                      v-- Origin
-[0     ][1     ][2     ][3     ]   128x8
-*/
+
 static const struct Subsprite sStatusSummaryBar_Subsprites_Enter[] =
 {
     {
-        .x = 32 * -3,
+        .x = 32 * 5,
         .y = 0,
         .shape = SPRITE_SHAPE(32x8),
         .size = SPRITE_SIZE(32x8),
@@ -543,7 +519,7 @@ static const struct Subsprite sStatusSummaryBar_Subsprites_Enter[] =
         .priority = 1
     },
     {
-        .x = 32 * -2,
+        .x = 32 * 6,
         .y = 0,
         .shape = SPRITE_SHAPE(32x8),
         .size = SPRITE_SIZE(32x8),
@@ -551,7 +527,7 @@ static const struct Subsprite sStatusSummaryBar_Subsprites_Enter[] =
         .priority = 1
     },
     {
-        .x = 32 * -1,
+        .x = 32 * 7,
         .y = 0,
         .shape = SPRITE_SHAPE(32x8),
         .size = SPRITE_SIZE(32x8),
@@ -568,14 +544,10 @@ static const struct Subsprite sStatusSummaryBar_Subsprites_Enter[] =
     }
 };
 
-/*                      v-- Origin
-[0     ][1     ][2     ][3     ][4     ][5     ]   192x8
-                 ^-- uses same tiles --^
-*/
 static const struct Subsprite sStatusSummaryBar_Subsprites_Exit[] =
 {
     {
-        .x = 32 * -3,
+        .x = 32 * 5,
         .y = 0,
         .shape = SPRITE_SHAPE(32x8),
         .size = SPRITE_SIZE(32x8),
@@ -583,7 +555,7 @@ static const struct Subsprite sStatusSummaryBar_Subsprites_Exit[] =
         .priority = 1
     },
     {
-        .x = 32 * -2,
+        .x = 32 * 6,
         .y = 0,
         .shape = SPRITE_SHAPE(32x8),
         .size = SPRITE_SIZE(32x8),
@@ -591,7 +563,7 @@ static const struct Subsprite sStatusSummaryBar_Subsprites_Exit[] =
         .priority = 1
     },
     {
-        .x = 32 * -1,
+        .x = 32 * 7,
         .y = 0,
         .shape = SPRITE_SHAPE(32x8),
         .size = SPRITE_SIZE(32x8),
@@ -2055,12 +2027,12 @@ static void UpdateStatusIconInHealthbox(u8 healthboxSpriteId)
         return;
     }
 
-    pltAdder = PLTT_ID(gSprites[healthboxSpriteId].oam.paletteNum);
+    pltAdder = gSprites[healthboxSpriteId].oam.paletteNum * 16;
     pltAdder += battlerId + 12;
 
-    FillPalette(sStatusIconColors[statusPalId], OBJ_PLTT_OFFSET + pltAdder, PLTT_SIZEOF(1));
-    CpuCopy16(&gPlttBufferUnfaded[OBJ_PLTT_OFFSET + pltAdder], (u16 *)OBJ_PLTT + pltAdder, PLTT_SIZEOF(1));
-    CpuCopy32(statusGfxPtr, (void *)(OBJ_VRAM0 + (gSprites[healthboxSpriteId].oam.tileNum + tileNumAdder) * TILE_SIZE_4BPP), 96);
+    FillPalette(sStatusIconColors[statusPalId], pltAdder + 0x100, 2);
+    CpuCopy16(gPlttBufferUnfaded + 0x100 + pltAdder, (void*)(OBJ_PLTT + pltAdder * 2), 2);
+    CpuCopy32(statusGfxPtr, (void*)(OBJ_VRAM0 + (gSprites[healthboxSpriteId].oam.tileNum + tileNumAdder) * TILE_SIZE_4BPP), 96);
     if (IsDoubleBattle() == TRUE || GetBattlerSide(battlerId) == B_SIDE_OPPONENT)
     {
         if (!gBattleSpritesDataPtr->battlerData[battlerId].hpNumbersNoBars)
@@ -2199,9 +2171,9 @@ void UpdateHealthboxAttribute(u8 healthboxSpriteId, struct Pokemon *mon, u8 elem
             species = GetMonData(mon, MON_DATA_SPECIES);
             level = GetMonData(mon, MON_DATA_LEVEL);
             exp = GetMonData(mon, MON_DATA_EXP);
-            currLevelExp = gExperienceTables[gSpeciesInfo[species].growthRate][level];
+            currLevelExp = gExperienceTables[gBaseStats[species].growthRate][level];
             currExpBarValue = exp - currLevelExp;
-            maxExpBarValue = gExperienceTables[gSpeciesInfo[species].growthRate][level + 1] - currLevelExp;
+            maxExpBarValue = gExperienceTables[gBaseStats[species].growthRate][level + 1] - currLevelExp;
             SetBattleBarStruct(battlerId, healthboxSpriteId, maxExpBarValue, currExpBarValue, isDoubles);
             MoveBattleBar(battlerId, healthboxSpriteId, EXP_BAR, 0);
         }

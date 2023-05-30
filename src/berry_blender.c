@@ -106,13 +106,6 @@ enum {
 // Last berry that an NPC can put in
 #define NUM_NPC_BERRIES ITEM_TO_BERRY(ITEM_ASPEAR_BERRY)
 
-enum {
-    // Windows 0-3 are used implicitly in several loops over BLENDER_MAX_PLAYERS
-    // i.e. window 0 is for player 1, window 1 for player 2, etc.
-    WIN_MSG = BLENDER_MAX_PLAYERS,
-    WIN_RESULTS,
-};
-
 struct BlenderBerry
 {
     u16 itemId;
@@ -207,7 +200,7 @@ static void SpriteCB_ScoreSymbolBest(struct Sprite *);
 static void InitLocalPlayers(u8);
 static void CB2_LoadBerryBlender(void);
 static void UpdateBlenderCenter(void);
-static bool32 PrintMessage(s16 *, const u8 *, s32 );
+static bool32 Blender_PrintText(s16 *, const u8 *, s32 );
 static void StartBlender(void);
 static void CB2_StartBlenderLink(void);
 static void CB2_StartBlenderLocal(void);
@@ -339,7 +332,7 @@ static const struct BgTemplate sBgTemplates[3] =
 
 static const struct WindowTemplate sWindowTemplates[] =
 {
-    { // Player 1
+    {
         .bg = 0,
         .tilemapLeft = 1,
         .tilemapTop = 6,
@@ -348,7 +341,7 @@ static const struct WindowTemplate sWindowTemplates[] =
         .paletteNum = 14,
         .baseBlock = 0x28,
     },
-    { // Player 2
+    {
         .bg = 0,
         .tilemapLeft = 22,
         .tilemapTop = 6,
@@ -357,7 +350,7 @@ static const struct WindowTemplate sWindowTemplates[] =
         .paletteNum = 14,
         .baseBlock = 0x36,
     },
-    { // Player 3
+    {
         .bg = 0,
         .tilemapLeft = 1,
         .tilemapTop = 12,
@@ -366,7 +359,7 @@ static const struct WindowTemplate sWindowTemplates[] =
         .paletteNum = 14,
         .baseBlock = 0x44,
     },
-    { // Player 4
+    {
         .bg = 0,
         .tilemapLeft = 22,
         .tilemapTop = 12,
@@ -375,7 +368,7 @@ static const struct WindowTemplate sWindowTemplates[] =
         .paletteNum = 14,
         .baseBlock = 0x52,
     },
-    [WIN_MSG] = {
+    {
         .bg = 0,
         .tilemapLeft = 2,
         .tilemapTop = 15,
@@ -384,7 +377,7 @@ static const struct WindowTemplate sWindowTemplates[] =
         .paletteNum = 14,
         .baseBlock = 0x60,
     },
-    [WIN_RESULTS] = {
+    {
         .bg = 0,
         .tilemapLeft = 5,
         .tilemapTop = 3,
@@ -966,7 +959,7 @@ static bool8 LoadBerryBlenderGfx(void)
     case 1:
         CopyToBgTilemapBuffer(2, sBlenderCenter_Tilemap, 0x400, 0);
         CopyBgTilemapBufferToVram(2);
-        LoadPalette(sBlenderCenter_Pal, BG_PLTT_ID(0), 8 * PLTT_SIZE_4BPP);
+        LoadPalette(sBlenderCenter_Pal, 0, 0x100);
         sBerryBlender->loadGfxState++;
         break;
     case 2:
@@ -991,7 +984,7 @@ static bool8 LoadBerryBlenderGfx(void)
         sBerryBlender->loadGfxState++;
         break;
     case 7:
-        LoadPalette(sBlenderOuter_Pal, BG_PLTT_ID(8), PLTT_SIZE_4BPP);
+        LoadPalette(sBlenderOuter_Pal, 0x80, 0x20);
         sBerryBlender->loadGfxState++;
         break;
     case 8:
@@ -1015,7 +1008,7 @@ static bool8 LoadBerryBlenderGfx(void)
 
 static void DrawBlenderBg(void)
 {
-    FillBgTilemapBufferRect_Palette0(0, 0, 0, 0, DISPLAY_TILE_WIDTH, DISPLAY_TILE_HEIGHT);
+    FillBgTilemapBufferRect_Palette0(0, 0, 0, 0, 0x1E, 0x14);
     CopyBgTilemapBufferToVram(0);
     ShowBg(0);
     ShowBg(1);
@@ -1033,12 +1026,11 @@ static void InitBerryBlenderWindows(void)
         s32 i;
 
         DeactivateAllTextPrinters();
-        // Initialize only the main text windows (player names and message box; excludes results screen)
-        for (i = 0; i < WIN_RESULTS; i++)
+        for (i = 0; i < 5; i++)
             FillWindowPixelBuffer(i, PIXEL_FILL(0));
 
-        FillBgTilemapBufferRect_Palette0(0, 0, 0, 0, DISPLAY_TILE_WIDTH, DISPLAY_TILE_HEIGHT);
-        Menu_LoadStdPalAt(BG_PLTT_ID(14));
+        FillBgTilemapBufferRect_Palette0(0, 0, 0, 0, 0x1E, 0x14);
+        Menu_LoadStdPalAt(0xE0);
     }
 }
 
@@ -1073,8 +1065,8 @@ static void CB2_LoadBerryBlender(void)
         InitBgsFromTemplates(1, sBgTemplates, ARRAY_COUNT(sBgTemplates));
         SetBgTilemapBuffer(1, sBerryBlender->tilemapBuffers[0]);
         SetBgTilemapBuffer(2, sBerryBlender->tilemapBuffers[1]);
-        LoadUserWindowBorderGfx(0, 1, BG_PLTT_ID(13));
-        LoadMessageBoxGfx(0, 0x14, BG_PLTT_ID(15));
+        LoadUserWindowBorderGfx(0, 1, 0xD0);
+        LoadMessageBoxGfx(0, 0x14, 0xF0);
         InitBerryBlenderWindows();
 
         sBerryBlender->mainState++;
@@ -1115,7 +1107,7 @@ static void CB2_LoadBerryBlender(void)
             sBerryBlender->mainState++;
         break;
     case 4:
-        if (PrintMessage(&sBerryBlender->textState, sText_BerryBlenderStart, GetPlayerTextSpeedDelay()))
+        if (Blender_PrintText(&sBerryBlender->textState, sText_BerryBlenderStart, GetPlayerTextSpeedDelay()))
             sBerryBlender->mainState++;
         break;
     case 5:
@@ -1345,7 +1337,7 @@ static void CB2_StartBlenderLink(void)
         }
         break;
     case 5:
-        PrintMessage(&sBerryBlender->textState, sText_CommunicationStandby, 0);
+        Blender_PrintText(&sBerryBlender->textState, sText_CommunicationStandby, 0);
         sBerryBlender->mainState = 8;
         sBerryBlender->framesToWait = 0;
         break;
@@ -1371,7 +1363,7 @@ static void CB2_StartBlenderLink(void)
         if (++sBerryBlender->framesToWait > 20)
         {
             // Wait for partners' berries
-            ClearDialogWindowAndFrameToTransparent(WIN_MSG, TRUE);
+            ClearDialogWindowAndFrameToTransparent(4, TRUE);
             if (GetBlockReceivedStatus() == GetLinkPlayerCountAsBitFlags())
             {
                 for (i = 0; i < GetLinkPlayerCount(); i++)
@@ -1510,8 +1502,8 @@ static void InitBlenderBgs(void)
 
     SetBgTilemapBuffer(1, sBerryBlender->tilemapBuffers[0]);
     SetBgTilemapBuffer(2, sBerryBlender->tilemapBuffers[1]);
-    LoadUserWindowBorderGfx(0, 1, BG_PLTT_ID(13));
-    LoadMessageBoxGfx(0, 0x14, BG_PLTT_ID(15));
+    LoadUserWindowBorderGfx(0, 1, 0xD0);
+    LoadMessageBoxGfx(0, 0x14, 0xF0);
     InitBerryBlenderWindows();
 
     sBerryBlender->unk0 = 0;
@@ -2284,9 +2276,9 @@ static u32 CalculatePokeblockColor(struct BlenderBerry* berries, s16* _flavors, 
             j++;
     }
 
-    // If all 5 flavors are 0, or if 4-5 flavors were negative,
+    // If all flavors are 0, or at least 3 were negative/0
     // or if players used the same berry, color is black
-    if (j == FLAVOR_COUNT || negativeFlavors > 3)
+    if (j == 5 || negativeFlavors > 3)
         return PBLOCK_CLR_BLACK;
 
     for (i = 0; i < numPlayers; i++)
@@ -2672,7 +2664,7 @@ static void CB2_EndBlenderGame(void)
         }
         break;
     case 7:
-        if (PrintMessage(&sBerryBlender->textState, sText_WouldLikeToBlendAnotherBerry, GetPlayerTextSpeedDelay()))
+        if (Blender_PrintText(&sBerryBlender->textState, sText_WouldLikeToBlendAnotherBerry, GetPlayerTextSpeedDelay()))
             sBerryBlender->gameEndState++;
         break;
     case 9:
@@ -2684,7 +2676,7 @@ static void CB2_EndBlenderGame(void)
         switch (Menu_ProcessInputNoWrapClearOnChoose())
         {
         case 1:
-        case MENU_B_PRESSED:
+        case -1:
             sBerryBlender->yesNoAnswer = 1;
             sBerryBlender->gameEndState++;
             for (i = 0; i < BLENDER_MAX_PLAYERS; i++)
@@ -2756,7 +2748,7 @@ static void CB2_EndBlenderGame(void)
         sBerryBlender->gameEndState++;
         break;
     case 13:
-        if (PrintMessage(&sBerryBlender->textState, sText_CommunicationStandby, GetPlayerTextSpeedDelay()))
+        if (Blender_PrintText(&sBerryBlender->textState, sText_CommunicationStandby, GetPlayerTextSpeedDelay()))
         {
             SetMainCallback2(CB2_CheckPlayAgainLink);
             sBerryBlender->gameEndState = 0;
@@ -2866,7 +2858,7 @@ static void CB2_CheckPlayAgainLink(void)
         StringAppend(gStringVar4, sText_HasNoBerriesToPut);
         break;
     case 3:
-        if (PrintMessage(&sBerryBlender->textState, gStringVar4, GetPlayerTextSpeedDelay()))
+        if (Blender_PrintText(&sBerryBlender->textState, gStringVar4, GetPlayerTextSpeedDelay()))
         {
             sBerryBlender->framesToWait = 0;
             sBerryBlender->gameEndState++;
@@ -2877,7 +2869,7 @@ static void CB2_CheckPlayAgainLink(void)
             sBerryBlender->gameEndState = 5;
         break;
     case 5:
-        PrintMessage(&sBerryBlender->textState, gText_SavingDontTurnOff2, 0);
+        Blender_PrintText(&sBerryBlender->textState, gText_SavingDontTurnOff2, 0);
         SetLinkStandbyCallback();
         sBerryBlender->gameEndState++;
         break;
@@ -2973,7 +2965,7 @@ static void CB2_CheckPlayAgainLocal(void)
         StringCopy(gStringVar4, sText_RunOutOfBerriesForBlending);
         break;
     case 3:
-        if (PrintMessage(&sBerryBlender->textState, gStringVar4, GetPlayerTextSpeedDelay()))
+        if (Blender_PrintText(&sBerryBlender->textState, gStringVar4, GetPlayerTextSpeedDelay()))
             sBerryBlender->gameEndState = 9;
         break;
     case 9:
@@ -3503,7 +3495,7 @@ static bool8 PrintBlendingResults(void)
             u8 *txtPtr;
 
             xPos = GetStringCenterAlignXOffset(FONT_NORMAL, sText_BlendingResults, 0xA8);
-            Blender_AddTextPrinter(WIN_RESULTS, sText_BlendingResults, xPos, 1, TEXT_SKIP_DRAW, 0);
+            Blender_AddTextPrinter(5, sText_BlendingResults, xPos, 1, TEXT_SKIP_DRAW, 0);
 
             if (sBerryBlender->numPlayers == BLENDER_MAX_PLAYERS)
                 yPos = 17;
@@ -3518,15 +3510,15 @@ static bool8 PrintBlendingResults(void)
                 StringAppend(sBerryBlender->stringVar, sText_Dot);
                 StringAppend(sBerryBlender->stringVar, gText_Space);
                 StringAppend(sBerryBlender->stringVar, gLinkPlayers[place].name);
-                Blender_AddTextPrinter(WIN_RESULTS, sBerryBlender->stringVar, 8, yPos, TEXT_SKIP_DRAW, 3);
+                Blender_AddTextPrinter(5, sBerryBlender->stringVar, 8, yPos, TEXT_SKIP_DRAW, 3);
 
                 StringCopy(sBerryBlender->stringVar, sBerryBlender->blendedBerries[place].name);
                 ConvertInternationalString(sBerryBlender->stringVar, gLinkPlayers[place].language);
                 StringAppend(sBerryBlender->stringVar, sText_SpaceBerry);
-                Blender_AddTextPrinter(WIN_RESULTS, sBerryBlender->stringVar, 0x54, yPos, TEXT_SKIP_DRAW, 3);
+                Blender_AddTextPrinter(5, sBerryBlender->stringVar, 0x54, yPos, TEXT_SKIP_DRAW, 3);
             }
 
-            Blender_AddTextPrinter(WIN_RESULTS, sText_MaximumSpeed, 0, 0x51, TEXT_SKIP_DRAW, 3);
+            Blender_AddTextPrinter(5, sText_MaximumSpeed, 0, 0x51, TEXT_SKIP_DRAW, 3);
             ConvertIntToDecimalStringN(sBerryBlender->stringVar, sBerryBlender->maxRPM / 100, STR_CONV_MODE_RIGHT_ALIGN, 3);
             StringAppend(sBerryBlender->stringVar, sText_Dot);
 
@@ -3535,8 +3527,8 @@ static bool8 PrintBlendingResults(void)
             StringAppend(sBerryBlender->stringVar, sText_RPM);
 
             xPos = GetStringRightAlignXOffset(FONT_NORMAL, sBerryBlender->stringVar, 0xA8);
-            Blender_AddTextPrinter(WIN_RESULTS, sBerryBlender->stringVar, xPos, 0x51, TEXT_SKIP_DRAW, 3);
-            Blender_AddTextPrinter(WIN_RESULTS, sText_Time, 0, 0x61, TEXT_SKIP_DRAW, 3);
+            Blender_AddTextPrinter(5, sBerryBlender->stringVar, xPos, 0x51, TEXT_SKIP_DRAW, 3);
+            Blender_AddTextPrinter(5, sText_Time, 0, 0x61, TEXT_SKIP_DRAW, 3);
 
             seconds = (sBerryBlender->gameFrameTime / 60) % 60;
             minutes = (sBerryBlender->gameFrameTime / (60 * 60));
@@ -3548,12 +3540,12 @@ static bool8 PrintBlendingResults(void)
             StringAppend(sBerryBlender->stringVar, sText_Sec);
 
             xPos = GetStringRightAlignXOffset(FONT_NORMAL, sBerryBlender->stringVar, 0xA8);
-            Blender_AddTextPrinter(WIN_RESULTS, sBerryBlender->stringVar, xPos, 0x61, TEXT_SKIP_DRAW, 3);
+            Blender_AddTextPrinter(5, sBerryBlender->stringVar, xPos, 0x61, TEXT_SKIP_DRAW, 3);
 
             sBerryBlender->framesToWait = 0;
             sBerryBlender->mainState++;
 
-            CopyWindowToVram(WIN_RESULTS, COPYWIN_GFX);
+            CopyWindowToVram(5, COPYWIN_GFX);
         }
         break;
     case 4:
@@ -3561,7 +3553,7 @@ static bool8 PrintBlendingResults(void)
             sBerryBlender->mainState++;
         break;
     case 5:
-        ClearStdWindowAndFrameToTransparent(WIN_RESULTS, TRUE);
+        ClearStdWindowAndFrameToTransparent(5, TRUE);
 
         for (i = 0; i < BLENDER_MAX_PLAYERS; i++)
         {
@@ -3589,7 +3581,7 @@ static bool8 PrintBlendingResults(void)
         sBerryBlender->mainState++;
         break;
     case 6:
-        if (PrintMessage(&sBerryBlender->textState, sBerryBlender->stringVar, GetPlayerTextSpeedDelay()))
+        if (Blender_PrintText(&sBerryBlender->textState, sBerryBlender->stringVar, GetPlayerTextSpeedDelay()))
         {
             TryUpdateBerryBlenderRecord();
             return TRUE;
@@ -3700,9 +3692,9 @@ static bool8 PrintBlendingRanking(void)
         }
         break;
     case 3:
-        DrawStdFrameWithCustomTileAndPalette(WIN_RESULTS, FALSE, 1, 0xD);
+        DrawStdFrameWithCustomTileAndPalette(5, FALSE, 1, 0xD);
         xPos = GetStringCenterAlignXOffset(FONT_NORMAL, sText_Ranking, 168);
-        Blender_AddTextPrinter(WIN_RESULTS, sText_Ranking, xPos, 1, TEXT_SKIP_DRAW, 0);
+        Blender_AddTextPrinter(5, sText_Ranking, xPos, 1, TEXT_SKIP_DRAW, 0);
 
         sBerryBlender->scoreIconIds[SCORE_BEST] = CreateSprite(&sSpriteTemplate_ScoreSymbols, 128, 52, 0);
         StartSpriteAnim(&gSprites[sBerryBlender->scoreIconIds[SCORE_BEST]], SCOREANIM_BEST_STATIC);
@@ -3726,20 +3718,20 @@ static bool8 PrintBlendingRanking(void)
             StringAppend(sBerryBlender->stringVar, sText_Dot);
             StringAppend(sBerryBlender->stringVar, gText_Space);
             StringAppend(sBerryBlender->stringVar, gLinkPlayers[place].name);
-            Blender_AddTextPrinter(WIN_RESULTS, sBerryBlender->stringVar, 0, yPos, TEXT_SKIP_DRAW, 3);
+            Blender_AddTextPrinter(5, sBerryBlender->stringVar, 0, yPos, TEXT_SKIP_DRAW, 3);
 
             ConvertIntToDecimalStringN(sBerryBlender->stringVar, sBerryBlender->scores[place][SCORE_BEST], STR_CONV_MODE_RIGHT_ALIGN, 3);
-            Blender_AddTextPrinter(WIN_RESULTS, sBerryBlender->stringVar, 78, yPos, TEXT_SKIP_DRAW, 3);
+            Blender_AddTextPrinter(5, sBerryBlender->stringVar, 78, yPos, TEXT_SKIP_DRAW, 3);
 
             ConvertIntToDecimalStringN(sBerryBlender->stringVar, sBerryBlender->scores[place][SCORE_GOOD], STR_CONV_MODE_RIGHT_ALIGN, 3);
-            Blender_AddTextPrinter(WIN_RESULTS, sBerryBlender->stringVar, 78 + 32, yPos, TEXT_SKIP_DRAW, 3);
+            Blender_AddTextPrinter(5, sBerryBlender->stringVar, 78 + 32, yPos, TEXT_SKIP_DRAW, 3);
 
             ConvertIntToDecimalStringN(sBerryBlender->stringVar, sBerryBlender->scores[place][SCORE_MISS], STR_CONV_MODE_RIGHT_ALIGN, 3);
-            Blender_AddTextPrinter(WIN_RESULTS, sBerryBlender->stringVar, 78 + 64, yPos, TEXT_SKIP_DRAW, 3);
+            Blender_AddTextPrinter(5, sBerryBlender->stringVar, 78 + 64, yPos, TEXT_SKIP_DRAW, 3);
         }
 
-        PutWindowTilemap(WIN_RESULTS);
-        CopyWindowToVram(WIN_RESULTS, COPYWIN_FULL);
+        PutWindowTilemap(5);
+        CopyWindowToVram(5, COPYWIN_FULL);
 
         sBerryBlender->framesToWait = 0;
         sBerryBlender->mainState++;
@@ -3883,24 +3875,26 @@ static void Blender_AddTextPrinter(u8 windowId, const u8 *string, u8 x, u8 y, s3
     }
 
     if (caseId != 3)
+    {
         FillWindowPixelBuffer(windowId, PIXEL_FILL(txtColor[0]));
+    }
 
     AddTextPrinterParameterized4(windowId, FONT_NORMAL, x, y, letterSpacing, 1, txtColor, speed, string);
 }
 
-static bool32 PrintMessage(s16 *textState, const u8 *string, s32 textSpeed)
+static bool32 Blender_PrintText(s16 *textState, const u8 *string, s32 textSpeed)
 {
     switch (*textState)
     {
     case 0:
-        DrawDialogFrameWithCustomTileAndPalette(WIN_MSG, FALSE, 0x14, 0xF);
-        Blender_AddTextPrinter(WIN_MSG, string, 0, 1, textSpeed, 0);
-        PutWindowTilemap(WIN_MSG);
-        CopyWindowToVram(WIN_MSG, COPYWIN_FULL);
+        DrawDialogFrameWithCustomTileAndPalette(4, FALSE, 0x14, 0xF);
+        Blender_AddTextPrinter(4, string, 0, 1, textSpeed, 0);
+        PutWindowTilemap(4);
+        CopyWindowToVram(4, COPYWIN_FULL);
         (*textState)++;
         break;
     case 1:
-        if (!IsTextPrinterActive(WIN_MSG))
+        if (!IsTextPrinterActive(4))
         {
             *textState = 0;
             return TRUE;

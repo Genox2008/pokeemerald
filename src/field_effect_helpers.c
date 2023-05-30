@@ -97,12 +97,18 @@ static void LoadObjectRegularReflectionPalette(struct ObjectEvent *objectEvent, 
     graphicsInfo = GetObjectEventGraphicsInfo(objectEvent->graphicsId);
     if (graphicsInfo->reflectionPaletteTag != OBJ_EVENT_PAL_TAG_NONE)
     {
-        if (graphicsInfo->paletteSlot == PALSLOT_PLAYER)
+        if (graphicsInfo->paletteSlot == 0)
+        {
             LoadPlayerObjectReflectionPalette(graphicsInfo->paletteTag, paletteIndex);
-        else if (graphicsInfo->paletteSlot == PALSLOT_NPC_SPECIAL)
+        }
+        else if (graphicsInfo->paletteSlot == 10)
+        {
             LoadSpecialObjectReflectionPalette(graphicsInfo->paletteTag, paletteIndex);
+        }
         else
+        {
             PatchObjectPalette(GetObjectPaletteTag(paletteIndex), paletteIndex);
+        }
         UpdateSpritePaletteWithWeather(paletteIndex);
     }
 }

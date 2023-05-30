@@ -14,19 +14,19 @@
   "battle_scene": "MAP_BATTLE_SCENE_NORMAL",
   "connections": [
     {
-      "map": "MAP_ROUTE122",
+      "direction": "down",
       "offset": 20,
-      "direction": "down"
+      "map": "MAP_ROUTE122"
     },
     {
-      "map": "MAP_ROUTE120",
+      "direction": "left",
       "offset": -80,
-      "direction": "left"
+      "map": "MAP_ROUTE120"
     },
     {
-      "map": "MAP_LILYCOVE_CITY",
+      "direction": "right",
       "offset": -10,
-      "direction": "right"
+      "map": "MAP_LILYCOVE_CITY"
     }
   ],
   "object_events": [
@@ -414,7 +414,7 @@
       "y": 5,
       "elevation": 0,
       "dest_map": "MAP_ROUTE121_SAFARI_ZONE_ENTRANCE",
-      "dest_warp_id": "2"
+      "dest_warp_id": 2
     }
   ],
   "coord_events": [

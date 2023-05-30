@@ -388,17 +388,17 @@ static void AnimTask_AnimateGustTornadoPalette_Step(u8 taskId)
     {
         gTasks[taskId].data[10] = 0;
         data2 = gTasks[taskId].data[2];
-        temp = gPlttBufferFaded[OBJ_PLTT_ID(data2) + 8];
+        temp = gPlttBufferFaded[16 * data2 + 0x108];
         i = 7;
-        base = PLTT_ID(data2);
+        base = data2 * 16;
 
         do
         {
-            gPlttBufferFaded[base + OBJ_PLTT_OFFSET + 1 + i] = gPlttBufferFaded[base + OBJ_PLTT_OFFSET + i];
+            gPlttBufferFaded[base + 0x101 + i] = gPlttBufferFaded[base + 0x100 + i];
             i--;
         } while (i > 0);
 
-        gPlttBufferFaded[base + OBJ_PLTT_OFFSET + 1] = temp;
+        gPlttBufferFaded[base + 0x101] = temp;
     }
 
     if (--gTasks[taskId].data[0] == 0)
@@ -528,8 +528,8 @@ static void AnimFlyBallAttack_Step(struct Sprite *sprite)
     }
 
     if (sprite->x + sprite->x2 < -32
-     || sprite->x + sprite->x2 > DISPLAY_WIDTH + 32
-     || sprite->y + sprite->y2 > DISPLAY_HEIGHT)
+        || sprite->x + sprite->x2 > DISPLAY_WIDTH + 32
+        || sprite->y + sprite->y2 > DISPLAY_HEIGHT)
     {
         gSprites[GetAnimBattlerSpriteId(ANIM_ATTACKER)].invisible = FALSE;
         DestroyAnimSprite(sprite);
@@ -910,8 +910,8 @@ static void AnimWhirlwindLine(struct Sprite * sprite)
     else
         InitSpritePosToAnimTarget(sprite, FALSE);
 
-    if ((gBattleAnimArgs[2] == ANIM_ATTACKER && GetBattlerSide(gBattleAnimAttacker) == B_SIDE_PLAYER)
-        || (gBattleAnimArgs[2] == ANIM_TARGET && GetBattlerSide(gBattleAnimTarget) == B_SIDE_PLAYER))
+    if ((gBattleAnimArgs[2] == ANIM_ATTACKER && !GetBattlerSide(gBattleAnimAttacker))
+        || (gBattleAnimArgs[2] == ANIM_TARGET && !GetBattlerSide(gBattleAnimTarget)))
     {
         sprite->x += 8;
     }
@@ -1215,8 +1215,8 @@ void AnimSkyAttackBird_Step(struct Sprite *sprite)
     sprite->x = sprite->data[4] >> 4;
     sprite->y = sprite->data[5] >> 4;
 
-    if (sprite->x > DISPLAY_WIDTH + 45 || sprite->x < -45
-     || sprite->y > 157 || sprite->y < -45)
+    if (sprite->x > 285 || sprite->x < -45
+        || sprite->y > 157 || sprite->y < -45)
         DestroySpriteAndMatrix(sprite);
 }
 

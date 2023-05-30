@@ -525,9 +525,6 @@ static const struct SpriteTemplate sSpriteTemplates_NextTurn[CONTESTANT_COUNT] =
     }
 };
 
-/*    v-- Origin
-[0    +][1     ]   64x8
-*/
 static const struct Subsprite sSubsprites_NextTurn[] =
 {
     {
@@ -736,7 +733,7 @@ static const struct WindowTemplate sContestWindowTemplates[] =
         .tilemapTop = 0,
         .width = 12,
         .height = 2,
-        .paletteNum = 15,
+        .paletteNum = 0xF,
         .baseBlock = 0x200
     },
     [WIN_CONTESTANT1_NAME] = {
@@ -745,7 +742,7 @@ static const struct WindowTemplate sContestWindowTemplates[] =
         .tilemapTop = 5,
         .width = 12,
         .height = 2,
-        .paletteNum = 15,
+        .paletteNum = 0xF,
         .baseBlock = 0x218
     },
     [WIN_CONTESTANT2_NAME] = {
@@ -754,7 +751,7 @@ static const struct WindowTemplate sContestWindowTemplates[] =
         .tilemapTop = 10,
         .width = 12,
         .height = 2,
-        .paletteNum = 15,
+        .paletteNum = 0xF,
         .baseBlock = 0x230
     },
     [WIN_CONTESTANT3_NAME] = {
@@ -763,7 +760,7 @@ static const struct WindowTemplate sContestWindowTemplates[] =
         .tilemapTop = 15,
         .width = 12,
         .height = 2,
-        .paletteNum = 15,
+        .paletteNum = 0xF,
         .baseBlock = 0x248
     },
     [WIN_GENERAL_TEXT] = {
@@ -772,7 +769,7 @@ static const struct WindowTemplate sContestWindowTemplates[] =
         .tilemapTop = 15,
         .width = 17,
         .height = 4,
-        .paletteNum = 15,
+        .paletteNum = 0xF,
         .baseBlock = 0x260
     },
     [WIN_MOVE0] = {
@@ -781,7 +778,7 @@ static const struct WindowTemplate sContestWindowTemplates[] =
         .tilemapTop = 31,
         .width = 9,
         .height = 2,
-        .paletteNum = 15,
+        .paletteNum = 0xF,
         .baseBlock = 0x2A4
     },
     [WIN_MOVE1] = {
@@ -790,7 +787,7 @@ static const struct WindowTemplate sContestWindowTemplates[] =
         .tilemapTop = 33,
         .width = 9,
         .height = 2,
-        .paletteNum = 15,
+        .paletteNum = 0xF,
         .baseBlock = 0x2B6
     },
     [WIN_MOVE2] = {
@@ -799,7 +796,7 @@ static const struct WindowTemplate sContestWindowTemplates[] =
         .tilemapTop = 35,
         .width = 9,
         .height = 2,
-        .paletteNum = 15,
+        .paletteNum = 0xF,
         .baseBlock = 0x2C8
     },
     [WIN_MOVE3] = {
@@ -808,7 +805,7 @@ static const struct WindowTemplate sContestWindowTemplates[] =
         .tilemapTop = 37,
         .width = 9,
         .height = 2,
-        .paletteNum = 15,
+        .paletteNum = 0xF,
         .baseBlock = 0x2DA
     },
     [WIN_SLASH] = {
@@ -817,7 +814,7 @@ static const struct WindowTemplate sContestWindowTemplates[] =
         .tilemapTop = 31,
         .width = 1,
         .height = 2,
-        .paletteNum = 15,
+        .paletteNum = 0xF,
         .baseBlock = 0x2EC
     },
     [WIN_MOVE_DESCRIPTION] = {
@@ -826,7 +823,7 @@ static const struct WindowTemplate sContestWindowTemplates[] =
         .tilemapTop = 35,
         .width = 18,
         .height = 4,
-        .paletteNum = 15,
+        .paletteNum = 0xF,
         .baseBlock = 0x2EE
     },
     DUMMY_WIN_TEMPLATE
@@ -1035,13 +1032,13 @@ void LoadContestBgAfterMoveAnim(void)
     LZDecompressVram(gContestAudienceGfx, (void *)(BG_SCREEN_ADDR(4)));
     CopyToBgTilemapBuffer(3, gContestAudienceTilemap, 0, 0);
     CopyBgTilemapBufferToVram(3);
-    LoadCompressedPalette(gContestInterfaceAudiencePalette, BG_PLTT_OFFSET, BG_PLTT_SIZE);
+    LoadCompressedPalette(gContestInterfaceAudiencePalette, 0, 0x200);
     LoadContestPalettes();
     for (i = 0; i < CONTESTANT_COUNT; i++)
     {
         u32 contestantWindowId = 5 + i;
 
-        LoadPalette(eContestTempSave.cachedWindowPalettes[contestantWindowId], BG_PLTT_ID(5 + gContestantTurnOrder[i]), sizeof((eContestTempSave.cachedWindowPalettes[contestantWindowId])));
+        LoadPalette(eContestTempSave.cachedWindowPalettes[contestantWindowId], 16 * (5 + gContestantTurnOrder[i]), sizeof((eContestTempSave.cachedWindowPalettes[contestantWindowId])));
     }
 }
 
@@ -1076,11 +1073,11 @@ static void LoadContestPalettes(void)
 {
     s32 i;
 
-    LoadPalette(sText_Pal, BG_PLTT_ID(15), sizeof(sText_Pal));
-    SetBackdropFromColor(RGB_BLACK);
+    LoadPalette(sText_Pal, 0xf0, 0x20);
+    FillPalette(RGB_BLACK, 0, 2);
     for (i = 10; i < 14; i++)
-        LoadPalette(&gPlttBufferUnfaded[BG_PLTT_ID(15) + 1], BG_PLTT_ID(15) + i, PLTT_SIZEOF(1));
-    FillPalette(RGB(31, 17, 31), BG_PLTT_ID(15) + 3, PLTT_SIZEOF(1));
+        LoadPalette(gPlttBufferUnfaded + 241, 240 + i, 2);
+    FillPalette(RGB(31, 17, 31), 0xF3, 2);
 }
 
 static void InitContestResources(void)
@@ -1330,11 +1327,11 @@ static bool8 SetupContestGraphics(u8 *stateVar)
         DmaCopy32Defvars(3, gContestResources->contestBgTilemaps[2], eContestTempSave.savedJunk, sizeof(eContestTempSave.savedJunk));
         break;
     case 5:
-        LoadCompressedPalette(gContestInterfaceAudiencePalette, BG_PLTT_OFFSET, BG_PLTT_SIZE);
-        CpuCopy32(&gPlttBufferUnfaded[BG_PLTT_ID(8)], tempPalette1, PLTT_SIZE_4BPP);
-        CpuCopy32(&gPlttBufferUnfaded[BG_PLTT_ID(5 + gContestPlayerMonIndex)], tempPalette2, PLTT_SIZE_4BPP);
-        CpuCopy32(tempPalette2, &gPlttBufferUnfaded[BG_PLTT_ID(8)], PLTT_SIZE_4BPP);
-        CpuCopy32(tempPalette1, &gPlttBufferUnfaded[BG_PLTT_ID(5 + gContestPlayerMonIndex)], PLTT_SIZE_4BPP);
+        LoadCompressedPalette(gContestInterfaceAudiencePalette, 0, 0x200);
+        CpuCopy32(gPlttBufferUnfaded + 128, tempPalette1, 16 * sizeof(u16));
+        CpuCopy32(gPlttBufferUnfaded + (5 + gContestPlayerMonIndex) * 16, tempPalette2, 16 * sizeof(u16));
+        CpuCopy32(tempPalette2, gPlttBufferUnfaded + 128, 16 * sizeof(u16));
+        CpuCopy32(tempPalette1, gPlttBufferUnfaded + (5 + gContestPlayerMonIndex) * 16, 16 * sizeof(u16));
         DmaCopy32Defvars(3, gPlttBufferUnfaded, eContestTempSave.cachedWindowPalettes, sizeof(eContestTempSave.cachedWindowPalettes));
         LoadContestPalettes();
         break;
@@ -1475,7 +1472,7 @@ static void Task_DisplayAppealNumberText(u8 taskId)
         gBattle_BG0_Y = 0;
         gBattle_BG2_Y = 0;
         ContestDebugDoPrint();
-        DmaCopy32Defvars(3, gPlttBufferUnfaded, eContestTempSave.cachedPlttBufferUnfaded, PLTT_SIZE);
+        DmaCopy32Defvars(3, gPlttBufferUnfaded, eContestTempSave.cachedPlttBufferUnfaded, PLTT_BUFFER_SIZE * 2);
         ConvertIntToDecimalStringN(gStringVar1, eContest.appealNumber + 1, STR_CONV_MODE_LEFT_ALIGN, 1);
         if (!Contest_IsMonsTurnDisabled(gContestPlayerMonIndex))
             StringCopy(gDisplayedStringBattle, gText_AppealNumWhichMoveWillBePlayed);
@@ -1674,8 +1671,8 @@ static void Task_HideMoveSelectScreen(u8 taskId)
     }
     Contest_SetBgCopyFlags(0);
     // This seems to be a bug; it should have just copied PLTT_BUFFER_SIZE.
-    DmaCopy32Defvars(3, gPlttBufferFaded, eContestTempSave.cachedPlttBufferFaded, PLTT_SIZE);
-    LoadPalette(eContestTempSave.cachedPlttBufferUnfaded, 0, PLTT_SIZE);
+    DmaCopy32Defvars(3, gPlttBufferFaded, eContestTempSave.cachedPlttBufferFaded, PLTT_BUFFER_SIZE * 2);
+    LoadPalette(eContestTempSave.cachedPlttBufferUnfaded, 0, PLTT_BUFFER_SIZE * 2);
     gTasks[taskId].data[0] = 0;
     gTasks[taskId].data[1] = 0;
     gTasks[taskId].func = Task_HideApplauseMeterForAppealStart;
@@ -2561,7 +2558,7 @@ static void Task_WaitForHeartSliders(u8 taskId)
 
 static void Task_RestorePlttBufferUnfaded(u8 taskId)
 {
-    DmaCopy32Defvars(3, eContestTempSave.cachedPlttBufferUnfaded, gPlttBufferUnfaded, PLTT_SIZE);
+    DmaCopy32Defvars(3, eContestTempSave.cachedPlttBufferUnfaded, gPlttBufferUnfaded, PLTT_BUFFER_SIZE * 2);
     gTasks[taskId].data[0] = 0;
     gTasks[taskId].data[1] = 2;
     gTasks[taskId].func = Task_WaitPrintRoundResult;
@@ -2756,8 +2753,8 @@ static void Task_ContestReturnToField(u8 taskId)
 
 static void FieldCB_ContestReturnToField(void)
 {
-    UnlockPlayerFieldControls();
-    ScriptContext_Enable();
+    ScriptContext2_Disable();
+    EnableBothScriptContexts();
 }
 
 static void TryPutPlayerLast(void)
@@ -3100,7 +3097,7 @@ static u8 CreateJudgeSprite(void)
     u8 spriteId;
 
     LoadCompressedSpriteSheet(&sSpriteSheet_Judge);
-    LoadCompressedPalette(gContest2Pal, OBJ_PLTT_ID(1), PLTT_SIZE_4BPP);
+    LoadCompressedPalette(gContest2Pal, 0x110, 32);
     spriteId = CreateSprite(&sSpriteTemplate_Judge, 112, 36, 30);
     gSprites[spriteId].oam.paletteNum = 1;
     gSprites[spriteId].callback = SpriteCallbackDummy;
@@ -3126,7 +3123,7 @@ static u8 CreateContestantSprite(u16 species, u32 otId, u32 personality, u32 ind
 
     HandleLoadSpecialPokePic(&gMonBackPicTable[species], gMonSpritesGfxPtr->sprites.ptr[B_POSITION_PLAYER_LEFT], species, personality);
 
-    LoadCompressedPalette(GetMonSpritePalFromSpeciesAndPersonality(species, otId, personality), OBJ_PLTT_ID(2), PLTT_SIZE_4BPP);
+    LoadCompressedPalette(GetMonSpritePalFromSpeciesAndPersonality(species, otId, personality), 0x120, 0x20);
     SetMultiuseSpriteTemplateToPokemon(species, B_POSITION_PLAYER_LEFT);
 
     spriteId = CreateSprite(&gMultiuseSpriteTemplate, 0x70, GetBattlerSpriteFinal_Y(2, species, FALSE), 30);
@@ -3997,7 +3994,7 @@ static void Task_StopFlashJudgeAttentionEye(u8 taskId)
     {
         gTasks[eContest.judgeAttentionTaskId].data[contestant * 4 + 0] = 0xFF;
         gTasks[eContest.judgeAttentionTaskId].data[contestant * 4 + 1] = 0;
-        BlendPalette(BG_PLTT_ID(5 + eContest.prevTurnOrder[contestant]) + 6, 2, 0, RGB(31, 31, 18));
+        BlendPalette((eContest.prevTurnOrder[contestant] + 5) * 16 + 6, 2, 0, RGB(31, 31, 18));
         DestroyTask(taskId);
     }
 }
@@ -4021,7 +4018,7 @@ static void Task_FlashJudgeAttentionEye(u8 taskId)
              || gTasks[taskId].data[offset + 0] == 0)
                 gTasks[taskId].data[offset + 1] ^= 1;
 
-            BlendPalette(BG_PLTT_ID(5 + eContest.prevTurnOrder[i]) + 6, 2, gTasks[taskId].data[offset + 0], RGB(31, 31, 18));
+            BlendPalette((eContest.prevTurnOrder[i] + 5) * 16 + 6, 2, gTasks[taskId].data[offset + 0], RGB(31, 31, 18));
         }
     }
 }
@@ -4065,14 +4062,14 @@ static void UpdateBlendTaskContestantData(u8 contestant)
 
     palOffset1 = contestant + 5;
     DmaCopy16Defvars(3,
-                     &gPlttBufferUnfaded[PLTT_ID(palOffset1) + 10],
-                     &gPlttBufferFaded[PLTT_ID(palOffset1) + 10],
-                     PLTT_SIZEOF(1));
-    palOffset2 = PLTT_ID(contestant + 5) + 12 + contestant;
+                     gPlttBufferUnfaded + palOffset1 * 16 + 10,
+                     gPlttBufferFaded   + palOffset1 * 16 + 10,
+                     2);
+    palOffset2 = (contestant + 5) * 16 + 12 + contestant;
     DmaCopy16Defvars(3,
-                     &gPlttBufferUnfaded[palOffset2],
-                     &gPlttBufferFaded[palOffset2],
-                     PLTT_SIZEOF(1));
+                     gPlttBufferUnfaded + palOffset2,
+                     gPlttBufferFaded + palOffset2,
+                     2);
 }
 
 // See comments on CreateUnusedBlendTask
@@ -4100,8 +4097,8 @@ static void Task_UnusedBlend(u8 taskId)
                  || gTasks[taskId].data[idx] == 0)
                     gTasks[taskId].data[idx + 1] ^= 1;
 
-                BlendPalette(BG_PLTT_ID(5 + i) + 10,     1, gTasks[taskId].data[idx + 0], RGB(31, 31, 18));
-                BlendPalette(BG_PLTT_ID(5 + i) + 12 + i, 1, gTasks[taskId].data[idx + 0], RGB(31, 31, 18));
+                BlendPalette((i + 5) * 16 + 10,     1, gTasks[taskId].data[idx + 0], RGB(31, 31, 18));
+                BlendPalette((i + 5) * 16 + 12 + i, 1, gTasks[taskId].data[idx + 0], RGB(31, 31, 18));
             }
         }
     }
@@ -4414,7 +4411,7 @@ static void DrawContestantWindows(void)
     for (i = 0; i < CONTESTANT_COUNT; i++)
     {
         s32 windowId = i + 5;
-        LoadPalette(eContestTempSave.cachedWindowPalettes[windowId], BG_PLTT_ID(5 + gContestantTurnOrder[i]), sizeof(eContestTempSave.cachedWindowPalettes[0]));
+        LoadPalette(eContestTempSave.cachedWindowPalettes[windowId], (gContestantTurnOrder[i] + 5) * 16, sizeof(eContestTempSave.cachedWindowPalettes[0]));
     }
     DrawContestantWindowText();
 }
@@ -4769,7 +4766,7 @@ static void Task_ApplauseOverflowAnimation(u8 taskId)
         else
             gTasks[taskId].data[4]--;
 
-        BlendPalette(OBJ_PLTT_ID(gTasks[taskId].data[2]) + 8, 1, gTasks[taskId].data[4], RGB_WHITE);
+        BlendPalette(264 + gTasks[taskId].data[2] * 16, 1, gTasks[taskId].data[4], RGB_WHITE);
 
         // At the maximum or minimum blending, switch directions.
         if (gTasks[taskId].data[4] == 0 || gTasks[taskId].data[4] == 16)
@@ -4779,7 +4776,7 @@ static void Task_ApplauseOverflowAnimation(u8 taskId)
             // Continue the animation until the applause meter is cleared.
             if (eContest.applauseLevel < 5)
             {
-                BlendPalette(OBJ_PLTT_ID(gTasks[taskId].data[2]) + 8, 1, 0, RGB_RED);
+                BlendPalette(264 + gTasks[taskId].data[2] * 16, 1, 0, RGB_RED);
                 DestroyTask(taskId);
             }
         }
@@ -4992,8 +4989,8 @@ static void Task_BlendAudienceBackground(u8 taskId)
         else
             gTasks[taskId].tBlendCoeff--;
 
-        BlendPalette(BG_PLTT_ID(1) + 1,  1, gTasks[taskId].tBlendCoeff, gTasks[taskId].tBlendColor);
-        BlendPalette(BG_PLTT_ID(1) + 10, 1, gTasks[taskId].tBlendCoeff, gTasks[taskId].tBlendColor);
+        BlendPalette(17, 1, gTasks[taskId].tBlendCoeff, gTasks[taskId].tBlendColor);
+        BlendPalette(26, 1, gTasks[taskId].tBlendCoeff, gTasks[taskId].tBlendColor);
 
         if (gTasks[taskId].tBlendCoeff == gTasks[taskId].tTargetBlendCoeff)
         {
@@ -5317,7 +5314,7 @@ static void SetMoveSpecificAnimData(u8 contestant)
     switch (move)
     {
     case MOVE_CURSE:
-        if (gSpeciesInfo[species].types[0] == TYPE_GHOST || gSpeciesInfo[species].types[1] == TYPE_GHOST)
+        if (gBaseStats[species].type1 == TYPE_GHOST || gBaseStats[species].type2 == TYPE_GHOST)
             gAnimMoveTurn = 0;
         else
             gAnimMoveTurn = 1;
@@ -5456,7 +5453,7 @@ static void Contest_StartTextPrinter(const u8 *currChar, bool32 b)
     u8 speed;
 
     printerTemplate.currentChar = currChar;
-    printerTemplate.windowId = WIN_GENERAL_TEXT;
+    printerTemplate.windowId = 4;
     printerTemplate.fontId = FONT_NORMAL;
     printerTemplate.x = 0;
     printerTemplate.y = 1;
@@ -5482,7 +5479,7 @@ static void Contest_StartTextPrinter(const u8 *currChar, bool32 b)
         AddTextPrinter(&printerTemplate, speed, 0);
     }
 
-    PutWindowTilemap(WIN_GENERAL_TEXT);
+    PutWindowTilemap(4);
     Contest_SetBgCopyFlags(0);
 }
 
@@ -5500,7 +5497,7 @@ static void ContestBG_FillBoxWithTile(u8 bg, u16 firstTileNum, u8 x, u8 y, u8 wi
 static bool32 Contest_RunTextPrinters(void)
 {
     RunTextPrinters();
-    return IsTextPrinterActive(WIN_GENERAL_TEXT);
+    return IsTextPrinterActive(4);
 }
 
 static void Contest_SetBgCopyFlags(u32 flagIndex)

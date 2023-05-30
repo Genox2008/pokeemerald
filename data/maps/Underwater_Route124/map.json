@@ -14,14 +14,14 @@
   "battle_scene": "MAP_BATTLE_SCENE_NORMAL",
   "connections": [
     {
-      "map": "MAP_UNDERWATER_ROUTE126",
+      "direction": "down",
       "offset": 0,
-      "direction": "down"
+      "map": "MAP_UNDERWATER_ROUTE126"
     },
     {
-      "map": "MAP_ROUTE124",
+      "direction": "emerge",
       "offset": 0,
-      "direction": "emerge"
+      "map": "MAP_ROUTE124"
     }
   ],
   "object_events": [

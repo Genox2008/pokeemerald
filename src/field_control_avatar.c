@@ -37,7 +37,7 @@
 #include "constants/trainer_hill.h"
 
 static EWRAM_DATA u8 sWildEncounterImmunitySteps = 0;
-static EWRAM_DATA u16 sPrevMetatileBehavior = 0;
+static EWRAM_DATA u16 sPreviousPlayerMetatileBehavior = 0;
 
 u8 gSelectedObjectEvent;
 
@@ -61,8 +61,8 @@ static s8 GetWarpEventAtMapPosition(struct MapHeader *, struct MapPosition *);
 static void SetupWarp(struct MapHeader *, s8, struct MapPosition *);
 static bool8 TryDoorWarp(struct MapPosition *, u16, u8);
 static s8 GetWarpEventAtPosition(struct MapHeader *, u16, u16, u8);
-static const u8 *GetCoordEventScriptAtPosition(struct MapHeader *, u16, u16, u8);
-static const struct BgEvent *GetBackgroundEventAtPosition(struct MapHeader *, u16, u16, u8);
+static u8 *GetCoordEventScriptAtPosition(struct MapHeader *, u16, u16, u8);
+static struct BgEvent *GetBackgroundEventAtPosition(struct MapHeader *, u16, u16, u8);
 static bool8 TryStartCoordEventScript(struct MapPosition *);
 static bool8 TryStartWarpEventScript(struct MapPosition *, u16);
 static bool8 TryStartMiscWalkingScripts(u16);
@@ -240,7 +240,7 @@ static bool8 TryStartInteractionScript(struct MapPosition *position, u16 metatil
      && script != EventScript_PC)
         PlaySE(SE_SELECT);
 
-    ScriptContext_SetupScript(script);
+    ScriptContext1_SetupScript(script);
     return TRUE;
 }
 
@@ -353,7 +353,7 @@ static const u8 *GetInteractedObjectEventScript(struct MapPosition *position, u8
 
 static const u8 *GetInteractedBackgroundEventScript(struct MapPosition *position, u8 metatileBehavior, u8 direction)
 {
-    const struct BgEvent *bgEvent = GetBackgroundEventAtPosition(&gMapHeader, position->x - MAP_OFFSET, position->y - MAP_OFFSET, position->elevation);
+    struct BgEvent *bgEvent = GetBackgroundEventAtPosition(&gMapHeader, position->x - MAP_OFFSET, position->y - MAP_OFFSET, position->elevation);
 
     if (bgEvent == NULL)
         return NULL;
@@ -504,7 +504,7 @@ static bool32 TrySetupDiveDownScript(void)
 {
     if (FlagGet(FLAG_BADGE07_GET) && TrySetDiveWarp() == 2)
     {
-        ScriptContext_SetupScript(EventScript_UseDive);
+        ScriptContext1_SetupScript(EventScript_UseDive);
         return TRUE;
     }
     return FALSE;
@@ -514,7 +514,7 @@ static bool32 TrySetupDiveEmergeScript(void)
 {
     if (FlagGet(FLAG_BADGE07_GET) && gMapHeader.mapType == MAP_TYPE_UNDERWATER && TrySetDiveWarp() == 1)
     {
-        ScriptContext_SetupScript(EventScript_UseDiveUnderwater);
+        ScriptContext1_SetupScript(EventScript_UseDiveUnderwater);
         return TRUE;
     }
     return FALSE;
@@ -537,11 +537,11 @@ static bool8 TryStartStepBasedScript(struct MapPosition *position, u16 metatileB
 
 static bool8 TryStartCoordEventScript(struct MapPosition *position)
 {
-    const u8 *script = GetCoordEventScriptAtPosition(&gMapHeader, position->x - MAP_OFFSET, position->y - MAP_OFFSET, position->elevation);
+    u8 *script = GetCoordEventScriptAtPosition(&gMapHeader, position->x - MAP_OFFSET, position->y - MAP_OFFSET, position->elevation);
 
     if (script == NULL)
         return FALSE;
-    ScriptContext_SetupScript(script);
+    ScriptContext1_SetupScript(script);
     return TRUE;
 }
 
@@ -551,12 +551,12 @@ static bool8 TryStartMiscWalkingScripts(u16 metatileBehavior)
 
     if (MetatileBehavior_IsCrackedFloorHole(metatileBehavior))
     {
-        ScriptContext_SetupScript(EventScript_FallDownHole);
+        ScriptContext1_SetupScript(EventScript_FallDownHole);
         return TRUE;
     }
     else if (MetatileBehavior_IsBattlePyramidWarp(metatileBehavior))
     {
-        ScriptContext_SetupScript(BattlePyramid_WarpToNextFloor);
+        ScriptContext1_SetupScript(BattlePyramid_WarpToNextFloor);
         return TRUE;
     }
     else if (MetatileBehavior_IsSecretBaseGlitterMat(metatileBehavior) == TRUE)
@@ -588,48 +588,48 @@ static bool8 TryStartStepCountScript(u16 metatileBehavior)
     {
         if (UpdatePoisonStepCounter() == TRUE)
         {
-            ScriptContext_SetupScript(EventScript_FieldPoison);
+            ScriptContext1_SetupScript(EventScript_FieldPoison);
             return TRUE;
         }
         if (ShouldEggHatch())
         {
             IncrementGameStat(GAME_STAT_HATCHED_EGGS);
-            ScriptContext_SetupScript(EventScript_EggHatch);
+            ScriptContext1_SetupScript(EventScript_EggHatch);
             return TRUE;
         }
         if (AbnormalWeatherHasExpired() == TRUE)
         {
-            ScriptContext_SetupScript(AbnormalWeather_EventScript_EndEventAndCleanup_1);
+            ScriptContext1_SetupScript(AbnormalWeather_EventScript_EndEventAndCleanup_1);
             return TRUE;
         }
         if (ShouldDoBrailleRegicePuzzle() == TRUE)
         {
-            ScriptContext_SetupScript(IslandCave_EventScript_OpenRegiEntrance);
+            ScriptContext1_SetupScript(IslandCave_EventScript_OpenRegiEntrance);
             return TRUE;
         }
         if (ShouldDoWallyCall() == TRUE)
         {
-            ScriptContext_SetupScript(MauvilleCity_EventScript_RegisterWallyCall);
+            ScriptContext1_SetupScript(MauvilleCity_EventScript_RegisterWallyCall);
             return TRUE;
         }
         if (ShouldDoScottFortreeCall() == TRUE)
         {
-            ScriptContext_SetupScript(Route119_EventScript_ScottWonAtFortreeGymCall);
+            ScriptContext1_SetupScript(Route119_EventScript_ScottWonAtFortreeGymCall);
             return TRUE;
         }
         if (ShouldDoScottBattleFrontierCall() == TRUE)
         {
-            ScriptContext_SetupScript(LittlerootTown_ProfessorBirchsLab_EventScript_ScottAboardSSTidalCall);
+            //ScriptContext1_SetupScript(LittlerootTown_ProfessorBirchsLab_EventScript_ScottAboardSSTidalCall);
             return TRUE;
         }
         if (ShouldDoRoxanneCall() == TRUE)
         {
-            ScriptContext_SetupScript(RustboroCity_Gym_EventScript_RegisterRoxanne);
+            ScriptContext1_SetupScript(RustboroCity_Gym_EventScript_RegisterRoxanne);
             return TRUE;
         }
         if (ShouldDoRivalRayquazaCall() == TRUE)
         {
-            ScriptContext_SetupScript(MossdeepCity_SpaceCenter_2F_EventScript_RivalRayquazaCall);
+            ScriptContext1_SetupScript(MossdeepCity_SpaceCenter_2F_EventScript_RivalRayquazaCall);
             return TRUE;
         }
     }
@@ -638,7 +638,7 @@ static bool8 TryStartStepCountScript(u16 metatileBehavior)
         return TRUE;
     if (CountSSTidalStep(1) == TRUE)
     {
-        ScriptContext_SetupScript(SSTidalCorridor_EventScript_ReachedStepCount);
+        ScriptContext1_SetupScript(SSTidalCorridor_EventScript_ReachedStepCount);
         return TRUE;
     }
     if (TryStartMatchCall())
@@ -711,18 +711,18 @@ static bool8 CheckStandardWildEncounter(u16 metatileBehavior)
     if (sWildEncounterImmunitySteps < 4)
     {
         sWildEncounterImmunitySteps++;
-        sPrevMetatileBehavior = metatileBehavior;
+        sPreviousPlayerMetatileBehavior = metatileBehavior;
         return FALSE;
     }
 
-    if (StandardWildEncounter(metatileBehavior, sPrevMetatileBehavior) == TRUE)
+    if (StandardWildEncounter(metatileBehavior, sPreviousPlayerMetatileBehavior) == TRUE)
     {
         sWildEncounterImmunitySteps = 0;
-        sPrevMetatileBehavior = metatileBehavior;
+        sPreviousPlayerMetatileBehavior = metatileBehavior;
         return TRUE;
     }
 
-    sPrevMetatileBehavior = metatileBehavior;
+    sPreviousPlayerMetatileBehavior = metatileBehavior;
     return FALSE;
 }
 
@@ -775,7 +775,7 @@ static bool8 TryStartWarpEventScript(struct MapPosition *position, u16 metatileB
         }
         if (MetatileBehavior_IsMtPyreHole(metatileBehavior) == TRUE)
         {
-            ScriptContext_SetupScript(EventScript_FallDownHoleMtPyre);
+            ScriptContext1_SetupScript(EventScript_FallDownHoleMtPyre);
             return TRUE;
         }
         if (MetatileBehavior_IsMossdeepGymWarp(metatileBehavior) == TRUE)
@@ -855,7 +855,7 @@ static void SetupWarp(struct MapHeader *unused, s8 warpEventId, struct MapPositi
         warpEvent = &gMapHeader.events->warps[warpEventId];
     }
 
-    if (warpEvent->mapNum == MAP_NUM(DYNAMIC))
+    if (warpEvent->mapNum == MAP_NUM(NONE))
     {
         SetWarpDestinationToDynamicWarp(warpEvent->warpId);
     }
@@ -866,7 +866,7 @@ static void SetupWarp(struct MapHeader *unused, s8 warpEventId, struct MapPositi
         SetWarpDestinationToMapWarp(warpEvent->mapGroup, warpEvent->mapNum, warpEvent->warpId);
         UpdateEscapeWarp(position->x, position->y);
         mapHeader = Overworld_GetMapHeaderByGroupAndId(warpEvent->mapGroup, warpEvent->mapNum);
-        if (mapHeader->events->warps[warpEvent->warpId].mapNum == MAP_NUM(DYNAMIC))
+        if (mapHeader->events->warps[warpEvent->warpId].mapNum == MAP_NUM(NONE))
             SetDynamicWarp(mapHeader->events->warps[warpEventId].warpId, gSaveBlock1Ptr->location.mapGroup, gSaveBlock1Ptr->location.mapNum, warpEventId);
     }
 }
@@ -901,7 +901,7 @@ static bool8 TryDoorWarp(struct MapPosition *position, u16 metatileBehavior, u8 
 static s8 GetWarpEventAtPosition(struct MapHeader *mapHeader, u16 x, u16 y, u8 elevation)
 {
     s32 i;
-    const struct WarpEvent *warpEvent = mapHeader->events->warps;
+    struct WarpEvent *warpEvent = mapHeader->events->warps;
     u8 warpCount = mapHeader->events->warpCount;
 
     for (i = 0; i < warpCount; i++, warpEvent++)
@@ -915,7 +915,7 @@ static s8 GetWarpEventAtPosition(struct MapHeader *mapHeader, u16 x, u16 y, u8 e
     return WARP_ID_NONE;
 }
 
-static const u8 *TryRunCoordEventScript(const struct CoordEvent *coordEvent)
+static u8 *TryRunCoordEventScript(struct CoordEvent *coordEvent)
 {
     if (coordEvent != NULL)
     {
@@ -924,9 +924,9 @@ static const u8 *TryRunCoordEventScript(const struct CoordEvent *coordEvent)
             DoCoordEventWeather(coordEvent->trigger);
             return NULL;
         }
-        if (coordEvent->trigger == TRIGGER_RUN_IMMEDIATELY)
+        if (coordEvent->trigger == 0)
         {
-            RunScriptImmediately(coordEvent->script);
+            ScriptContext2_RunNewScript(coordEvent->script);
             return NULL;
         }
         if (VarGet(coordEvent->trigger) == (u8)coordEvent->index)
@@ -935,10 +935,10 @@ static const u8 *TryRunCoordEventScript(const struct CoordEvent *coordEvent)
     return NULL;
 }
 
-static const u8 *GetCoordEventScriptAtPosition(struct MapHeader *mapHeader, u16 x, u16 y, u8 elevation)
+static u8 *GetCoordEventScriptAtPosition(struct MapHeader *mapHeader, u16 x, u16 y, u8 elevation)
 {
     s32 i;
-    const struct CoordEvent *coordEvents = mapHeader->events->coordEvents;
+    struct CoordEvent *coordEvents = mapHeader->events->coordEvents;
     u8 coordEventCount = mapHeader->events->coordEventCount;
 
     for (i = 0; i < coordEventCount; i++)
@@ -947,7 +947,7 @@ static const u8 *GetCoordEventScriptAtPosition(struct MapHeader *mapHeader, u16 
         {
             if (coordEvents[i].elevation == elevation || coordEvents[i].elevation == 0)
             {
-                const u8 *script = TryRunCoordEventScript(&coordEvents[i]);
+                u8 *script = TryRunCoordEventScript(&coordEvents[i]);
                 if (script != NULL)
                     return script;
             }
@@ -956,15 +956,15 @@ static const u8 *GetCoordEventScriptAtPosition(struct MapHeader *mapHeader, u16 
     return NULL;
 }
 
-const u8 *GetCoordEventScriptAtMapPosition(struct MapPosition *position)
+u8 *GetCoordEventScriptAtMapPosition(struct MapPosition *position)
 {
     return GetCoordEventScriptAtPosition(&gMapHeader, position->x - MAP_OFFSET, position->y - MAP_OFFSET, position->elevation);
 }
 
-static const struct BgEvent *GetBackgroundEventAtPosition(struct MapHeader *mapHeader, u16 x, u16 y, u8 elevation)
+static struct BgEvent *GetBackgroundEventAtPosition(struct MapHeader *mapHeader, u16 x, u16 y, u8 elevation)
 {
     u8 i;
-    const struct BgEvent *bgEvents = mapHeader->events->bgEvents;
+    struct BgEvent *bgEvents = mapHeader->events->bgEvents;
     u8 bgEventCount = mapHeader->events->bgEventCount;
 
     for (i = 0; i < bgEventCount; i++)

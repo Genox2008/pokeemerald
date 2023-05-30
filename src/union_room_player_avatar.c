@@ -24,8 +24,7 @@ static u32 IsUnionRoomPlayerInvisible(u32, u32);
 static void SetUnionRoomObjectFacingDirection(s32, s32, u8);
 
 // + 2 is just to match, those elements are empty and never read
-// Graphics ids should correspond with the classes in gUnionRoomFacilityClasses
-static const u8 sUnionRoomObjGfxIds[GENDER_COUNT][NUM_UNION_ROOM_CLASSES + 2] = {
+static const u8 sUnionRoomObjGfxIds[GENDER_COUNT][MAX_UNION_ROOM_LEADERS + 2] = {
     [MALE] = {
         OBJ_EVENT_GFX_MAN_3,
         OBJ_EVENT_GFX_BLACK_BELT,
@@ -133,7 +132,7 @@ static bool32 IsPlayerStandingStill(void)
 // Gender and trainer id are used to determine which sprite a player appears as
 static u8 GetUnionRoomPlayerGraphicsId(u32 gender, u32 id)
 {
-    return sUnionRoomObjGfxIds[gender][id % NUM_UNION_ROOM_CLASSES];
+    return sUnionRoomObjGfxIds[gender][id % MAX_UNION_ROOM_LEADERS];
 }
 
 static void GetUnionRoomPlayerCoords(u32 leaderId, u32 memberId, s32 * x, s32 * y)
@@ -206,7 +205,7 @@ static bool32 TryReleaseUnionRoomPlayerObjectEvent(u32 leaderId)
     if (!ObjectEventClearHeldMovementIfFinished(object))
         return FALSE;
 
-    if (!ArePlayerFieldControlsLocked())
+    if (!ScriptContext2_IsEnabled())
         UnfreezeObjectEvent(object);
     else
         FreezeObjectEvent(object);
@@ -340,10 +339,15 @@ static void AnimateUnionRoomPlayer(u32 leaderId, struct UnionRoomObject * object
         }
         break;
     case 1:
-        if (object->schedAnim != UNION_ROOM_SPAWN_OUT)
+        if (object->schedAnim == UNION_ROOM_SPAWN_OUT)
+        {
+            object->state = 3;
+            object->animState = 0;
+        }
+        else
+        {
             break;
-        object->state = 3;
-        object->animState = 0;
+        }
         // fallthrough
     case 3:
         if (AnimateUnionRoomPlayerDespawn(&object->animState, leaderId, object) == 1)
@@ -564,7 +568,7 @@ bool32 TryInteractWithUnionRoomMember(struct RfuPlayerList *list, s16 *memberIdP
         for (memberId = 0; memberId < MAX_RFU_PLAYERS; memberId++)
         {
             s32 id = UR_PLAYER_SPRITE_ID(i, memberId);
-
+            
             // Is the player in front of a group member position?
             if (x != sUnionRoomPlayerCoords[i][0] + sUnionRoomGroupOffsets[memberId][0] + 7)
                 continue;

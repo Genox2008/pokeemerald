@@ -220,7 +220,7 @@ bool8 MEScrCmd_setmsg(struct ScriptContext *ctx)
 bool8 MEScrCmd_runscript(struct ScriptContext *ctx)
 {
     u8 *script = (u8 *)(ScriptReadWord(ctx) - ctx->mOffset + ctx->mScriptBase);
-    RunScriptImmediately(script);
+    ScriptContext2_RunNewScript(script);
     return FALSE;
 }
 
@@ -293,7 +293,7 @@ bool8 MEScrCmd_givenationaldex(struct ScriptContext *ctx)
 
 bool8 MEScrCmd_addrareword(struct ScriptContext *ctx)
 {
-    UnlockTrendySaying(ScriptReadByte(ctx));
+    UnlockAdditionalPhrase(ScriptReadByte(ctx));
     StringExpandPlaceholders(gStringVar4, gText_MysteryEventRareWord);
     ctx->mStatus = MEVENT_STATUS_SUCCESS;
     return FALSE;
@@ -319,7 +319,7 @@ bool8 MEScrCmd_givepokemon(struct ScriptContext *ctx)
     void *mailPtr = (void *)(data + sizeof(struct Pokemon));
 
     pokemon = *(struct Pokemon *)pokemonPtr;
-    species = GetMonData(&pokemon, MON_DATA_SPECIES_OR_EGG);
+    species = GetMonData(&pokemon, MON_DATA_SPECIES2);
 
     if (species == SPECIES_EGG)
         StringCopyN(gStringVar1, gText_EggNickname, POKEMON_NAME_LENGTH + 1);

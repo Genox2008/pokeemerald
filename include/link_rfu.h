@@ -83,7 +83,7 @@ struct RfuGameCompatibilityData
     u16 hasNews:1;
     u16 hasCard:1;
     u16 unknown:1; // Never read
-    u16 canLinkNationally:1;
+    u16 isChampion:1;
     u16 hasNationalDex:1;
     u16 gameClear:1;
     u16 version:4;
@@ -103,15 +103,13 @@ struct __attribute__((packed, aligned(2))) RfuGameData
 {
     struct RfuGameCompatibilityData compatibility;
     u8 partnerInfo[RFU_CHILD_MAX];
-    u16 tradeSpecies:10;
-    u16 tradeType:6;
+    u16 tradeSpecies;
     u8 activity:7;
     u8 startedActivity:1;
     u8 playerGender:1;
     u8 tradeLevel:7;
     u8 tradeType:6;
     u8 padding:2;
-    u8 filler;
 };
 
 // Constants for getting/setting information in 'partnerInfo' of RfuGameData.
@@ -120,7 +118,7 @@ struct __attribute__((packed, aligned(2))) RfuGameData
 // Bits 0-2 are a shortened trainerId
 // Bit 3 is the player's gender
 // Bits 4-6 are unknown/unused
-// Bit 7 is an 'active' flag
+// Bit 7 is an 'active' flag 
 #define PINFO_TID_MASK 0x7
 #define PINFO_GENDER_SHIFT 3
 #define PINFO_ACTIVE_FLAG (1 << 7)

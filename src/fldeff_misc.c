@@ -586,7 +586,7 @@ bool8 SetUpFieldMove_SecretPower(void)
 static void FieldCallback_SecretBaseCave(void)
 {
     gFieldEffectArguments[0] = GetCursorSelectionMonId();
-    ScriptContext_SetupScript(SecretBase_EventScript_CaveUseSecretPower);
+    ScriptContext1_SetupScript(SecretBase_EventScript_CaveUseSecretPower);
 }
 
 bool8 FldEff_UseSecretPowerCave(void)
@@ -640,13 +640,13 @@ static void SpriteCB_CaveEntranceOpen(struct Sprite *sprite)
 static void SpriteCB_CaveEntranceEnd(struct Sprite *sprite)
 {
     FieldEffectStop(sprite, FLDEFF_SECRET_POWER_CAVE);
-    ScriptContext_Enable();
+    EnableBothScriptContexts();
 }
 
 static void FieldCallback_SecretBaseTree(void)
 {
     gFieldEffectArguments[0] = GetCursorSelectionMonId();
-    ScriptContext_SetupScript(SecretBase_EventScript_TreeUseSecretPower);
+    ScriptContext1_SetupScript(SecretBase_EventScript_TreeUseSecretPower);
 }
 
 bool8 FldEff_UseSecretPowerTree(void)
@@ -714,13 +714,13 @@ static void SpriteCB_TreeEntranceOpen(struct Sprite *sprite)
 static void SpriteCB_TreeEntranceEnd(struct Sprite *sprite)
 {
     FieldEffectStop(sprite, FLDEFF_SECRET_POWER_TREE);
-    ScriptContext_Enable();
+    EnableBothScriptContexts();
 }
 
 static void FieldCallback_SecretBaseShrub(void)
 {
     gFieldEffectArguments[0] = GetCursorSelectionMonId();
-    ScriptContext_SetupScript(SecretBase_EventScript_ShrubUseSecretPower);
+    ScriptContext1_SetupScript(SecretBase_EventScript_ShrubUseSecretPower);
 }
 
 bool8 FldEff_UseSecretPowerShrub(void)
@@ -778,7 +778,7 @@ static void SpriteCB_ShrubEntranceOpen(struct Sprite *sprite)
 static void SpriteCB_ShrubEntranceEnd(struct Sprite *sprite)
 {
     FieldEffectStop(sprite, FLDEFF_SECRET_POWER_SHRUB);
-    ScriptContext_Enable();
+    EnableBothScriptContexts();
 }
 
 #define tX     data[0]
@@ -820,7 +820,7 @@ static void Task_SecretBasePCTurnOn(u8 taskId)
         MapGridSetMetatileIdAt(tX, tY, METATILE_SecretBase_PC_On);
         CurrentMapDrawMetatileAt(tX, tY);
         FieldEffectActiveListRemove(FLDEFF_PCTURN_ON);
-        ScriptContext_Enable();
+        EnableBothScriptContexts();
         DestroyTask(taskId);
         return;
     }
@@ -1034,7 +1034,7 @@ bool8 FldEff_SandPillar(void)
 {
     s16 x, y;
 
-    LockPlayerFieldControls();
+    ScriptContext2_Enable();
     GetXYCoordsOneStepInFrontOfPlayer(&x, &y);
 
     gFieldEffectArguments[5] = x;
@@ -1113,7 +1113,7 @@ static void SpriteCB_SandPillar_BreakBase(struct Sprite *sprite)
 static void SpriteCB_SandPillar_End(struct Sprite *sprite)
 {
     FieldEffectStop(sprite, FLDEFF_SAND_PILLAR);
-    ScriptContext_Enable();
+    EnableBothScriptContexts();
 }
 
 void InteractWithShieldOrTVDecoration(void)
@@ -1273,7 +1273,7 @@ static void Task_WateringBerryTreeAnim_End(u8 taskId)
 {
     SetPlayerAvatarTransitionFlags(GetPlayerAvatarFlags());
     DestroyTask(taskId);
-    ScriptContext_Enable();
+    EnableBothScriptContexts();
 }
 
 void DoWateringBerryTreeAnim(void)

@@ -88,7 +88,7 @@ u16 FontFunc_Braille(struct TextPrinter *textPrinter)
                 subStruct->fontId = *textPrinter->printerTemplate.currentChar;
                 textPrinter->printerTemplate.currentChar++;
                 return RENDER_REPEAT;
-            case EXT_CTRL_CODE_RESET_FONT:
+            case EXT_CTRL_CODE_RESET_SIZE:
                 return RENDER_REPEAT;
             case EXT_CTRL_CODE_PAUSE:
                 textPrinter->delayCounter = *textPrinter->printerTemplate.currentChar++;
@@ -109,7 +109,7 @@ u16 FontFunc_Braille(struct TextPrinter *textPrinter)
             case EXT_CTRL_CODE_ESCAPE:
                 char_ = *++textPrinter->printerTemplate.currentChar;
                 break;
-            case EXT_CTRL_CODE_SHIFT_RIGHT:
+            case EXT_CTRL_CODE_SHIFT_TEXT:
                 textPrinter->printerTemplate.currentX = textPrinter->printerTemplate.x + *textPrinter->printerTemplate.currentChar++;
                 return RENDER_REPEAT;
             case EXT_CTRL_CODE_SHIFT_DOWN:

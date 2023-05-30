@@ -135,8 +135,7 @@ SCRIPT := tools/poryscript/poryscript$(EXE)
 
 PERL := perl
 
-# Inclusive list. If you don't want a tool to be built, don't add it here.
-TOOLDIRS := tools/aif2pcm tools/bin2c tools/gbafix tools/gbagfx tools/jsonproc tools/mapjson tools/mid2agb tools/preproc tools/ramscrgen tools/rsfont tools/scaninc
+TOOLDIRS := $(filter-out tools/agbcc tools/binutils tools/poryscript,$(wildcard tools/*))
 TOOLBASE = $(TOOLDIRS:tools/%=%)
 TOOLS = $(foreach tool,$(TOOLBASE),tools/$(tool)/$(tool)$(EXE))
 
@@ -257,7 +256,7 @@ tidynonmodern:
 tidymodern:
 	rm -f $(MODERN_ROM_NAME) $(MODERN_ELF_NAME) $(MODERN_MAP_NAME)
 	rm -rf $(MODERN_OBJ_DIR_NAME)
-
+	
 ifneq ($(MODERN),0)
 $(C_BUILDDIR)/berry_crush.o: override CFLAGS += -Wno-address-of-packed-member
 endif
@@ -417,7 +416,7 @@ LD_SCRIPT := ld_script.txt
 LD_SCRIPT_DEPS := $(OBJ_DIR)/sym_bss.ld $(OBJ_DIR)/sym_common.ld $(OBJ_DIR)/sym_ewram.ld
 else
 LD_SCRIPT := ld_script_modern.txt
-LD_SCRIPT_DEPS :=
+LD_SCRIPT_DEPS := 
 endif
 
 $(OBJ_DIR)/ld_script.ld: $(LD_SCRIPT) $(LD_SCRIPT_DEPS)

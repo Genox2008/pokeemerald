@@ -627,7 +627,7 @@ static void AnimTask_SpiteTargetShadow_Step1(u8 taskId)
                 task->data[2] = 0;
                 task->data[3] = 16;
                 task->data[13] = GetAnimBattlerSpriteId(ANIM_TARGET);
-                task->data[4] = OBJ_PLTT_ID2(gSprites[task->data[13]].oam.paletteNum);
+                task->data[4] = (gSprites[task->data[13]].oam.paletteNum + 16) * 16;
                 if (position == 1) {
                     u16 mask = DISPCNT_BG1_ON;
                     mask2 = mask;
@@ -642,8 +642,8 @@ static void AnimTask_SpiteTargetShadow_Step1(u8 taskId)
         }
         break;
     case 1:
-        task->data[14] = OBJ_PLTT_ID2(task->data[14]);
-        CpuCopy32(&gPlttBufferUnfaded[task->data[4]], &gPlttBufferFaded[task->data[14]], PLTT_SIZE_4BPP);
+        task->data[14] = (task->data[14] + 16) * 16;
+        CpuCopy32(&gPlttBufferUnfaded[task->data[4]], &gPlttBufferFaded[task->data[14]], 32);
         BlendPalette(task->data[4], 16, 10, RGB(13, 0, 15));
         task->data[15]++;
         break;
@@ -814,7 +814,7 @@ void AnimTask_DestinyBondWhiteShadow(u8 taskId)
         for (battler = 0; battler < MAX_BATTLERS_COUNT; battler++)
         {
             if (battler != gBattleAnimAttacker
-             && battler != BATTLE_PARTNER(gBattleAnimAttacker)
+             && battler != (gBattleAnimAttacker ^ 2)
              && IsBattlerSpriteVisible(battler))
             {
                 spriteId = CreateSprite(&gDestinyBondWhiteShadowSpriteTemplate, baseX, baseY, 55);

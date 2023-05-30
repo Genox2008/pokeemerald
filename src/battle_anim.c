@@ -706,8 +706,8 @@ void MoveBattlerSpriteToBG(u8 battlerId, bool8 toBG_2, bool8 setSpriteInvisible)
         SetGpuReg(REG_OFFSET_BG1HOFS, gBattle_BG1_X);
         SetGpuReg(REG_OFFSET_BG1VOFS, gBattle_BG1_Y);
 
-        LoadPalette(&gPlttBufferUnfaded[OBJ_PLTT_ID(battlerId)], BG_PLTT_ID(animBg.paletteId), PLTT_SIZE_4BPP);
-        CpuCopy32(&gPlttBufferUnfaded[OBJ_PLTT_ID(battlerId)], (void *)(BG_PLTT + PLTT_OFFSET_4BPP(animBg.paletteId)), PLTT_SIZE_4BPP);
+        LoadPalette(&gPlttBufferUnfaded[0x100 + battlerId * 16], animBg.paletteId * 16, 0x20);
+        CpuCopy32(&gPlttBufferUnfaded[0x100 + battlerId * 16], (void*)(BG_PLTT + animBg.paletteId * 32), 0x20);
 
         if (IsContest())
             battlerPosition = 0;
@@ -741,8 +741,8 @@ void MoveBattlerSpriteToBG(u8 battlerId, bool8 toBG_2, bool8 setSpriteInvisible)
         SetGpuReg(REG_OFFSET_BG2HOFS, gBattle_BG2_X);
         SetGpuReg(REG_OFFSET_BG2VOFS, gBattle_BG2_Y);
 
-        LoadPalette(&gPlttBufferUnfaded[OBJ_PLTT_ID(battlerId)], BG_PLTT_ID(9), PLTT_SIZE_4BPP);
-        CpuCopy32(&gPlttBufferUnfaded[OBJ_PLTT_ID(battlerId)], (void *)(BG_PLTT + PLTT_OFFSET_4BPP(9)), PLTT_SIZE_4BPP);
+        LoadPalette(&gPlttBufferUnfaded[0x100 + battlerId * 16], 0x90, 0x20);
+        CpuCopy32(&gPlttBufferUnfaded[0x100 + battlerId * 16], (void*)(BG_PLTT + 0x120), 0x20);
 
         DrawBattlerOnBg(2, 0, 0, GetBattlerPosition(battlerId), animBg.paletteId, animBg.bgTiles + 0x1000, animBg.bgTilemap + 0x400, animBg.tilesOffset);
     }
@@ -824,15 +824,27 @@ static void Task_UpdateMonBg(u8 taskId)
 
     if (!gTasks[taskId].t2_InBg2)
     {
+        u16 *src;
+        u16 *dst;
+
         gBattle_BG1_X = x + gTasks[taskId].t2_BgX;
         gBattle_BG1_Y = y + gTasks[taskId].t2_BgY;
-        CpuCopy32(&gPlttBufferFaded[OBJ_PLTT_ID(battlerId)], &gPlttBufferFaded[BG_PLTT_ID(animBg.paletteId)], PLTT_SIZE_4BPP);
+
+        src = &gPlttBufferFaded[0x100 + battlerId * 16];
+        dst = &gPlttBufferFaded[0x100 + animBg.paletteId * 16 - 256];
+        CpuCopy32(src, dst, 32);
     }
     else
     {
+        u16 *src;
+        u16 *dst;
+
         gBattle_BG2_X = x + gTasks[taskId].t2_BgX;
         gBattle_BG2_Y = y + gTasks[taskId].t2_BgY;
-        CpuCopy32(&gPlttBufferFaded[OBJ_PLTT_ID(battlerId)], &gPlttBufferFaded[BG_PLTT_ID(9)], PLTT_SIZE_4BPP);
+
+        src = &gPlttBufferFaded[0x100 + battlerId * 16];
+        dst = &gPlttBufferFaded[0x100 - 112];
+        CpuCopy32(src, dst, 32);
     }
 }
 
@@ -871,7 +883,7 @@ static void Cmd_clearmonbg(void)
     if (sMonAnimTaskIdArray[0] != TASK_NONE)
         gSprites[gBattlerSpriteIds[battlerId]].invisible = FALSE;
     if (animBattlerId > 1 && sMonAnimTaskIdArray[1] != TASK_NONE)
-        gSprites[gBattlerSpriteIds[BATTLE_PARTNER(battlerId)]].invisible = FALSE;
+        gSprites[gBattlerSpriteIds[battlerId ^ BIT_FLANK]].invisible = FALSE;
     else
         animBattlerId = 0;
 
@@ -978,8 +990,8 @@ static void Cmd_clearmonbg_static(void)
 
     if (IsBattlerSpriteVisible(battlerId))
         gSprites[gBattlerSpriteIds[battlerId]].invisible = FALSE;
-    if (animBattlerId > 1 && IsBattlerSpriteVisible(BATTLE_PARTNER(battlerId)))
-        gSprites[gBattlerSpriteIds[BATTLE_PARTNER(battlerId)]].invisible = FALSE;
+    if (animBattlerId > 1 && IsBattlerSpriteVisible(battlerId ^ BIT_FLANK))
+        gSprites[gBattlerSpriteIds[battlerId ^ BIT_FLANK]].invisible = FALSE;
     else
         animBattlerId = 0;
 
@@ -1005,7 +1017,7 @@ static void Task_ClearMonBgStatic(u8 taskId)
 
         if (IsBattlerSpriteVisible(battlerId))
             ResetBattleAnimBg(toBG_2);
-        if (gTasks[taskId].data[0] > 1 && IsBattlerSpriteVisible(BATTLE_PARTNER(battlerId)))
+        if (gTasks[taskId].data[0] > 1 && IsBattlerSpriteVisible(battlerId ^ BIT_FLANK))
             ResetBattleAnimBg(toBG_2 ^ 1);
 
         DestroyTask(taskId);
@@ -1196,13 +1208,13 @@ static void LoadMoveBg(u16 bgId)
         dmaDest = (void *)BG_SCREEN_ADDR(26);
         DmaCopy32(3, dmaSrc, dmaDest, 0x800);
         LZDecompressVram(gBattleAnimBackgroundTable[bgId].image, (void *)BG_SCREEN_ADDR(4));
-        LoadCompressedPalette(gBattleAnimBackgroundTable[bgId].palette, BG_PLTT_ID(GetBattleBgPaletteNum()), PLTT_SIZE_4BPP);
+        LoadCompressedPalette(gBattleAnimBackgroundTable[bgId].palette, GetBattleBgPaletteNum() * 16, 32);
     }
     else
     {
         LZDecompressVram(gBattleAnimBackgroundTable[bgId].tilemap, (void *)BG_SCREEN_ADDR(26));
         LZDecompressVram(gBattleAnimBackgroundTable[bgId].image, (void *)BG_CHAR_ADDR(2));
-        LoadCompressedPalette(gBattleAnimBackgroundTable[bgId].palette, BG_PLTT_ID(2), PLTT_SIZE_4BPP);
+        LoadCompressedPalette(gBattleAnimBackgroundTable[bgId].palette, 32, 32);
     }
 }
 
