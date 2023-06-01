@@ -4537,4 +4537,17 @@ const struct Item gItems[] =
         .type = ITEM_USE_BAG_MENU,
         .fieldUseFunc = ItemUseOutOfBattle_CannotUse,
     },
+
+        [ITEM_TEST_ITEM] =
+    {
+        .name = _("ULTRA REPEL"),
+        .itemId = ITEM_TEST_ITEM,
+        .price = 10,
+        .holdEffectParam = 1000,
+        .description = sUltraRepelpDesc,
+        .pocket = POCKET_KEY_ITEMS,
+        .type = ITEM_USE_BAG_MENU,
+        .fieldUseFunc = PMPTest_ItemUseInBattle1,
+        .registrability = FALSE,
+    },
 };

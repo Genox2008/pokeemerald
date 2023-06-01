@@ -70,6 +70,8 @@ static void Task_UseRepel(u8);
 static void Task_CloseCantUseKeyItemMessage(u8);
 static void SetDistanceOfClosestHiddenItem(u8, s16, s16);
 static void CB2_OpenPokeblockFromBag(void);
+static void Task_StartUseRepelInfinite(u8);
+static void Task_UseRepelInfinite(u8);
 
 // EWRAM variables
 EWRAM_DATA static void(*sItemUseOnFieldCB)(u8 taskId) = NULL;
@@ -1119,6 +1121,39 @@ void ItemUseInBattle_EnigmaBerry(u8 taskId)
     default:
         ItemUseOutOfBattle_CannotUse(taskId);
         break;
+    }
+}
+
+void PMPTest_ItemUseInBattle1(u8 taskId) {
+    if (VarGet(VAR_REPEL_STEP_COUNT) == 0)
+        gTasks[taskId].func = Task_StartUseRepelInfinite;
+    else if (!InBattlePyramid())
+        DisplayItemMessage(taskId, FONT_NORMAL, gText_RepelEffectsLingered, CloseItemMessage);
+    else
+        DisplayItemMessageInBattlePyramid(taskId, gText_RepelEffectsLingered, Task_CloseBattlePyramidBagMessage);
+}
+
+static void Task_StartUseRepelInfinite(u8 taskId)
+{
+    s16 *data = gTasks[taskId].data;
+
+    if (++data[8] > 7)
+    {
+        data[8] = 0;
+        PlaySE(SE_REPEL);
+        gTasks[taskId].func = Task_UseRepelInfinite;
+    }
+}
+
+static void Task_UseRepelInfinite(u8 taskId)
+{
+    if (!IsSEPlaying())
+    {
+        VarSet(VAR_REPEL_STEP_COUNT, ItemId_GetHoldEffectParam(gSpecialVar_ItemId));
+        if (!InBattlePyramid())
+            DisplayItemMessage(taskId, FONT_NORMAL, gStringVar4, CloseItemMessage);
+        else
+            DisplayItemMessageInBattlePyramid(taskId, gStringVar4, Task_CloseBattlePyramidBagMessage);
     }
 }
 

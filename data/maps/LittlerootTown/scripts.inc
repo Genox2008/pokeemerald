@@ -470,6 +470,12 @@ LittlerootTown_EventScript_GiveRunningShoesTrigger5::
 	goto LittlerootTown_EventScript_GiveRunningShoesTrigger
 	end
 
+LittlerootTown_EventScript_GiveItemTest::
+	lockall
+	giveitem ITEM_TEST_ITEM
+	closemessage
+	end
+
 LittlerootTown_EventScript_GiveRunningShoesTrigger::
 	checkplayergender
 	call_if_eq VAR_RESULT, MALE, LittlerootTown_EventScript_MomNoticePlayerMale
