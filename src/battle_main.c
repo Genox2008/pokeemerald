@@ -34,7 +34,6 @@
 #include "pokeball.h"
 #include "pokedex.h"
 #include "pokemon.h"
-#include "pokemon_summary_screen.h"
 #include "random.h"
 #include "recorded_battle.h"
 #include "roamer.h"
@@ -237,7 +236,6 @@ EWRAM_DATA struct BattleHealthboxInfo *gBattleControllerOpponentFlankHealthboxDa
 EWRAM_DATA u16 gBattleMovePower = 0;
 EWRAM_DATA u16 gMoveToLearn = 0;
 EWRAM_DATA u8 gBattleMonForms[MAX_BATTLERS_COUNT] = {0};
-EWRAM_DATA u8 gBattleMoveTypeSpriteId = 0;
 
 void (*gPreBattleCallback1)(void);
 void (*gBattleMainFunc)(void);
@@ -4360,7 +4358,6 @@ static void HandleTurnActionSelectionState(void)
                         }
                         else if (TrySetCantSelectMoveBattleScript())
                         {
-                            DestroyTypeIcon();  // make type icon dissapear with the textboxs
                             RecordedBattle_ClearBattlerAction(gActiveBattler, 1);
                             gBattleCommunication[gActiveBattler] = STATE_SELECTION_SCRIPT;
                             *(gBattleStruct->selectionScriptFinished + gActiveBattler) = FALSE;
@@ -4370,7 +4367,6 @@ static void HandleTurnActionSelectionState(void)
                         }
                         else
                         {
-                            DestroyTypeIcon();  // make type icon dissapear with the textboxs unless a msg plays before the box is removed
                             if (!(gBattleTypeFlags & BATTLE_TYPE_PALACE))
                             {
                                 RecordedBattle_SetBattlerAction(gActiveBattler, gBattleBufferB[gActiveBattler][2]);
@@ -5243,40 +5239,4 @@ void RunBattleScriptCommands(void)
 {
     if (gBattleControllerExecFlags == 0)
         gBattleScriptingCommandsTable[gBattlescriptCurrInstr[0]]();
-}
-
-// type icons
-static void SetTypeIconSpriteInvisibility(u8 spriteId, bool8 invisible)
-{
-    gSprites[spriteId].invisible = invisible;
-}
-
-void SetTypeIconPal(u8 typeId, u8 spriteId)
-{
-    struct Sprite *sprite;
-    
-    sprite = &gSprites[spriteId];
-    StartSpriteAnim(sprite, typeId);
-    sprite->oam.paletteNum = gMoveTypeToOamPaletteNum[typeId];
-    SetTypeIconSpriteInvisibility(spriteId, FALSE);
-}
-
-void LoadTypeIcon(u8 type)
-{
-    if (gBattleMoveTypeSpriteId == MAX_SPRITES)
-    {
-        LoadCompressedSpriteSheet(&gSpriteSheet_MoveTypes);
-        gBattleMoveTypeSpriteId = CreateSprite(&gSpriteTemplate_MoveTypes, 216, 128, 0);
-        gSprites[gBattleMoveTypeSpriteId].oam.priority = 0;
-        SetTypeIconPal(type, gBattleMoveTypeSpriteId);
-    }
-}
-
-void DestroyTypeIcon(void)
-{
-    if (gBattleMoveTypeSpriteId != MAX_SPRITES)
-    {
-        DestroySpriteAndFreeResources(&gSprites[gBattleMoveTypeSpriteId]);
-        gBattleMoveTypeSpriteId = MAX_SPRITES;
-    }
 }

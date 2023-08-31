@@ -193,44 +193,44 @@ static const struct WindowTemplate sStandardBattleWindowTemplates[] =
         .bg = 0,
         .tilemapLeft = 2,
         .tilemapTop = 55,
-        .width = 10,
+        .width = 8,
         .height = 2,
         .paletteNum = 5,
         .baseBlock = 0x0300,
     },
     [B_WIN_MOVE_NAME_2] = {
         .bg = 0,
-        .tilemapLeft = 13,
+        .tilemapLeft = 11,
         .tilemapTop = 55,
-        .width = 10,
+        .width = 8,
         .height = 2,
         .paletteNum = 5,
-        .baseBlock = 0x0314,
+        .baseBlock = 0x0310,
     },
     [B_WIN_MOVE_NAME_3] = {
         .bg = 0,
         .tilemapLeft = 2,
         .tilemapTop = 57,
-        .width = 10,
+        .width = 8,
         .height = 2,
         .paletteNum = 5,
-        .baseBlock = 0x0328,
+        .baseBlock = 0x0320,
     },
     [B_WIN_MOVE_NAME_4] = {
         .bg = 0,
-        .tilemapLeft = 13,
+        .tilemapLeft = 11,
         .tilemapTop = 57,
-        .width = 10,
+        .width = 8,
         .height = 2,
         .paletteNum = 5,
-        .baseBlock = 0x033C,
+        .baseBlock = 0x0330,
     },
     [B_WIN_PP] = {
         .bg = 0,
         .tilemapLeft = 21,
         .tilemapTop = 55,
-        .width = 0,
-        .height = 0,
+        .width = 4,
+        .height = 2,
         .paletteNum = 5,
         .baseBlock = 0x0290,
     },
@@ -263,9 +263,9 @@ static const struct WindowTemplate sStandardBattleWindowTemplates[] =
     },
     [B_WIN_SWITCH_PROMPT] = {
         .bg = 0,
-        .tilemapLeft = 25,
+        .tilemapLeft = 21,
         .tilemapTop = 55,
-        .width = 4,
+        .width = 8,
         .height = 4,
         .paletteNum = 5,
         .baseBlock = 0x02b0,
@@ -864,8 +864,6 @@ void LoadBattleTextboxAndBackground(void)
     LoadCompressedPalette(gBattleTextboxPalette, BG_PLTT_ID(0), 2 * PLTT_SIZE_4BPP);
     LoadBattleMenuWindowGfx();
     DrawMainBattleBackground();
-    gBattleMoveTypeSpriteId = MAX_SPRITES;
-    LoadCompressedPalette(gMoveTypes_Pal, 0x1D0, 0x60);
 }
 
 static void DrawLinkBattleParticipantPokeballs(u8 taskId, u8 multiplayerId, u8 bgId, u8 destX, u8 destY)
