@@ -1409,10 +1409,19 @@ bool8 MetatileBehavior_IsTrainerHillTimer(u8 metatileBehavior)
 bool8 MetatileBehavior_IsSidewaysStairsRightSide(u8 metatileBehavior)
 {
     if (metatileBehavior == MB_SIDEWAYS_STAIRS_RIGHT_SIDE || metatileBehavior == MB_SIDEWAYS_STAIRS_RIGHT_SIDE_BOTTOM)
-           return TRUE;
+            return TRUE;
     else
         return FALSE;
 }
+
+bool8 MetatileBehavior_IsSidewaysStairsLeftSide(u8 metatileBehavior)
+{
+    if (metatileBehavior == MB_SIDEWAYS_STAIRS_LEFT_SIDE || metatileBehavior == MB_SIDEWAYS_STAIRS_LEFT_SIDE_BOTTOM)
+            return TRUE;
+    else
+        return FALSE;
+}
+
 bool8 MetatileBehavior_IsDirectionalUpRightStairWarp(u8 metatileBehavior)
 {
     if(metatileBehavior == MB_UP_RIGHT_STAIR_WARP)
@@ -1429,6 +1438,13 @@ bool8 MetatileBehavior_IsDirectionalUpLeftStairWarp(u8 metatileBehavior)
         return FALSE;
 }
 
+bool8 MetatileBehavior_IsSidewaysStairsRightSideTop(u8 metatileBehavior)
+{
+    if (metatileBehavior == MB_SIDEWAYS_STAIRS_RIGHT_SIDE_TOP)
+            return TRUE;
+    else
+        return FALSE;
+}
 bool8 MetatileBehavior_IsDirectionalDownRightStairWarp(u8 metatileBehavior)
 {
     if (metatileBehavior == MB_DOWN_RIGHT_STAIR_WARP)
@@ -1444,6 +1460,7 @@ bool8 MetatileBehavior_IsSidewaysStairsLeftSideTop(u8 metatileBehavior)
     else
         return FALSE;
 }
+
 bool8 MetatileBehavior_IsDirectionalDownLeftStairWarp(u8 metatileBehavior)
 {
     if (metatileBehavior == MB_DOWN_LEFT_STAIR_WARP)
