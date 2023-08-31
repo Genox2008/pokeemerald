@@ -3,8 +3,8 @@
 
 void PlayerStep(u8 direction, u16 newKeys, u16 heldKeys);
 void ClearPlayerAvatarInfo(void);
-void SetPlayerAvatarExtraStateTransition(u8, u8);
-u8 GetPlayerAvatarGenderByGraphicsId(u8);
+void SetPlayerAvatarExtraStateTransition(u16 graphicsId, u8);
+u8 GetPlayerAvatarGenderByGraphicsId(u16);
 bool8 TestPlayerAvatarFlags(u8);
 u8 GetPlayerAvatarSpriteId(void);
 void PlayerGetDestCoords(s16 *, s16 *);
@@ -50,8 +50,8 @@ bool8 IsPlayerSurfingNorth(void);
 void SetPlayerAvatarWatering(u8 direction);
 u8 GetPlayerAvatarFlags(void);
 void UpdatePlayerAvatarTransitionState(void);
-u8 GetFRLGAvatarGraphicsIdByGender(u8);
-u8 GetRSAvatarGraphicsIdByGender(u8);
+u16 GetFRLGAvatarGraphicsIdByGender(u8);
+u16 GetRSAvatarGraphicsIdByGender(u8);
 void PlayerWheelieInPlace(u8 direction);
 void PlayerWheelieMove(u8 direction);
 void PlayerPopWheelieWhileMoving(u8 direction);
