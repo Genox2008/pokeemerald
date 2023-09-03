@@ -2,6 +2,7 @@
 #include "malloc.h"
 #include "battle_pyramid.h"
 #include "berry.h"
+#include "day_night.h"
 #include "decoration.h"
 #include "event_data.h"
 #include "event_object_movement.h"
@@ -2103,7 +2104,7 @@ static u8 LoadSpritePaletteIfTagExists(const struct SpritePalette *spritePalette
     if (IndexOfSpritePaletteTag(spritePalette->tag) != 0xFF)
         return 0xFF;
 
-    return LoadSpritePalette(spritePalette);
+    return LoadSpritePaletteDayNight(spritePalette);
 }
 
 void PatchObjectPalette(u16 paletteTag, u8 paletteSlot)
@@ -2111,7 +2112,7 @@ void PatchObjectPalette(u16 paletteTag, u8 paletteSlot)
     // paletteTag is assumed to exist in sObjectEventSpritePalettes
     u8 paletteIndex = FindObjectEventPaletteIndexByTag(paletteTag);
 
-    LoadPalette(sObjectEventSpritePalettes[paletteIndex].data, OBJ_PLTT_ID(paletteSlot), PLTT_SIZE_4BPP);
+    LoadPaletteDayNight(sObjectEventSpritePalettes[paletteIndex].data, 16 * paletteSlot + 0x100, 0x20);
 }
 
 void PatchObjectPaletteRange(const u16 *paletteTags, u8 minSlot, u8 maxSlot)

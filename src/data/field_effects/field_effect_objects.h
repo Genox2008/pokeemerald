@@ -1332,3 +1332,4 @@ const struct SpriteTemplate gFieldEffectObjectTemplate_RockClimbDust = {
 };
 
 const struct SpritePalette gSpritePalette_BigDust = {gFieldEffectPal_DustCloud, FLDEFF_PAL_TAG_DUST_CLOUD};
+const struct SpritePalette gSpritePalette_ArrowEmotionsFieldEffect = {gObjectEventPal_Brendan, FLDEFF_PAL_TAG_ARROW};
