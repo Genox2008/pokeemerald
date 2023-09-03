@@ -1,6 +1,5 @@
 #include "global.h"
 #include "bg.h"
-#include "day_night.h"
 #include "event_data.h"
 #include "gpu_regs.h"
 #include "graphics.h"
@@ -17,7 +16,6 @@
 #include "trig.h"
 #include "pokedex_area_region_map.h"
 #include "wild_encounter.h"
-#include "constants/day_night.h"
 #include "constants/region_map_sections.h"
 #include "constants/rgb.h"
 #include "constants/songs.h"
@@ -407,17 +405,12 @@ static bool8 MapHasSpecies(const struct WildPokemonHeader *info, u16 species)
 static bool8 MonListHasSpecies(const struct WildPokemonInfo *info, u16 species, u16 size)
 {
     u16 i;
-    int timeOfDay;
-
     if (info != NULL)
     {
-        for (timeOfDay = 0; timeOfDay < TIMES_OF_DAY_COUNT; timeOfDay++)
+        for (i = 0; i < size; i++)
         {
-            for (i = 0; i < size; i++)
-            {
-                if (info->wildPokemon[timeOfDay][i].species == species)
-                    return TRUE;
-            }
+            if (info->wildPokemon[i].species == species)
+                return TRUE;
         }
     }
     return FALSE;

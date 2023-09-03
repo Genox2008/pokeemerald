@@ -3,7 +3,6 @@
 #include "battle.h"
 #include "battle_setup.h"
 #include "bg.h"
-#include "day_night.h"
 #include "data.h"
 #include "event_data.h"
 #include "event_object_movement.h"
@@ -1749,10 +1748,6 @@ static void PopulateSpeciesFromTrainerLocation(int matchCallId, u8 *destStr)
     int numSpecies;
     u8 slot;
     int i = 0;
-    u8 timeOfDay;
-    
-    RtcCalcLocalTime();
-    timeOfDay = GetCurrentTimeOfDay();
 
     if (gWildMonHeaders[i].mapGroup != MAP_GROUP(UNDEFINED)) // ??? This check is nonsense.
     {
@@ -1771,14 +1766,14 @@ static void PopulateSpeciesFromTrainerLocation(int matchCallId, u8 *destStr)
             if (gWildMonHeaders[i].landMonsInfo)
             {
                 slot = GetLandEncounterSlot();
-                species[numSpecies] = gWildMonHeaders[i].landMonsInfo->wildPokemon[timeOfDay][slot].species;
+                species[numSpecies] = gWildMonHeaders[i].landMonsInfo->wildPokemon[slot].species;
                 numSpecies++;
             }
 
             if (gWildMonHeaders[i].waterMonsInfo)
             {
                 slot = GetWaterEncounterSlot();
-                species[numSpecies] = gWildMonHeaders[i].waterMonsInfo->wildPokemon[timeOfDay][slot].species;
+                species[numSpecies] = gWildMonHeaders[i].waterMonsInfo->wildPokemon[slot].species;
                 numSpecies++;
             }
 

@@ -55,7 +55,6 @@ extern bool8 gExitStairsMovementDisabled;
 
 extern const struct UCoords32 gDirectionToVectors[];
 
-void ChooseAmbientCrySpecies(void);
 void DoWhiteOut(void);
 void Overworld_ResetStateAfterFly(void);
 void Overworld_ResetStateAfterTeleport(void);

@@ -1,5 +1,4 @@
 #include "global.h"
-#include "day_night.h"
 #include "palette.h"
 #include "util.h"
 #include "decompress.h"
@@ -85,21 +84,18 @@ static const u8 sRoundedDownGrayscaleMap[] = {
 void LoadCompressedPalette(const u32 *src, u16 offset, u16 size)
 {
     LZDecompressWram(src, gPaletteDecompressionBuffer);
-    CpuFill16(RGB_BLACK, &gPlttBufferPreDN[offset], size);
     CpuCopy16(gPaletteDecompressionBuffer, &gPlttBufferUnfaded[offset], size);
     CpuCopy16(gPaletteDecompressionBuffer, &gPlttBufferFaded[offset], size);
 }
 
 void LoadPalette(const void *src, u16 offset, u16 size)
 {
-    CpuFill16(RGB_BLACK, &gPlttBufferPreDN[offset], size);
     CpuCopy16(src, &gPlttBufferUnfaded[offset], size);
     CpuCopy16(src, &gPlttBufferFaded[offset], size);
 }
 
 void FillPalette(u16 value, u16 offset, u16 size)
 {
-    CpuFill16(RGB_BLACK, &gPlttBufferPreDN[offset], size);
     CpuFill16(value, &gPlttBufferUnfaded[offset], size);
     CpuFill16(value, &gPlttBufferFaded[offset], size);
 }
@@ -154,7 +150,6 @@ static void ReadPlttIntoBuffers(void)
 
     for (i = 0; i < PLTT_BUFFER_SIZE; i++)
     {
-        gPlttBufferPreDN[i] = RGB_BLACK;
         gPlttBufferUnfaded[i] = pltt[i];
         gPlttBufferFaded[i] = pltt[i];
     }
@@ -253,7 +248,6 @@ static void PaletteStruct_Copy(struct PaletteStruct *palStruct, u32 *unkFlags)
     {
         while (i < palStruct->template->size)
         {
-            gPlttBufferPreDN[palStruct->destOffset] = RGB_BLACK;
             gPlttBufferUnfaded[palStruct->destOffset] = palStruct->template->src[srcOffset];
             gPlttBufferFaded[palStruct->destOffset] = palStruct->template->src[srcOffset];
             i++;
@@ -945,35 +939,6 @@ void TintPalette_CustomTone(u16 *palette, u16 count, u16 rTone, u16 gTone, u16 b
             b = 31;
 
         *palette++ = RGB2(r, g, b);
-    }
-}
-
-void TintPalette_CustomToneWithCopy(const u16 *src, u16 *dest, u16 count, u16 rTone, u16 gTone, u16 bTone, bool8 excludeZeroes)
-{
-    s32 r, g, b, i;
-    u32 gray;
-
-    for (i = 0; i < count; i++, src++, dest++)
-    {
-        if (excludeZeroes && *src == RGB_BLACK)
-            continue;
-        
-        r = (*src >>  0) & 0x1F;
-        g = (*src >>  5) & 0x1F;
-        b = (*src >> 10) & 0x1F;
-
-        r = (u16)((rTone * r)) >> 8;
-        g = (u16)((gTone * g)) >> 8;
-        b = (u16)((bTone * b)) >> 8;
-
-        if (r > 31)
-            r = 31;
-        if (g > 31)
-            g = 31;
-        if (b > 31)
-            b = 31;
-
-        *dest = (b << 10) | (g << 5) | (r << 0);
     }
 }
 
