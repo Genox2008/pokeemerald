@@ -242,7 +242,7 @@
 #define OBJ_EVENT_GFX_HOOH                       238
 
 // overworld-expansion possible overworld sprites up tp '65536'
-#define OBJ_EVENT_UNUSED_239                     239
+/*#define OBJ_EVENT_UNUSED_239                     239
 #define OBJ_EVENT_UNUSED_240                     240
 #define OBJ_EVENT_UNUSED_241                     241
 #define OBJ_EVENT_UNUSED_242                     242
@@ -254,7 +254,7 @@
 #define OBJ_EVENT_UNUSED_254                     254
 #define OBJ_EVENT_UNUSED_255                     255
 #define OBJ_EVENT_UNUSED_256                     256
-#define OBJ_EVENT_UNUSED_257                     257
+#define OBJ_EVENT_UNUSED_257                     257*/
 // ...
 
 // NOTE: By default, the max value for NUM_OBJ_EVENT_GFX is 239.
@@ -268,7 +268,8 @@
 // https://github.com/pret/pokeemerald/wiki/Feature-Branches#overworld-expansion
 
 // why 65520? Because of dynamic object gfx ids
-#define NUM_OBJ_EVENT_GFX                        65520
+// #define NUM_OBJ_EVENT_GFX                        65520
+#define NUM_OBJ_EVENT_GFX                        239
 
 
 // These are dynamic object gfx ids.
