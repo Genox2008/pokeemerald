@@ -1,0 +1,52 @@
+dppt_hgss_music				        check
+sideways_stairs				        check
+stair-warps				            check
+rock_climb				            check
+tx_ui_party_screen_ds_style_1		check
+gen4_bike (no branch, mod)		    check
+auto_run				            check
+battle-mugshots 			        ?			
+move-names				            ?
+overworld-expansion			        check
+StartMenuIcons				        check
+b2w2 repel sys				        check
+saveblock_extension (no branch, mod)check
+saveblock cleansing ghoulslash      check
+triple layer metatiles              check
+
+dynamic overworld palettes: https://github.com/ExpoSeed/pokeemerald/tree/dynamic-ow-pals
+day night system: https://github.com/ShinyDragonHunter/pokeemerald/tree/DayNightenum
+
+
+// here from simple mod directory, in order //
+reusable tms
+running indoors
+Wrapping Summary Screen
+"Move Pokémon" as first PSS option
+Gen. 8 Synchronize 
+Evolution Moves
+Move Item (in party)
+Set a Trainer's Pokémon's abilities
+Always inherit nature when holding an Everstone
+IV Checker NPC
+Change Object Event Movement Type in Real Time
+Pokemart Items by Badge Count
+Snow Weather Fix
+Let the Player only buy TMs and HMs once
+Let a Pokémon forget any move they know
+Fix Surf Dismount Ground Effects
+Coin Pokemarts
+Lower case after first input in the naming screen.
+Give Custom Mon
+Change bag sound with the ones from FR
+Repeated Field Medicine Use
+Removing overworld pokenav calls
+Removing the trainer registered script
+Move camera to a coordinates and return camera to the player specials.
+Rival Nickname
+// stop //
+
+pokeemerald-expansion
+
+dexnav (trim to 4.gen) so pokeradar
+DEGUBMENU
