@@ -25,9 +25,7 @@ Nature-affected stats colouring                                             chec
 Wrapping Summary Screen                                                     check (not tested)
 "Move Pokémon" as first PSS option                                          check
 Move Item (in party)                                                        check (not tested)
-Set a Trainer's Pokémon's abilities
-Always inherit nature when holding an Everstone
-IV Checker NPC
+IV Checker NPC                                                              check
 Change Object Event Movement Type in Real Time
 Pokemart Items by Badge Count
 Snow Weather Fix
