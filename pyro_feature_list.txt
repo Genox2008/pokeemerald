@@ -19,6 +19,7 @@ day night system: https://github.com/ShinyDragonHunter/pokeemerald/tree/DayNight
 
 
 // here from simple mod directory, in order //
+Editing Default Options Settings 
 reusable tms
 running indoors
 Wrapping Summary Screen
