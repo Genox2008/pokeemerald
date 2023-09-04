@@ -19,8 +19,8 @@ day night system: https://github.com/ShinyDragonHunter/pokeemerald/tree/DayNight
 
 
 // here from simple mod directory, in order //
-Editing Default Options Settings 
-reusable tms
+Ediating Default Options Settings                                           check
+reusable tms                                                                check
 running indoors
 Wrapping Summary Screen
 "Move Pokémon" as first PSS option
