@@ -24,8 +24,7 @@ reusable tms                                                                chec
 running indoors                                                             check (not tested)
 Nature-affected stats colouring                                             check
 Wrapping Summary Screen                                                     check (not tested)
-White out money calculation                                                 check
-"Move Pokémon" as first PSS option                                          
+"Move Pokémon" as first PSS option                                          check
 Gen. 8 Synchronize 
 Evolution Moves
 Move Item (in party)
