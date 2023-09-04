@@ -24,7 +24,6 @@ reusable tms                                                                chec
 Nature-affected stats colouring                                             check
 Wrapping Summary Screen                                                     check (not tested)
 "Move Pokémon" as first PSS option                                          check
-Gen. 8 Synchronize                                                          check (not tested)
 Move Item (in party)
 Set a Trainer's Pokémon's abilities
 Always inherit nature when holding an Everstone
