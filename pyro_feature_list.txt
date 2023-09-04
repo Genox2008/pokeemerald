@@ -20,10 +20,12 @@ day night system: https://github.com/ShinyDragonHunter/pokeemerald/tree/DayNight
 
 // here from simple mod directory, in order //
 Ediating Default Options Settings                                           check
-reusable tms                                                                check
-running indoors
-Wrapping Summary Screen
-"Move Pokémon" as first PSS option
+reusable tms                                                                check (not tested)
+running indoors                                                             check (not tested)
+Nature-affected stats colouring                                             check
+Wrapping Summary Screen                                                     check (not tested)
+White out money calculation                                                 check
+"Move Pokémon" as first PSS option                                          
 Gen. 8 Synchronize 
 Evolution Moves
 Move Item (in party)
