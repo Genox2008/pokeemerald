@@ -25,7 +25,7 @@ running indoors                                                             chec
 Nature-affected stats colouring                                             check
 Wrapping Summary Screen                                                     check (not tested)
 "Move Pokémon" as first PSS option                                          check
-Gen. 8 Synchronize 
+Gen. 8 Synchronize                                                          check (not tested)
 Evolution Moves
 Move Item (in party)
 Set a Trainer's Pokémon's abilities
