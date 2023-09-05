@@ -26,7 +26,7 @@ Wrapping Summary Screen                                                     chec
 "Move Pokémon" as first PSS option                                          check
 Move Item (in party)                                                        check (not tested)
 IV Checker NPC                                                              check
-Change Object Event Movement Type in Real Time
+Change Object Event Movement Type in Real Time                              check (not tested)
 Pokemart Items by Badge Count
 Snow Weather Fix
 Let the Player only buy TMs and HMs once

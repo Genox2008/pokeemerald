@@ -542,3 +542,5 @@ gSpecials::
 	def_special GetSpAtkIV
 	def_special GetSpDefIV
 	def_special GetSpeedIV
+	// change movement type in real time
+	def_special SetObjectMovementType

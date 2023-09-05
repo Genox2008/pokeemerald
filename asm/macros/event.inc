@@ -1939,3 +1939,11 @@
 	setvar VAR_0x8006, \item
 	special CreateEnemyEventMon
 	.endm
+
+	@ Changes movemente type in real time
+	.macro setobjectnewmovementtype localId:req, movementType:req
+    setvar VAR_0x8005, \localId
+    setvar VAR_0x8006, \movementType
+    special SetObjectMovementType
+    .endm
+	
