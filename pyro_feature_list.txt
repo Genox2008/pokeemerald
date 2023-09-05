@@ -13,7 +13,7 @@ b2w2 repel sys				        check
 saveblock_extension (no branch, mod)check
 saveblock cleansing ghoulslash      check
 triple layer metatiles              check
-
+town map    
 dynamic overworld palettes: https://github.com/ExpoSeed/pokeemerald/tree/dynamic-ow-pals
 day night system: https://github.com/ShinyDragonHunter/pokeemerald/tree/DayNightenum
 
@@ -29,7 +29,7 @@ IV Checker NPC                                                              chec
 Change Object Event Movement Type in Real Time                              check (not tested)
 Pokemart Items by Badge Count                                               check (not tested)
 Snow Weather Fix                                                            check
-Let the Player only buy TMs and HMs once
+Let the Player only buy TMs and HMs once                                    check (not tested)
 Let a Pokémon forget any move they know
 Fix Surf Dismount Ground Effects
 Coin Pokemarts
@@ -44,6 +44,5 @@ Rival Nickname
 // stop //
 
 pokeemerald-expansion
-
 dexnav (trim to 4.gen) so pokeradar
-DEGUBMENU
+follower pokemon
