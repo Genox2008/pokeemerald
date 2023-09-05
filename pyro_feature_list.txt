@@ -28,7 +28,7 @@ Move Item (in party)                                                        chec
 IV Checker NPC                                                              check
 Change Object Event Movement Type in Real Time                              check (not tested)
 Pokemart Items by Badge Count                                               check (not tested)
-Snow Weather Fix
+Snow Weather Fix                                                            check
 Let the Player only buy TMs and HMs once
 Let a Pokémon forget any move they know
 Fix Surf Dismount Ground Effects
