@@ -935,8 +935,8 @@ static const u8 *const sUnionRoomTradeMessages[] =
 {
     [UR_TRADE_MSG_NOT_MON_PARTNER_WANTS - 1]       = gText_NotPkmnOtherTrainerWants,
     [UR_TRADE_MSG_NOT_EGG - 1]                     = gText_ThatIsntAnEgg,
-    [UR_TRADE_MSG_MON_CANT_BE_TRADED_1 - 1]        = gText_PkmnCantBeTradedNow,
-    [UR_TRADE_MSG_MON_CANT_BE_TRADED_2 - 1]        = gText_PkmnCantBeTradedNow,
+    [UR_TRADE_MSG_MON_CANT_BE_TRADED_NOW - 1]      = gText_PkmnCantBeTradedNow,
+    [UR_TRADE_MSG_MON_CANT_BE_TRADED - 1]          = gText_PkmnCantBeTraded,
     [UR_TRADE_MSG_PARTNERS_MON_CANT_BE_TRADED - 1] = gText_OtherTrainersPkmnCantBeTraded,
     [UR_TRADE_MSG_EGG_CANT_BE_TRADED -1]           = gText_EggCantBeTradedNow,
     [UR_TRADE_MSG_PARTNER_CANT_ACCEPT_MON - 1]     = gText_OtherTrainerCantAcceptPkmn,
@@ -1200,7 +1200,7 @@ static const union AnimCmd sSpriteAnim_StatusFaint[] =
     ANIMCMD_END
 };
 
-static const union AnimCmd sSpriteAnim_Blank[] =
+static const union AnimCmd sSpriteAnim_StatusFrostbite[] =
 {
     ANIMCMD_FRAME(28, 0),
     ANIMCMD_END
@@ -1215,7 +1215,7 @@ static const union AnimCmd *const sSpriteTemplate_StatusCondition[] =
     sSpriteAnim_StatusBurn,
     sSpriteAnim_StatusPokerus,
     sSpriteAnim_StatusFaint,
-    sSpriteAnim_Blank
+    sSpriteAnim_StatusFrostbite
 };
 
 static const struct CompressedSpriteSheet sSpriteSheet_StatusIcons =
@@ -1228,7 +1228,7 @@ static const struct CompressedSpritePalette sSpritePalette_StatusIcons =
     gStatusPal_Icons, TAG_STATUS_ICONS
 };
 
-static const struct SpriteTemplate sSpriteTemplate_StatusIcons =
+const struct SpriteTemplate gSpriteTemplate_StatusIcons =
 {
     .tileTag = TAG_STATUS_ICONS,
     .paletteTag = TAG_STATUS_ICONS,
@@ -1237,20 +1237,6 @@ static const struct SpriteTemplate sSpriteTemplate_StatusIcons =
     .images = NULL,
     .affineAnims = gDummySpriteAffineAnimTable,
     .callback = SpriteCallbackDummy,
-};
-
-// Mask for the partners party in a multi battle. TRUE if in the partners party, FALSE otherwise
-// The 7th slot is Cancel, and the 8th slot is unreachable
-// Used only to determine whether or not to show the Deoxys form icon sprite
-static const bool8 sMultiBattlePartnersPartyMask[PARTY_SIZE + 2] =
-{
-    FALSE,
-    TRUE,
-    FALSE,
-    FALSE,
-    TRUE,
-    TRUE,
-    FALSE
 };
 
 static const u8 *const sUnused_StatStrings[] =
@@ -1274,6 +1260,113 @@ static const u8 *const sUnused_StatStrings[] =
 #define TMHM_MOVE(id) CAT(MOVE_, id),
 static const u16 sTMHMMoves[] =
 {
-    FOREACH_TMHM(TMHM_MOVE)
+    [ITEM_TM01 - ITEM_TM01] = MOVE_FOCUS_PUNCH,
+    [ITEM_TM02 - ITEM_TM01] = MOVE_DRAGON_CLAW,
+    [ITEM_TM03 - ITEM_TM01] = MOVE_WATER_PULSE,
+    [ITEM_TM04 - ITEM_TM01] = MOVE_CALM_MIND,
+    [ITEM_TM05 - ITEM_TM01] = MOVE_ROAR,
+    [ITEM_TM06 - ITEM_TM01] = MOVE_TOXIC,
+    [ITEM_TM07 - ITEM_TM01] = MOVE_HAIL,
+    [ITEM_TM08 - ITEM_TM01] = MOVE_BULK_UP,
+    [ITEM_TM09 - ITEM_TM01] = MOVE_BULLET_SEED,
+    [ITEM_TM10 - ITEM_TM01] = MOVE_HIDDEN_POWER,
+    [ITEM_TM11 - ITEM_TM01] = MOVE_SUNNY_DAY,
+    [ITEM_TM12 - ITEM_TM01] = MOVE_TAUNT,
+    [ITEM_TM13 - ITEM_TM01] = MOVE_ICE_BEAM,
+    [ITEM_TM14 - ITEM_TM01] = MOVE_BLIZZARD,
+    [ITEM_TM15 - ITEM_TM01] = MOVE_HYPER_BEAM,
+    [ITEM_TM16 - ITEM_TM01] = MOVE_LIGHT_SCREEN,
+    [ITEM_TM17 - ITEM_TM01] = MOVE_PROTECT,
+    [ITEM_TM18 - ITEM_TM01] = MOVE_RAIN_DANCE,
+    [ITEM_TM19 - ITEM_TM01] = MOVE_GIGA_DRAIN,
+    [ITEM_TM20 - ITEM_TM01] = MOVE_SAFEGUARD,
+    [ITEM_TM21 - ITEM_TM01] = MOVE_FRUSTRATION,
+    [ITEM_TM22 - ITEM_TM01] = MOVE_SOLAR_BEAM,
+    [ITEM_TM23 - ITEM_TM01] = MOVE_IRON_TAIL,
+    [ITEM_TM24 - ITEM_TM01] = MOVE_THUNDERBOLT,
+    [ITEM_TM25 - ITEM_TM01] = MOVE_THUNDER,
+    [ITEM_TM26 - ITEM_TM01] = MOVE_EARTHQUAKE,
+    [ITEM_TM27 - ITEM_TM01] = MOVE_RETURN,
+    [ITEM_TM28 - ITEM_TM01] = MOVE_DIG,
+    [ITEM_TM29 - ITEM_TM01] = MOVE_PSYCHIC,
+    [ITEM_TM30 - ITEM_TM01] = MOVE_SHADOW_BALL,
+    [ITEM_TM31 - ITEM_TM01] = MOVE_BRICK_BREAK,
+    [ITEM_TM32 - ITEM_TM01] = MOVE_DOUBLE_TEAM,
+    [ITEM_TM33 - ITEM_TM01] = MOVE_REFLECT,
+    [ITEM_TM34 - ITEM_TM01] = MOVE_SHOCK_WAVE,
+    [ITEM_TM35 - ITEM_TM01] = MOVE_FLAMETHROWER,
+    [ITEM_TM36 - ITEM_TM01] = MOVE_SLUDGE_BOMB,
+    [ITEM_TM37 - ITEM_TM01] = MOVE_SANDSTORM,
+    [ITEM_TM38 - ITEM_TM01] = MOVE_FIRE_BLAST,
+    [ITEM_TM39 - ITEM_TM01] = MOVE_ROCK_TOMB,
+    [ITEM_TM40 - ITEM_TM01] = MOVE_AERIAL_ACE,
+    [ITEM_TM41 - ITEM_TM01] = MOVE_TORMENT,
+    [ITEM_TM42 - ITEM_TM01] = MOVE_FACADE,
+    [ITEM_TM43 - ITEM_TM01] = MOVE_SECRET_POWER,
+    [ITEM_TM44 - ITEM_TM01] = MOVE_REST,
+    [ITEM_TM45 - ITEM_TM01] = MOVE_ATTRACT,
+    [ITEM_TM46 - ITEM_TM01] = MOVE_THIEF,
+    [ITEM_TM47 - ITEM_TM01] = MOVE_STEEL_WING,
+    [ITEM_TM48 - ITEM_TM01] = MOVE_SKILL_SWAP,
+    [ITEM_TM49 - ITEM_TM01] = MOVE_SNATCH,
+    [ITEM_TM50 - ITEM_TM01] = MOVE_OVERHEAT,
+    [ITEM_TM51 - ITEM_TM01] = MOVE_NONE, // Todo
+    [ITEM_TM52 - ITEM_TM01] = MOVE_NONE, // Todo
+    [ITEM_TM53 - ITEM_TM01] = MOVE_NONE, // Todo
+    [ITEM_TM54 - ITEM_TM01] = MOVE_NONE, // Todo
+    [ITEM_TM55 - ITEM_TM01] = MOVE_NONE, // Todo
+    [ITEM_TM56 - ITEM_TM01] = MOVE_NONE, // Todo
+    [ITEM_TM57 - ITEM_TM01] = MOVE_NONE, // Todo
+    [ITEM_TM58 - ITEM_TM01] = MOVE_NONE, // Todo
+    [ITEM_TM59 - ITEM_TM01] = MOVE_NONE, // Todo
+    [ITEM_TM60 - ITEM_TM01] = MOVE_NONE, // Todo
+    [ITEM_TM61 - ITEM_TM01] = MOVE_NONE, // Todo
+    [ITEM_TM62 - ITEM_TM01] = MOVE_NONE, // Todo
+    [ITEM_TM63 - ITEM_TM01] = MOVE_NONE, // Todo
+    [ITEM_TM64 - ITEM_TM01] = MOVE_NONE, // Todo
+    [ITEM_TM65 - ITEM_TM01] = MOVE_NONE, // Todo
+    [ITEM_TM66 - ITEM_TM01] = MOVE_NONE, // Todo
+    [ITEM_TM67 - ITEM_TM01] = MOVE_NONE, // Todo
+    [ITEM_TM68 - ITEM_TM01] = MOVE_NONE, // Todo
+    [ITEM_TM69 - ITEM_TM01] = MOVE_NONE, // Todo
+    [ITEM_TM70 - ITEM_TM01] = MOVE_NONE, // Todo
+    [ITEM_TM71 - ITEM_TM01] = MOVE_NONE, // Todo
+    [ITEM_TM72 - ITEM_TM01] = MOVE_NONE, // Todo
+    [ITEM_TM73 - ITEM_TM01] = MOVE_NONE, // Todo
+    [ITEM_TM74 - ITEM_TM01] = MOVE_NONE, // Todo
+    [ITEM_TM75 - ITEM_TM01] = MOVE_NONE, // Todo
+    [ITEM_TM76 - ITEM_TM01] = MOVE_NONE, // Todo
+    [ITEM_TM77 - ITEM_TM01] = MOVE_NONE, // Todo
+    [ITEM_TM78 - ITEM_TM01] = MOVE_NONE, // Todo
+    [ITEM_TM79 - ITEM_TM01] = MOVE_NONE, // Todo
+    [ITEM_TM80 - ITEM_TM01] = MOVE_NONE, // Todo
+    [ITEM_TM81 - ITEM_TM01] = MOVE_NONE, // Todo
+    [ITEM_TM82 - ITEM_TM01] = MOVE_NONE, // Todo
+    [ITEM_TM83 - ITEM_TM01] = MOVE_NONE, // Todo
+    [ITEM_TM84 - ITEM_TM01] = MOVE_NONE, // Todo
+    [ITEM_TM85 - ITEM_TM01] = MOVE_NONE, // Todo
+    [ITEM_TM86 - ITEM_TM01] = MOVE_NONE, // Todo
+    [ITEM_TM87 - ITEM_TM01] = MOVE_NONE, // Todo
+    [ITEM_TM88 - ITEM_TM01] = MOVE_NONE, // Todo
+    [ITEM_TM89 - ITEM_TM01] = MOVE_NONE, // Todo
+    [ITEM_TM90 - ITEM_TM01] = MOVE_NONE, // Todo
+    [ITEM_TM91 - ITEM_TM01] = MOVE_NONE, // Todo
+    [ITEM_TM92 - ITEM_TM01] = MOVE_NONE, // Todo
+    [ITEM_TM93 - ITEM_TM01] = MOVE_NONE, // Todo
+    [ITEM_TM94 - ITEM_TM01] = MOVE_NONE, // Todo
+    [ITEM_TM95 - ITEM_TM01] = MOVE_NONE, // Todo
+    [ITEM_TM96 - ITEM_TM01] = MOVE_NONE, // Todo
+    [ITEM_TM97 - ITEM_TM01] = MOVE_NONE, // Todo
+    [ITEM_TM98 - ITEM_TM01] = MOVE_NONE, // Todo
+    [ITEM_TM99 - ITEM_TM01] = MOVE_NONE, // Todo
+    [ITEM_TM100 - ITEM_TM01] = MOVE_NONE, // Todo
+    [ITEM_HM01 - ITEM_TM01] = MOVE_CUT,
+    [ITEM_HM02 - ITEM_TM01] = MOVE_FLY,
+    [ITEM_HM03 - ITEM_TM01] = MOVE_SURF,
+    [ITEM_HM04 - ITEM_TM01] = MOVE_STRENGTH,
+    [ITEM_HM05 - ITEM_TM01] = MOVE_FLASH,
+    [ITEM_HM06 - ITEM_TM01] = MOVE_ROCK_SMASH,
+    [ITEM_HM07 - ITEM_TM01] = MOVE_WATERFALL,
+    [ITEM_HM08 - ITEM_TM01] = MOVE_DIVE,
 };
 #undef TMHM_MOVE

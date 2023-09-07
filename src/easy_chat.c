@@ -230,7 +230,7 @@ enum {
     PALTAG_TRIANGLE_CURSOR,
     PALTAG_RECTANGLE_CURSOR,
     PALTAG_MISC_UI,
-    PALTAG_RS_INTERVIEW_FRAME,  
+    PALTAG_RS_INTERVIEW_FRAME,
 };
 
 enum {
@@ -240,7 +240,7 @@ enum {
     GFXTAG_START_SELECT_BUTTONS,
     GFXTAG_MODE_WINDOW,
     GFXTAG_RS_INTERVIEW_FRAME,
-    GFXTAG_BUTTON_WINDOW,  
+    GFXTAG_BUTTON_WINDOW,
 };
 
 
@@ -5224,7 +5224,7 @@ u8 *CopyEasyChatWord(u8 *dest, u16 easyChatWord)
     {
         u16 index = EC_INDEX(easyChatWord);
         u8 groupId = EC_GROUP(easyChatWord);
-        resultStr = StringCopy(dest, GetEasyChatWord(groupId, index));
+        resultStr = StringCopyUppercase(dest, GetEasyChatWord(groupId, index));
     }
     else
     {
