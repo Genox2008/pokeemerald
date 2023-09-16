@@ -896,3 +896,14 @@ gTileset_OceanportCity::
 	.4byte gMetatiles_OceanportCity
 	.4byte gMetatileAttributes_OceanportCity
 	.4byte NULL
+
+	.align 2
+gTileset_PorytilesPrimaryTest::
+	.byte TRUE @ is compressed
+	.byte FALSE @ is secondary
+	.2byte 0
+	.4byte gTilesetTiles_PorytilesPrimaryTest
+	.4byte gTilesetPalettes_PorytilesPrimaryTest
+	.4byte gMetatiles_PorytilesPrimaryTest
+	.4byte gMetatileAttributes_PorytilesPrimaryTest
+	.4byte NULL

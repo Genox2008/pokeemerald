@@ -600,3 +600,10 @@ gMetatiles_OceanportCity::
 	.align 1
 gMetatileAttributes_OceanportCity::
 	.incbin "data/tilesets/secondary/oceanportcity/metatile_attributes.bin"
+	.align 1
+gMetatiles_PorytilesPrimaryTest::
+	.incbin "data/tilesets/primary/porytilesprimarytest/metatiles.bin"
+
+	.align 1
+gMetatileAttributes_PorytilesPrimaryTest::
+	.incbin "data/tilesets/primary/porytilesprimarytest/metatile_attributes.bin"

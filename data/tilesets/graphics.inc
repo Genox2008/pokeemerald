@@ -1849,3 +1849,23 @@ gTilesetPalettes_OceanportCity::
 	.align 2
 gTilesetTiles_OceanportCity::
 	.incbin "data/tilesets/secondary/oceanportcity/tiles.4bpp.lz"
+
+	.align 2
+gTilesetPalettes_PorytilesPrimaryTest::
+	.incbin "data/tilesets/primary/porytilesprimarytest/palettes/00.gbapal"
+	.incbin "data/tilesets/primary/porytilesprimarytest/palettes/01.gbapal"
+	.incbin "data/tilesets/primary/porytilesprimarytest/palettes/02.gbapal"
+	.incbin "data/tilesets/primary/porytilesprimarytest/palettes/03.gbapal"
+	.incbin "data/tilesets/primary/porytilesprimarytest/palettes/04.gbapal"
+	.incbin "data/tilesets/primary/porytilesprimarytest/palettes/05.gbapal"
+	.incbin "data/tilesets/primary/porytilesprimarytest/palettes/06.gbapal"
+	.incbin "data/tilesets/primary/porytilesprimarytest/palettes/07.gbapal"
+	.incbin "data/tilesets/primary/porytilesprimarytest/palettes/08.gbapal"
+	.incbin "data/tilesets/primary/porytilesprimarytest/palettes/09.gbapal"
+	.incbin "data/tilesets/primary/porytilesprimarytest/palettes/10.gbapal"
+	.incbin "data/tilesets/primary/porytilesprimarytest/palettes/11.gbapal"
+	.incbin "data/tilesets/primary/porytilesprimarytest/palettes/12.gbapal"
+
+	.align 2
+gTilesetTiles_PorytilesPrimaryTest::
+	.incbin "data/tilesets/primary/porytilesprimarytest/tiles.4bpp.lz"
