@@ -905,6 +905,17 @@ const u8 *ItemId_GetDescription(u16 itemId)
     return gItems[SanitizeItemId(itemId)].description;
 }
 
+// New Function for fix
+u8 ItemId_GetImportanceForTMCaseReusable(u16 itemId)
+{   
+    // Fixed hm and number being printed. Was graphical bug
+    if (itemId < END_OF_TMS) {
+        return 0;
+    } else {
+         return gItems[SanitizeItemId(itemId)].importance;
+    }
+}
+
 u8 ItemId_GetImportance(u16 itemId)
 {
     return gItems[SanitizeItemId(itemId)].importance;

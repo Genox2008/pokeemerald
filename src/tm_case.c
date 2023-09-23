@@ -559,7 +559,7 @@ static void TMCase_ItemPrintFunc(u8 windowId, u32 itemId, u8 y)
 {
     if (itemId != -2)
     {
-        if (!ItemId_GetImportance(BagGetItemIdByPocketPosition(POCKET_TM_HM, itemId)))
+        if (!ItemId_GetImportanceForTMCaseReusable(BagGetItemIdByPocketPosition(POCKET_TM_HM, itemId)))
         {
             // ConvertIntToDecimalStringN(gStringVar1, BagGetQuantityByPocketPosition(POCKET_TM_HM, itemId), STR_CONV_MODE_RIGHT_ALIGN, 3);
             // StringExpandPlaceholders(gStringVar4, gText_xVar1);
@@ -807,7 +807,7 @@ static void Task_SelectTMAction_FromFieldBag(u8 taskId)
     Free(strbuf);
 
     //show HM icon
-    if (ItemId_GetImportance(gSpecialVar_ItemId))
+    if (ItemId_GetImportanceForTMCaseReusable(gSpecialVar_ItemId))
     {
         PlaceHMTileInWindow(2, 0, 2);
         CopyWindowToVram(2, 2);
@@ -927,7 +927,7 @@ static void Task_SelectTMAction_Type3(u8 taskId)
 {
     s16 * data = gTasks[taskId].data;
 
-    if (!ItemId_GetImportance(BagGetItemIdByPocketPosition(POCKET_TM_HM, data[1])))
+    if (!ItemId_GetImportanceForTMCaseReusable(BagGetItemIdByPocketPosition(POCKET_TM_HM, data[1])))
     {
         sTMCaseDynamicResources->savedCallback = CB2_ReturnToPokeStorage;
         Task_BeginFadeOutFromTMCase(taskId);
@@ -1170,7 +1170,7 @@ static void TintPartyMonIcons(u8 tm)
     for (i = 0; i < gPlayerPartyCount; i++)
     {
         species = GetMonData(&gPlayerParty[i], MON_DATA_SPECIES);
-        if (!CanSpeciesLearnTMHM(species, tm))
+        if (!CanLearnTeachableMove(species, tm))
         {
             gSprites[spriteIdData[i]].oam.paletteNum = 7 + spriteIdPalette[i];
         }
