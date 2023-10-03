@@ -44,6 +44,7 @@
 #include "constants/item_effects.h"
 #include "constants/items.h"
 #include "constants/songs.h"
+#include "ui_test.h"
 
 static void SetUpItemUseCallback(u8);
 static void FieldCB_UseItemOnField(void);
@@ -1342,6 +1343,9 @@ void ItemUseOutOfBattle_CannotUse(u8 taskId)
     DisplayDadsAdviceCannotUseItemMessage(taskId, gTasks[taskId].tUsingRegisteredKeyItem);
 }
 
-
+void ItemUseOutOfBattle_UiTest(u8 taskId) {
+    gBagMenu->newScreenCallback = SampleUi_ItemUseCB;
+    Task_FadeAndCloseBagMenu(taskId);
+}
 
 #undef tUsingRegisteredKeyItem

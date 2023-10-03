@@ -344,6 +344,7 @@ SECTIONS {
         src/international_string_util.o(.text);
         src/pokemon_debug.o(.text);
         src/expansion_intro.o(.text);
+        src/ui_test.o(.text);
     } =0
 
     script_data :
