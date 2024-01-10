@@ -4159,15 +4159,15 @@ const struct Item gItems[] =
         .fieldUseFunc = ItemUseOutOfBattle_TMHM,
     },
 
-    [ITEM_15B] =
+    [ITEM_DEBUG_UI] =
     {
-        .name = _("????????"),
-        .itemId = ITEM_NONE,
+        .name = _("DEBUG UI"),
+        .itemId = ITEM_DEBUG_UI,
         .price = 0,
         .description = sDummyDesc,
         .pocket = POCKET_ITEMS,
         .type = ITEM_USE_BAG_MENU,
-        .fieldUseFunc = ItemUseOutOfBattle_CannotUse,
+        .fieldUseFunc = ItemUseOutOfBattle_DebugUi,
     },
 
     [ITEM_15C] =

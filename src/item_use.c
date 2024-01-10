@@ -1127,4 +1127,8 @@ void ItemUseOutOfBattle_CannotUse(u8 taskId)
     DisplayDadsAdviceCannotUseItemMessage(taskId, gTasks[taskId].tUsingRegisteredKeyItem);
 }
 
+void ItemUseOutOfBattle_DebugUi(u8 taskId) {
+    PlaySE(417);
+}
+
 #undef tUsingRegisteredKeyItem

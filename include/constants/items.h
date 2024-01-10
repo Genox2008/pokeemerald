@@ -382,7 +382,7 @@
 #define ITEM_HM08 346
 
 // Unknown
-#define ITEM_15B 347
+#define ITEM_DEBUG_UI 347
 #define ITEM_15C 348
 
 // FireRed/LeafGreen
