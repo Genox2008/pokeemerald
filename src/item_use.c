@@ -1130,7 +1130,7 @@ void ItemUseOutOfBattle_CannotUse(u8 taskId)
 #include "ui_template.h"
 
 void ItemUseOutOfBattle_DebugUi(u8 taskId) {
-    gBagMenu->newScreenCallback = ExcavationUi_ItemUseCB;
+    gBagMenu->newScreenCallback = TemplateUi_ItemUseCB;
     Task_FadeAndCloseBagMenu(taskId);
 }
 
