@@ -1127,10 +1127,10 @@ void ItemUseOutOfBattle_CannotUse(u8 taskId)
     DisplayDadsAdviceCannotUseItemMessage(taskId, gTasks[taskId].tUsingRegisteredKeyItem);
 }
 
-#include "ui_template.h"
+#include "excavation.h"
 
 void ItemUseOutOfBattle_DebugUi(u8 taskId) {
-    gBagMenu->newScreenCallback = TemplateUi_ItemUseCB;
+    gBagMenu->newScreenCallback = Excavation_ItemUseCB;
     Task_FadeAndCloseBagMenu(taskId);
 }
 
