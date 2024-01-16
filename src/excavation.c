@@ -219,27 +219,27 @@ static void delay(unsigned int amount) {
     for (i = 0; i < amount * 10; i++) {};
 }
 
-static void UiShake(struct Sprite *sprite) {
-    SetGpuReg(REG_OFFSET_BG1HOFS, 1);
+static void UiShake(void) {
+    SetGpuReg(REG_OFFSET_BG3HOFS, 1);
     delay(1500);
-    SetGpuReg(REG_OFFSET_BG1VOFS, 1);
+    SetGpuReg(REG_OFFSET_BG3VOFS, 1);
     delay(1000);
-    SetGpuReg(REG_OFFSET_BG1HOFS, -2);
+    SetGpuReg(REG_OFFSET_BG3HOFS, -2);
     delay(1000);
-    SetGpuReg(REG_OFFSET_BG1VOFS, -1);
+    SetGpuReg(REG_OFFSET_BG3VOFS, -1);
     delay(1500);
-    SetGpuReg(REG_OFFSET_BG1HOFS, 1);
+    SetGpuReg(REG_OFFSET_BG3HOFS, 1);
     delay(500);
-    SetGpuReg(REG_OFFSET_BG1VOFS, 1);
+    SetGpuReg(REG_OFFSET_BG3VOFS, 1);
     delay(1000);
-    SetGpuReg(REG_OFFSET_BG1HOFS, -2);
+    SetGpuReg(REG_OFFSET_BG3HOFS, -2);
     delay(1000);
-    SetGpuReg(REG_OFFSET_BG1VOFS, -1);
+    SetGpuReg(REG_OFFSET_BG3VOFS, -1);
     delay(1500);
 
     // Stop shake
-    SetGpuReg(REG_OFFSET_BG1VOFS, 0);
-    SetGpuReg(REG_OFFSET_BG1HOFS, 0);
+    SetGpuReg(REG_OFFSET_BG3VOFS, 0);
+    SetGpuReg(REG_OFFSET_BG3HOFS, 0);
 }
 
 void Excavation_ItemUseCB(void) {
@@ -508,6 +508,10 @@ static void Task_ExcavationMainInput(u8 taskId) {
     BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);
     gTasks[taskId].func = Task_ExcavationFadeAndExitMenu;
   } 
+
+  else if (gMain.newKeys & A_BUTTON) {
+    UiShake();
+  }
 
   else if (gMain.newAndRepeatedKeys & DPAD_LEFT && CURSOR_SPRITE.x > 8) {
     CURSOR_SPRITE.x -= 16;
