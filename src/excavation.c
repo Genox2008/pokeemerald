@@ -41,9 +41,11 @@ static void Excavation_FadeAndBail(void);
 static bool8 Excavation_LoadBgGraphics(void);
 static void Excavation_LoadSpriteGraphics(void);
 static void Excavation_FreeResources(void);
+static void Excavation_UpdateCracks(void);
 static void Task_ExcavationWaitFadeIn(u8 taskId);
 static void Task_ExcavationMainInput(u8 taskId);
 static void Task_ExcavationFadeAndExitMenu(u8 taskId);
+
 
 struct ExcavationState {
     // Callback which we will use to leave from this menu
@@ -53,25 +55,38 @@ struct ExcavationState {
     u8 cursorSpriteIndex;
     u8 bRedSpriteIndex;
     u8 bBlueSpriteIndex;
+    u8 crackCount;
+    u8 crackPos;
 };
 
 // We will allocate that on the heap later on but for now we will just have a NULL pointer.
 static EWRAM_DATA struct ExcavationState *sExcavationUiState = NULL;
+static EWRAM_DATA u8 *sBg2TilemapBuffer = NULL;
 static EWRAM_DATA u8 *sBg3TilemapBuffer = NULL;
 
 static const struct BgTemplate sExcavationBgTemplates[] =
-{
+{   
+    // Cracks, Terrain (idk how its called lol)
+    {
+        .bg = 2,
+        .charBaseIndex = 2,
+        .mapBaseIndex = 30,
+        .priority = 2
+    },
+
+    // Ui gfx
     {
         .bg = 3,
         // Use charblock 0 for BG3 tiles
-        .charBaseIndex = 0,
+        .charBaseIndex = 3,
         // Use screenblock 31 for BG3 tilemap
         // (It has become customary to put tilemaps in the final few screenblocks)
         .mapBaseIndex = 31,
         // 0 is highest priority, etc. Make sure to change priority if I want to use windows
-        .priority = 0
+        .priority = 3
     },
 };
+
 
 static const u32 sUiTiles[] = INCBIN_U32("graphics/excavation/ui.4bpp.lz");
 static const u32 sUiTilemap[] = INCBIN_U32("graphics/excavation/ui.bin.lz");
@@ -85,6 +100,10 @@ const u16 gCursorPal[] = INCBIN_U16("graphics/pokenav/region_map/cursor.gbapal")
 
 const u32 gButtonGfx[] = INCBIN_U32("graphics/excavation/buttons.4bpp.lz");
 const u16 gButtonPal[] = INCBIN_U16("graphics/excavation/buttons.gbapal");
+
+static const u32 gCracksAndTerrainTiles[] = INCBIN_U32("graphics/excavation/cracks_terrain.4bpp.lz");
+static const u32 gCracksAndTerrainTilemap[] = INCBIN_U32("graphics/excavation/cracks_terrain.bin.lz");
+static const u16 gCracksAndTerrainPalette[] = INCBIN_U16("graphics/excavation/cracks_terrain.gbapal");
 
 static const struct CompressedSpriteSheet sSpriteSheet_Cursor[] =
 {
@@ -221,25 +240,35 @@ static void delay(unsigned int amount) {
 
 static void UiShake(void) {
     SetGpuReg(REG_OFFSET_BG3HOFS, 1);
+    SetGpuReg(REG_OFFSET_BG2HOFS, 1);
     delay(1500);
     SetGpuReg(REG_OFFSET_BG3VOFS, 1);
+    SetGpuReg(REG_OFFSET_BG2VOFS, 1);
     delay(1000);
     SetGpuReg(REG_OFFSET_BG3HOFS, -2);
+    SetGpuReg(REG_OFFSET_BG2HOFS, -2);
     delay(1000);
     SetGpuReg(REG_OFFSET_BG3VOFS, -1);
+    SetGpuReg(REG_OFFSET_BG2VOFS, -1);
     delay(1500);
     SetGpuReg(REG_OFFSET_BG3HOFS, 1);
+    SetGpuReg(REG_OFFSET_BG2HOFS, 1);
     delay(500);
     SetGpuReg(REG_OFFSET_BG3VOFS, 1);
+    SetGpuReg(REG_OFFSET_BG2VOFS, 1);
     delay(1000);
     SetGpuReg(REG_OFFSET_BG3HOFS, -2);
+    SetGpuReg(REG_OFFSET_BG2HOFS, -2);
     delay(1000);
     SetGpuReg(REG_OFFSET_BG3VOFS, -1);
+    SetGpuReg(REG_OFFSET_BG2VOFS, -1);
     delay(1500);
 
     // Stop shake
     SetGpuReg(REG_OFFSET_BG3VOFS, 0);
     SetGpuReg(REG_OFFSET_BG3HOFS, 0);
+    SetGpuReg(REG_OFFSET_BG2HOFS, 0);
+    SetGpuReg(REG_OFFSET_BG2HOFS, 0);
 }
 
 void Excavation_ItemUseCB(void) {
@@ -258,6 +287,8 @@ static void Excavation_Init(MainCallback callback) {
   
     sExcavationUiState->leavingCallback = callback;
     sExcavationUiState->loadState = 0;
+    sExcavationUiState->crackCount = 0;
+    sExcavationUiState->crackPos = 0;
 
     SetMainCallback2(Excavation_SetupCB);
 }
@@ -352,10 +383,13 @@ static bool8 Excavation_InitBgs(void)
     // BG registers may have scroll values left over from the previous screen. Reset all scroll values to 0.
     ResetAllBgsCoordinates();
 
-    // Allocate our tilemap buffer on the heap, and bail if allocation fails
+    // Allocate our tilemap buffer on the heap, and bail if allocation fail
+    sBg2TilemapBuffer = AllocZeroed(TILEMAP_BUFFER_SIZE);
     sBg3TilemapBuffer = AllocZeroed(TILEMAP_BUFFER_SIZE);
     if (sBg3TilemapBuffer == NULL)
     {
+        return FALSE;
+    } else if (sBg2TilemapBuffer == NULL) {
         return FALSE;
     }
 
@@ -374,6 +408,7 @@ static bool8 Excavation_InitBgs(void)
     InitBgsFromTemplates(0, sExcavationBgTemplates, NELEMS(sExcavationBgTemplates));
 
     // Set the BG manager to use our newly allocated tilemap buffer for BG1's tilemap
+    SetBgTilemapBuffer(2, sBg2TilemapBuffer);
     SetBgTilemapBuffer(3, sBg3TilemapBuffer);
 
     /*
@@ -381,8 +416,10 @@ static bool8 Excavation_InitBgs(void)
      * Right now, BG1 will just use Tile 0 for every tile. We will change this once we load in our true tilemap
      * values from sSampleUiTilemap.
      */
+    ScheduleBgCopyTilemapToVram(2);
     ScheduleBgCopyTilemapToVram(3);
-
+  
+    ShowBg(2);
     ShowBg(3);
 
     return TRUE;
@@ -458,19 +495,23 @@ static void Excavation_FadeAndBail(void)
 // * Create tiles
 // * Create palette
 static bool8 Excavation_LoadBgGraphics(void) {
+  
   switch (sExcavationUiState->loadState) {
     case 0:
       ResetTempTileDataBuffers();
+      DecompressAndCopyTileDataToVram(2, gCracksAndTerrainTiles, 0, 0, 0);
       DecompressAndCopyTileDataToVram(3, sUiTiles, 0, 0, 0);
       sExcavationUiState->loadState++;
       break;
     case 1:
-      if (FreeTempTileDataBuffersIfPossible() != TRUE) { 
+      if (FreeTempTileDataBuffersIfPossible() != TRUE) {
+        LZDecompressWram(gCracksAndTerrainTilemap, sBg2TilemapBuffer);
         LZDecompressWram(sUiTilemap, sBg3TilemapBuffer);
         sExcavationUiState->loadState++;
       }
       break;
     case 2:
+      LoadPalette(gCracksAndTerrainPalette, BG_PLTT_ID(1), PLTT_SIZE_4BPP);
       LoadPalette(sUiPalette, BG_PLTT_ID(0), PLTT_SIZE_4BPP);
       sExcavationUiState->loadState++;
     default: 
@@ -508,8 +549,9 @@ static void Task_ExcavationMainInput(u8 taskId) {
     BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);
     gTasks[taskId].func = Task_ExcavationFadeAndExitMenu;
   } 
-
-  else if (gMain.newKeys & A_BUTTON) {
+  
+  else if (gMain.newKeys & A_BUTTON && sExcavationUiState->crackPos < 8 )  {
+    Excavation_UpdateCracks();    
     UiShake();
   }
 
@@ -531,6 +573,198 @@ static void Task_ExcavationMainInput(u8 taskId) {
     StartSpriteAnim(&gSprites[sExcavationUiState->bRedSpriteIndex], 0);
     StartSpriteAnim(&gSprites[sExcavationUiState->bBlueSpriteIndex], 0);
   }
+}
+
+#define TILE_POS(x,y) (32*(y) + (x))
+
+// Overwrites specific tile in the tilemap of a background!!!
+// Credits to Sbird (Karathan) for helping me with the tile override!
+static void OverwriteTileDataInTilemapBuffer(u8 tile, u8 x, u8 y, u16* tilemapBuf, u8 pal) {
+  tilemapBuf[TILE_POS(x, y)] = tile | (pal << 12);
+}
+
+// DO NOT TOUCH ANY OF THE CRACK UPDATE FUNCTIONS!!!!! GENERATION IS TOO COMPLICATED TO GET FIXED! (most likely will forget everything lmao (thats why)! )!
+// 
+// Each function represent one crack, but why are there two offset vars?????
+// Well there's `ofs` for telling how much to the left the next crack goes, (cracks are splite up by seven of these 32x32 `sprites`) (Cracks start at the end, so 23 is the first tile.);
+// 
+// `ofs2` tells how far the tile should move to the right side. Thats because the cracks dont really line up each other. 
+// So you cant put one 32x32 `sprite` (calling them sprites) right next to another 32x32 `sprite`. To align the next `sprite` so it looks right, we have to offset the next `sprite` by 8 pixels. 
+// 
+// You are still confused? Im sorry I cant help you, after one week, I will also have problems understanding that again.
+//
+// NOTE TO MY FUTURE SELF: The crack updating 
+static void Crack_DrawCrack_0(u8 ofs, u8 ofs2, u16* ptr) {
+  OverwriteTileDataInTilemapBuffer(0x07, 21 - ofs * 4 + ofs2, 1, ptr, 0x01);
+  OverwriteTileDataInTilemapBuffer(0x08, 22 - ofs * 4 + ofs2, 1, ptr, 0x01);
+  OverwriteTileDataInTilemapBuffer(0x09, 23 - ofs * 4 + ofs2, 1, ptr, 0x01);
+  OverwriteTileDataInTilemapBuffer(0x0E, 22 - ofs * 4 + ofs2, 2, ptr, 0x01);
+  OverwriteTileDataInTilemapBuffer(0x0F, 23 - ofs * 4 + ofs2, 2, ptr, 0x01);  
+  OverwriteTileDataInTilemapBuffer(0x14, 23 - ofs * 4 + ofs2, 3, ptr, 0x01);
+}
+
+static void Crack_DrawCrack_1(u8 ofs, u8 ofs2, u16* ptr) {
+  OverwriteTileDataInTilemapBuffer(0x17, 21 - ofs * 4 + ofs2, 0, ptr, 0x01);
+  OverwriteTileDataInTilemapBuffer(0x18, 22 - ofs * 4 + ofs2, 0, ptr, 0x01);
+  OverwriteTileDataInTilemapBuffer(0x1B, 21 - ofs * 4 + ofs2, 1, ptr, 0x01);
+  OverwriteTileDataInTilemapBuffer(0x1C, 22 - ofs * 4 + ofs2, 1, ptr, 0x01);
+  OverwriteTileDataInTilemapBuffer(0x1D, 23 - ofs * 4 + ofs2, 1, ptr, 0x01);
+  OverwriteTileDataInTilemapBuffer(0x22, 22 - ofs * 4 + ofs2, 2, ptr, 0x01);
+  OverwriteTileDataInTilemapBuffer(0x23, 23 - ofs * 4 + ofs2, 2, ptr, 0x01);
+  OverwriteTileDataInTilemapBuffer(0x26, 23 - ofs * 4 + ofs2, 3, ptr, 0x01);
+}
+
+static void Crack_DrawCrack_2(u8 ofs, u8 ofs2, u16* ptr) {
+  OverwriteTileDataInTilemapBuffer(0x27, 20 - ofs * 4 + ofs2, 0, ptr, 0x01);
+  OverwriteTileDataInTilemapBuffer(0x28, 21 - ofs * 4 + ofs2, 0, ptr, 0x01);
+  OverwriteTileDataInTilemapBuffer(0x29, 22 - ofs * 4 + ofs2, 0, ptr, 0x01);
+  OverwriteTileDataInTilemapBuffer(0x2A, 20 - ofs * 4 + ofs2, 1, ptr, 0x01);
+  OverwriteTileDataInTilemapBuffer(0x2B, 21 - ofs * 4 + ofs2, 1, ptr, 0x01);
+  OverwriteTileDataInTilemapBuffer(0x2C, 22 - ofs * 4 + ofs2, 1, ptr, 0x01);
+  OverwriteTileDataInTilemapBuffer(0x2D, 23 - ofs * 4 + ofs2, 1, ptr, 0x01);
+  OverwriteTileDataInTilemapBuffer(0x2E, 21 - ofs * 4 + ofs2, 2, ptr, 0x01);
+  OverwriteTileDataInTilemapBuffer(0x2F, 22 - ofs * 4 + ofs2, 2, ptr, 0x01);
+  OverwriteTileDataInTilemapBuffer(0x30, 23 - ofs * 4 + ofs2, 2, ptr, 0x01);
+  OverwriteTileDataInTilemapBuffer(0x26, 23 - ofs * 4 + ofs2, 3, ptr, 0x01);
+}
+
+static void Crack_DrawCrack_3(u8 ofs, u8 ofs2, u16* ptr) {
+  // Clean up 0x27, 0x28 and 0x29 from Crack_DrawCrack_2
+  OverwriteTileDataInTilemapBuffer(0x00, 20 - ofs * 4 + ofs2, 0, ptr, 0x01);
+  OverwriteTileDataInTilemapBuffer(0x00, 21 - ofs * 4 + ofs2, 0, ptr, 0x01);
+  OverwriteTileDataInTilemapBuffer(0x00, 22 - ofs * 4 + ofs2, 0, ptr, 0x01);
+
+  OverwriteTileDataInTilemapBuffer(0x31, 22 - ofs * 4 + ofs2, 0, ptr, 0x01);
+  OverwriteTileDataInTilemapBuffer(0x32, 20 - ofs * 4 + ofs2, 1, ptr, 0x01);
+  OverwriteTileDataInTilemapBuffer(0x33, 21 - ofs * 4 + ofs2, 1, ptr, 0x01);
+  OverwriteTileDataInTilemapBuffer(0x34, 22 - ofs * 4 + ofs2, 1, ptr, 0x01);
+  OverwriteTileDataInTilemapBuffer(0x2D, 23 - ofs * 4 + ofs2, 1, ptr, 0x01);
+  OverwriteTileDataInTilemapBuffer(0x35, 20 - ofs * 4 + ofs2, 2, ptr, 0x01);
+  OverwriteTileDataInTilemapBuffer(0x36, 21 - ofs * 4 + ofs2, 2, ptr, 0x01);
+  OverwriteTileDataInTilemapBuffer(0x37, 22 - ofs * 4 + ofs2, 2, ptr, 0x01);
+  OverwriteTileDataInTilemapBuffer(0x30, 23 - ofs * 4 + ofs2, 2, ptr, 0x01);
+  OverwriteTileDataInTilemapBuffer(0x26, 23 - ofs * 4 + ofs2, 3, ptr, 0x01);
+}
+
+static void Crack_DrawCrack_4(u8 ofs, u8 ofs2, u16* ptr) {
+  OverwriteTileDataInTilemapBuffer(0x38, 22 - ofs * 4 + ofs2, 0, ptr, 0x01);
+  OverwriteTileDataInTilemapBuffer(0x39, 20 - ofs * 4 + ofs2, 1, ptr, 0x01);
+  OverwriteTileDataInTilemapBuffer(0x3A, 21 - ofs * 4 + ofs2, 1, ptr, 0x01);
+  OverwriteTileDataInTilemapBuffer(0x3B, 22 - ofs * 4 + ofs2, 1, ptr, 0x01);
+  OverwriteTileDataInTilemapBuffer(0x2D, 23 - ofs * 4 + ofs2, 1, ptr, 0x01);
+  OverwriteTileDataInTilemapBuffer(0x3C, 19 - ofs * 4 + ofs2, 2, ptr, 0x01);
+  OverwriteTileDataInTilemapBuffer(0x3D, 20 - ofs * 4 + ofs2, 2, ptr, 0x01);
+  OverwriteTileDataInTilemapBuffer(0x3E, 21 - ofs * 4 + ofs2, 2, ptr, 0x01);
+  OverwriteTileDataInTilemapBuffer(0x3F, 22 - ofs * 4 + ofs2, 2, ptr, 0x01);
+  OverwriteTileDataInTilemapBuffer(0x30, 23 - ofs * 4 + ofs2, 2, ptr, 0x01);
+  OverwriteTileDataInTilemapBuffer(0x40, 19 - ofs * 4 + ofs2, 3, ptr, 0x01);
+  OverwriteTileDataInTilemapBuffer(0x41, 20 - ofs * 4 + ofs2, 3, ptr, 0x01);
+  OverwriteTileDataInTilemapBuffer(0x42, 21 - ofs * 4 + ofs2, 3, ptr, 0x01);
+  OverwriteTileDataInTilemapBuffer(0x26, 23 - ofs * 4 + ofs2, 3, ptr, 0x01);
+}
+
+static void Crack_DrawCrack_5(u8 ofs, u8 ofs2, u16* ptr) {
+  OverwriteTileDataInTilemapBuffer(0x43, 20 - ofs * 4 + ofs2, 1, ptr, 0x01);
+  OverwriteTileDataInTilemapBuffer(0x44, 21 - ofs * 4 + ofs2, 1, ptr, 0x01);
+  OverwriteTileDataInTilemapBuffer(0x3B, 22 - ofs * 4 + ofs2, 1, ptr, 0x01);
+  OverwriteTileDataInTilemapBuffer(0x2D, 23 - ofs * 4 + ofs2, 1, ptr, 0x01);
+  OverwriteTileDataInTilemapBuffer(0x45, 19 - ofs * 4 + ofs2, 2, ptr, 0x01);
+  OverwriteTileDataInTilemapBuffer(0x46, 20 - ofs * 4 + ofs2, 2, ptr, 0x01);
+  OverwriteTileDataInTilemapBuffer(0x47, 21 - ofs * 4 + ofs2, 2, ptr, 0x01);
+  OverwriteTileDataInTilemapBuffer(0x3F, 22 - ofs * 4 + ofs2, 2, ptr, 0x01);
+  OverwriteTileDataInTilemapBuffer(0x30, 23 - ofs * 4 + ofs2, 2, ptr, 0x01);
+  OverwriteTileDataInTilemapBuffer(0x48, 19 - ofs * 4 + ofs2, 3, ptr, 0x01);
+  OverwriteTileDataInTilemapBuffer(0x49, 20 - ofs * 4 + ofs2, 3, ptr, 0x01);
+  OverwriteTileDataInTilemapBuffer(0x4A, 21 - ofs * 4 + ofs2, 3, ptr, 0x01);
+  OverwriteTileDataInTilemapBuffer(0x26, 23 - ofs * 4 + ofs2, 3, ptr, 0x01);
+}
+
+static void Crack_DrawCrack_6(u8 ofs, u8 ofs2, u16* ptr) {
+  // Clean up 0x48 and 0x49 from Crack_DrawCrack_5
+  OverwriteTileDataInTilemapBuffer(0x00, 19 - ofs * 4 + ofs2, 3, ptr, 0x01);
+  OverwriteTileDataInTilemapBuffer(0x00, 20 - ofs * 4 + ofs2, 3, ptr, 0x01);
+
+  OverwriteTileDataInTilemapBuffer(0x07, 18 - ofs * 4 + ofs2, 1, ptr, 0x01);
+  OverwriteTileDataInTilemapBuffer(0x08, 19 - ofs * 4 + ofs2, 1, ptr, 0x01);
+  OverwriteTileDataInTilemapBuffer(0x09, 20 - ofs * 4 + ofs2, 1, ptr, 0x01);
+  OverwriteTileDataInTilemapBuffer(0x44, 21 - ofs * 4 + ofs2, 1, ptr, 0x01);
+  OverwriteTileDataInTilemapBuffer(0x3B, 22 - ofs * 4 + ofs2, 1, ptr, 0x01);
+  OverwriteTileDataInTilemapBuffer(0x2D, 23 - ofs * 4 + ofs2, 1, ptr, 0x01);
+  OverwriteTileDataInTilemapBuffer(0x0E, 19 - ofs * 4 + ofs2, 2, ptr, 0x01);
+  OverwriteTileDataInTilemapBuffer(0x0F, 20 - ofs * 4 + ofs2, 2, ptr, 0x01);
+  OverwriteTileDataInTilemapBuffer(0x4B, 21 - ofs * 4 + ofs2, 2, ptr, 0x01);
+  OverwriteTileDataInTilemapBuffer(0x3F, 22 - ofs * 4 + ofs2, 2, ptr, 0x01);
+  OverwriteTileDataInTilemapBuffer(0x30, 23 - ofs * 4 + ofs2, 2, ptr, 0x01);
+  OverwriteTileDataInTilemapBuffer(0x14, 20 - ofs * 4 + ofs2, 3, ptr, 0x01);
+  OverwriteTileDataInTilemapBuffer(0x4A, 21 - ofs * 4 + ofs2, 3, ptr, 0x01);
+  OverwriteTileDataInTilemapBuffer(0x26, 23 - ofs * 4 + ofs2, 3, ptr, 0x01);
+}
+
+// DO NOT TOUCH ANY OF THE CRACK UPDATE FUNCTIONS!!!!! GENERATION IS TOO COMPLICATED TO GET FIXED!
+static void Crack_UpdateCracksRelativeToCrackPos(u8 offsetIn8, u8 ofs2, u16* ptr) {
+  switch (sExcavationUiState->crackCount) {
+    case 0:
+      Crack_DrawCrack_0(offsetIn8, ofs2, ptr);
+      sExcavationUiState->crackCount++;
+      break;
+    case 1:
+      Crack_DrawCrack_1(offsetIn8, ofs2, ptr);
+      sExcavationUiState->crackCount++;
+      break;
+    case 2:
+      Crack_DrawCrack_2(offsetIn8, ofs2, ptr);
+      sExcavationUiState->crackCount++;
+      break;
+    case 3:
+      Crack_DrawCrack_3(offsetIn8, ofs2, ptr);
+      sExcavationUiState->crackCount++;
+      break;
+    case 4:
+      Crack_DrawCrack_4(offsetIn8, ofs2, ptr);
+      sExcavationUiState->crackCount++;
+      break;
+    case 5:
+      Crack_DrawCrack_5(offsetIn8, ofs2, ptr);
+      sExcavationUiState->crackCount++;
+      break;
+    case 6:
+      Crack_DrawCrack_6(offsetIn8, ofs2, ptr);
+      sExcavationUiState->crackCount = 1;
+      sExcavationUiState->crackPos++;
+      break;
+  }
+}
+
+// DO NOT TOUCH ANY OF THE CRACK UPDATE FUNCTIONS!!!!! GENERATION IS TOO COMPLICATED TO GET FIXED!
+static void Excavation_UpdateCracks(void) {
+  u16 *ptr = GetBgTilemapBuffer(2);
+  switch (sExcavationUiState->crackPos) {
+    case 0:
+      Crack_UpdateCracksRelativeToCrackPos(0, 0, ptr);
+      break;
+    case 1:
+      Crack_UpdateCracksRelativeToCrackPos(1, 1, ptr);
+      break;
+    case 2:
+      Crack_UpdateCracksRelativeToCrackPos(2, 2, ptr);
+      break;
+    case 3:
+      Crack_UpdateCracksRelativeToCrackPos(3, 3, ptr);
+      break;
+    case 4:
+      Crack_UpdateCracksRelativeToCrackPos(4, 4, ptr);
+      break;
+    case 5:
+      Crack_UpdateCracksRelativeToCrackPos(5, 5, ptr);
+      break;
+    case 6:
+      Crack_UpdateCracksRelativeToCrackPos(6, 6, ptr);
+      break;
+    case 7:
+      Crack_UpdateCracksRelativeToCrackPos(7, 7, ptr);
+      break;
+  }
+  ScheduleBgCopyTilemapToVram(2);
 }
 
 static void Task_ExcavationFadeAndExitMenu(u8 taskId) {
