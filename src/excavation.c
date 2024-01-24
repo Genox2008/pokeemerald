@@ -783,10 +783,25 @@ static void Excavation_UpdateCracks(void) {
   }
 }
 
+// ******************************************************************************
+// TODO!!!: - Make the generation more like in the 3rd gen. 
+//          - Do the other Todos
+//          - Make the layer_tile updating/replacement, when hitting A, work.
+//          - Write some prettier docs.
+// ******************************************************************************
+//
+//
+// Draws a tile layer (of the terrain) to the screen.
+// This function is used to make a random sequence of terrain tiles.
+// 
+// In the switch statement, for example case 0 and case 1 do the same thing. Thats because the layer is a 3 bit integer (2 * 2 * 2 possible nums) and I want multiple probabilies for 
+// other tiles as well. Thats why case 0 and case 1 do the same thing, to increase the probabily of drawing layer_tile 0 to the screen.
 static void Terrain_DrawLayerTileToScreen(u8 x, u8 y, u8 layer, u16* ptr) {
   u8 tileX = x;
   u8 tileY = y;
 
+  // Idk why tf I am doing the checking
+  // TODO: Change this \/
   if (x == 0) {
     tileX = 0;
   } else {
@@ -858,20 +873,27 @@ static void Terrain_DrawLayerTileToScreen(u8 x, u8 y, u8 layer, u16* ptr) {
   }
 }
 
+// Randomly generates a terrain, stores the layering in an array and draw the right tiles, with the help of the layer map, to the screen.
+// Use the above function just to draw a tile once (for updating the tile, use Terrain_UpdateLayerTileOnScreen(...); )
 static void Excavation_DrawRandomTerrain(void) {
   u8 i;
   u8 x;
   u8 y;
   u8 rnd;
 
+  // Pointer to the tilemap in VRAM
   u16* ptr = GetBgTilemapBuffer(2);
 
+  // Generate a 5-bit number and store that value in the layermap.
   for (i = 0; i < 96; i++) {
     rnd = (Random() >> 13);
     sExcavationUiState->layerMap[i] = rnd;
   } 
   
-  i = 0;
+  i = 0; // Using 'i' again to get the layer of the layer map
+  
+  // Using 'x', 'y' and 'i' to draw the right layer_tiles from layerMap to the screen.
+  // Why 'y = 2'? Because we need to have a distance from the top of the screen, which is 32px -> 2 * 16
   for (y = 2; y < 8 +2; y++) {
     for (x = 0; x < 12 && i < 96; x++, i++) {
       Terrain_DrawLayerTileToScreen(x, y, sExcavationUiState->layerMap[i], ptr);
@@ -879,11 +901,14 @@ static void Excavation_DrawRandomTerrain(void) {
   }
 }
 
+// This function is like 'Terrain_DrawLayerTileToScreen(...);', but for updating a tile AND the layer in the layerMap (we want to sync it)
 static void Terrain_UpdateLayerTileOnScreen(u16* ptr) {
   u8 tileX = sExcavationUiState->cursorX;
   u8 tileY = sExcavationUiState->cursorY;
-  u8 layer = sExcavationUiState->layerMap[sExcavationUiState->cursorY*8 + sExcavationUiState->cursorX];
+  // Maybe this?
+  //u8 layer = sExcavationUiState->layerMap[sExcavationUiState->cursorY*8 + sExcavationUiState->cursorX];
 
+  // TODO: Change this as well
   if (sExcavationUiState->cursorX == 0) {
     tileX = 0;
   } else {
@@ -896,12 +921,51 @@ static void Terrain_UpdateLayerTileOnScreen(u16* ptr) {
     tileY = sExcavationUiState->cursorY * 2;
   }
 
-  switch (layer + 1) {
+  // Here, case 0 is missing because it will never appear. Why? Because the value we are doing the switch statement on would need to be negative.
+  // Case 6 clears the tile so we can take a look at Bg3 (for the item sprite)!
+  //
+  // Other than that, the tiles here are in order.
+  switch (sExcavationUiState->layerMap[sExcavationUiState->cursorY*8 + sExcavationUiState->cursorX]++) { // Incrementing? Idk if thats the bug for wrong tile replacements...
     case 1:
-      OverwriteTileDataInTilemapBuffer(0x1F, tileX, tileY, ptr, 0x01);
+      OverwriteTileDataInTilemapBuffer(0x19, tileX, tileY, ptr, 0x01);
+      OverwriteTileDataInTilemapBuffer(0x1A, tileX + 1, tileY, ptr, 0x01);
+      OverwriteTileDataInTilemapBuffer(0x1E, tileX, tileY + 1, ptr, 0x01);
+      OverwriteTileDataInTilemapBuffer(0x1F, tileX + 1, tileY + 1, ptr, 0x01);
+      break;
+    case 2:
+      OverwriteTileDataInTilemapBuffer(0x10, tileX, tileY, ptr, 0x01);
+      OverwriteTileDataInTilemapBuffer(0x11, tileX + 1, tileY, ptr, 0x01);
+      OverwriteTileDataInTilemapBuffer(0x15, tileX, tileY + 1, ptr, 0x01);
+      OverwriteTileDataInTilemapBuffer(0x16, tileX + 1, tileY + 1, ptr, 0x01);
+      break;
+    case 3: 
+      OverwriteTileDataInTilemapBuffer(0x0C, tileX, tileY, ptr, 0x01);
+      OverwriteTileDataInTilemapBuffer(0x0D, tileX + 1, tileY, ptr, 0x01);
+      OverwriteTileDataInTilemapBuffer(0x12, tileX, tileY + 1, ptr, 0x01);
+      OverwriteTileDataInTilemapBuffer(0x13, tileX + 1, tileY + 1, ptr, 0x01);
+      break;
+    case 4:
+      OverwriteTileDataInTilemapBuffer(0x05, tileX, tileY, ptr, 0x01);
+      OverwriteTileDataInTilemapBuffer(0x06, tileX + 1, tileY, ptr, 0x01);
+      OverwriteTileDataInTilemapBuffer(0x0A, tileX, tileY + 1, ptr, 0x01);
+      OverwriteTileDataInTilemapBuffer(0x0B, tileX + 1, tileY + 1, ptr, 0x01);
+      break;
+    case 5:
+      OverwriteTileDataInTilemapBuffer(0x01, tileX, tileY, ptr, 0x01);
+      OverwriteTileDataInTilemapBuffer(0x02, tileX + 1, tileY, ptr, 0x01);
+      OverwriteTileDataInTilemapBuffer(0x03, tileX, tileY + 1, ptr, 0x01);
+      OverwriteTileDataInTilemapBuffer(0x04, tileX + 1, tileY + 1, ptr, 0x01);
+      break;
+    case 6:
+      OverwriteTileDataInTilemapBuffer(0x00, tileX, tileY, ptr, 0x01);
+      OverwriteTileDataInTilemapBuffer(0x00, tileX + 1, tileY, ptr, 0x01);
+      OverwriteTileDataInTilemapBuffer(0x00, tileX, tileY + 1, ptr, 0x01);
+      OverwriteTileDataInTilemapBuffer(0x00, tileX + 1, tileY + 1, ptr, 0x01);
+      break;
   }
 }
 
+// Used in the Input task.
 static void Excavation_UpdateTerrain(void) {
   u16* ptr = GetBgTilemapBuffer(2);
   Terrain_UpdateLayerTileOnScreen(ptr);
