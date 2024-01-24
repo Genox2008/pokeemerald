@@ -30,6 +30,7 @@
 #include "data.h"
 #include "pokedex.h"
 #include "gpu_regs.h"
+#include "random.h"
 
 static void Excavation_Init(MainCallback callback);
 static void Excavation_SetupCB(void);
@@ -42,6 +43,8 @@ static bool8 Excavation_LoadBgGraphics(void);
 static void Excavation_LoadSpriteGraphics(void);
 static void Excavation_FreeResources(void);
 static void Excavation_UpdateCracks(void);
+static void Excavation_UpdateTerrain(void);
+static void Excavation_DrawRandomTerrain(void);
 static void Task_ExcavationWaitFadeIn(u8 taskId);
 static void Task_ExcavationMainInput(u8 taskId);
 static void Task_ExcavationFadeAndExitMenu(u8 taskId);
@@ -57,6 +60,9 @@ struct ExcavationState {
     u8 bBlueSpriteIndex;
     u8 crackCount;
     u8 crackPos;
+    u8 cursorX;
+    u8 cursorY;
+    u8 layerMap[96];
 };
 
 // We will allocate that on the heap later on but for now we will just have a NULL pointer.
@@ -268,7 +274,7 @@ static void UiShake(void) {
     SetGpuReg(REG_OFFSET_BG3VOFS, 0);
     SetGpuReg(REG_OFFSET_BG3HOFS, 0);
     SetGpuReg(REG_OFFSET_BG2HOFS, 0);
-    SetGpuReg(REG_OFFSET_BG2HOFS, 0);
+    SetGpuReg(REG_OFFSET_BG2VOFS, 0);
 }
 
 void Excavation_ItemUseCB(void) {
@@ -514,6 +520,9 @@ static bool8 Excavation_LoadBgGraphics(void) {
       LoadPalette(gCracksAndTerrainPalette, BG_PLTT_ID(1), PLTT_SIZE_4BPP);
       LoadPalette(sUiPalette, BG_PLTT_ID(0), PLTT_SIZE_4BPP);
       sExcavationUiState->loadState++;
+    case 3:
+      Excavation_DrawRandomTerrain();
+      sExcavationUiState->loadState++;
     default: 
       sExcavationUiState->loadState = 0;
       return TRUE;
@@ -529,6 +538,8 @@ static void Excavation_LoadSpriteGraphics(void) {
   LoadCompressedSpriteSheet(sSpriteSheet_Buttons);
   
   sExcavationUiState->cursorSpriteIndex = CreateSprite(&gSpriteCursor, 8, 40, 0);
+  sExcavationUiState->cursorX = 0;
+  sExcavationUiState->cursorY = 2;
   sExcavationUiState->bRedSpriteIndex = CreateSprite(&gSpriteButtonRed, 217,78,0);
   sExcavationUiState->bBlueSpriteIndex = CreateSprite(&gSpriteButtonBlue, 217,138,1);
   sExcavationUiState->mode = 0;
@@ -553,16 +564,22 @@ static void Task_ExcavationMainInput(u8 taskId) {
   else if (gMain.newKeys & A_BUTTON && sExcavationUiState->crackPos < 8 )  {
     Excavation_UpdateCracks();    
     UiShake();
+    Excavation_UpdateTerrain();
+    ScheduleBgCopyTilemapToVram(2);
   }
 
   else if (gMain.newAndRepeatedKeys & DPAD_LEFT && CURSOR_SPRITE.x > 8) {
     CURSOR_SPRITE.x -= 16;
+    sExcavationUiState->cursorX -= 1;
   } else if (gMain.newAndRepeatedKeys & DPAD_RIGHT && CURSOR_SPRITE.x < 184) {
     CURSOR_SPRITE.x += 16;
+    sExcavationUiState->cursorX += 1;
   } else if (gMain.newAndRepeatedKeys & DPAD_UP && CURSOR_SPRITE.y > 46) {
     CURSOR_SPRITE.y -= 16;
+    sExcavationUiState->cursorY -= 1;
   } else if (gMain.newAndRepeatedKeys & DPAD_DOWN && CURSOR_SPRITE.y < 151) {
     CURSOR_SPRITE.y += 16;
+    sExcavationUiState->cursorY += 1;
   }
 
   else if (gMain.newAndRepeatedKeys & R_BUTTON) {
@@ -764,7 +781,130 @@ static void Excavation_UpdateCracks(void) {
       Crack_UpdateCracksRelativeToCrackPos(7, 7, ptr);
       break;
   }
-  ScheduleBgCopyTilemapToVram(2);
+}
+
+static void Terrain_DrawLayerTileToScreen(u8 x, u8 y, u8 layer, u16* ptr) {
+  u8 tileX = x;
+  u8 tileY = y;
+
+  if (x == 0) {
+    tileX = 0;
+  } else {
+    tileX = x*2;
+  }
+
+  if (y == 0) {
+    tileY = 0;
+  } else {
+    tileY = y*2;
+  }
+  
+  switch(layer) {
+     // layer 0 and 1 - tile: 0
+    case 0:
+      OverwriteTileDataInTilemapBuffer(0x20, tileX, tileY, ptr, 0x01);
+      OverwriteTileDataInTilemapBuffer(0x21, tileX + 1, tileY, ptr, 0x01);
+      OverwriteTileDataInTilemapBuffer(0x24, tileX, tileY + 1, ptr, 0x01);
+      OverwriteTileDataInTilemapBuffer(0x25, tileX + 1, tileY + 1, ptr, 0x01);
+      break;
+    case 1:
+      OverwriteTileDataInTilemapBuffer(0x20, tileX, tileY, ptr, 0x01);
+      OverwriteTileDataInTilemapBuffer(0x21, tileX + 1, tileY, ptr, 0x01);
+      OverwriteTileDataInTilemapBuffer(0x24, tileX, tileY + 1, ptr, 0x01);
+      OverwriteTileDataInTilemapBuffer(0x25, tileX + 1, tileY + 1, ptr, 0x01);
+      break;
+    
+    // layer 2 and 3 - tile 1
+    case 2:
+      OverwriteTileDataInTilemapBuffer(0x19, tileX, tileY, ptr, 0x01);
+      OverwriteTileDataInTilemapBuffer(0x1A, tileX + 1, tileY, ptr, 0x01);
+      OverwriteTileDataInTilemapBuffer(0x1E, tileX, tileY + 1, ptr, 0x01);
+      OverwriteTileDataInTilemapBuffer(0x1F, tileX + 1, tileY + 1, ptr, 0x01);
+      break;
+    case 3:
+      OverwriteTileDataInTilemapBuffer(0x19, tileX, tileY, ptr, 0x01);
+      OverwriteTileDataInTilemapBuffer(0x1A, tileX + 1, tileY, ptr, 0x01);
+      OverwriteTileDataInTilemapBuffer(0x1E, tileX, tileY + 1, ptr, 0x01);
+      OverwriteTileDataInTilemapBuffer(0x1F, tileX + 1, tileY + 1, ptr, 0x01);
+      break;
+
+    case 4:
+      OverwriteTileDataInTilemapBuffer(0x10, tileX, tileY, ptr, 0x01);
+      OverwriteTileDataInTilemapBuffer(0x11, tileX + 1, tileY, ptr, 0x01);
+      OverwriteTileDataInTilemapBuffer(0x15, tileX, tileY + 1, ptr, 0x01);
+      OverwriteTileDataInTilemapBuffer(0x16, tileX + 1, tileY + 1, ptr, 0x01);
+      break;
+    case 5:
+      OverwriteTileDataInTilemapBuffer(0x0C, tileX, tileY, ptr, 0x01);
+      OverwriteTileDataInTilemapBuffer(0x0D, tileX + 1, tileY, ptr, 0x01);
+      OverwriteTileDataInTilemapBuffer(0x12, tileX, tileY + 1, ptr, 0x01);
+      OverwriteTileDataInTilemapBuffer(0x13, tileX + 1, tileY + 1, ptr, 0x01);
+      break;
+    
+    // layer 6 and 7 - tile 4
+    case 6:
+      OverwriteTileDataInTilemapBuffer(0x05, tileX, tileY, ptr, 0x01);
+      OverwriteTileDataInTilemapBuffer(0x06, tileX + 1, tileY, ptr, 0x01);
+      OverwriteTileDataInTilemapBuffer(0x0A, tileX, tileY + 1, ptr, 0x01);
+      OverwriteTileDataInTilemapBuffer(0x0B, tileX + 1, tileY + 1, ptr, 0x01);
+      break;
+    case 7:
+      OverwriteTileDataInTilemapBuffer(0x05, tileX, tileY, ptr, 0x01);
+      OverwriteTileDataInTilemapBuffer(0x06, tileX + 1, tileY, ptr, 0x01);
+      OverwriteTileDataInTilemapBuffer(0x0A, tileX, tileY + 1, ptr, 0x01);
+      OverwriteTileDataInTilemapBuffer(0x0B, tileX + 1, tileY + 1, ptr, 0x01);
+      break;
+
+  }
+}
+
+static void Excavation_DrawRandomTerrain(void) {
+  u8 i;
+  u8 x;
+  u8 y;
+  u8 rnd;
+
+  u16* ptr = GetBgTilemapBuffer(2);
+
+  for (i = 0; i < 96; i++) {
+    rnd = (Random() >> 13);
+    sExcavationUiState->layerMap[i] = rnd;
+  } 
+  
+  i = 0;
+  for (y = 2; y < 8 +2; y++) {
+    for (x = 0; x < 12 && i < 96; x++, i++) {
+      Terrain_DrawLayerTileToScreen(x, y, sExcavationUiState->layerMap[i], ptr);
+    }
+  }
+}
+
+static void Terrain_UpdateLayerTileOnScreen(u16* ptr) {
+  u8 tileX = sExcavationUiState->cursorX;
+  u8 tileY = sExcavationUiState->cursorY;
+  u8 layer = sExcavationUiState->layerMap[sExcavationUiState->cursorY*8 + sExcavationUiState->cursorX];
+
+  if (sExcavationUiState->cursorX == 0) {
+    tileX = 0;
+  } else {
+    tileX = sExcavationUiState->cursorX * 2;
+  }
+  
+  if (sExcavationUiState->cursorY == 0) {
+    tileY = 0;
+  } else {
+    tileY = sExcavationUiState->cursorY * 2;
+  }
+
+  switch (layer + 1) {
+    case 1:
+      OverwriteTileDataInTilemapBuffer(0x1F, tileX, tileY, ptr, 0x01);
+  }
+}
+
+static void Excavation_UpdateTerrain(void) {
+  u16* ptr = GetBgTilemapBuffer(2);
+  Terrain_UpdateLayerTileOnScreen(ptr);
 }
 
 static void Task_ExcavationFadeAndExitMenu(u8 taskId) {
