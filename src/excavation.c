@@ -561,7 +561,7 @@ static void Task_ExcavationMainInput(u8 taskId) {
     gTasks[taskId].func = Task_ExcavationFadeAndExitMenu;
   } 
   
-  else if (gMain.newKeys & A_BUTTON && sExcavationUiState->crackPos < 8 )  {
+  else if (gMain.newKeys & A_BUTTON /*&& sExcavationUiState->crackPos < 8 */)  {
     Excavation_UpdateCracks();    
     UiShake();
     Excavation_UpdateTerrain();
@@ -823,53 +823,35 @@ static void Terrain_DrawLayerTileToScreen(u8 x, u8 y, u8 layer, u16* ptr) {
       OverwriteTileDataInTilemapBuffer(0x25, tileX + 1, tileY + 1, ptr, 0x01);
       break;
     case 1:
-      OverwriteTileDataInTilemapBuffer(0x20, tileX, tileY, ptr, 0x01);
-      OverwriteTileDataInTilemapBuffer(0x21, tileX + 1, tileY, ptr, 0x01);
-      OverwriteTileDataInTilemapBuffer(0x24, tileX, tileY + 1, ptr, 0x01);
-      OverwriteTileDataInTilemapBuffer(0x25, tileX + 1, tileY + 1, ptr, 0x01);
+      OverwriteTileDataInTilemapBuffer(0x19, tileX, tileY, ptr, 0x01);
+      OverwriteTileDataInTilemapBuffer(0x1A, tileX + 1, tileY, ptr, 0x01);
+      OverwriteTileDataInTilemapBuffer(0x1E, tileX, tileY + 1, ptr, 0x01);
+      OverwriteTileDataInTilemapBuffer(0x1F, tileX + 1, tileY + 1, ptr, 0x01);
       break;
-    
-    // layer 2 and 3 - tile 1
     case 2:
-      OverwriteTileDataInTilemapBuffer(0x19, tileX, tileY, ptr, 0x01);
-      OverwriteTileDataInTilemapBuffer(0x1A, tileX + 1, tileY, ptr, 0x01);
-      OverwriteTileDataInTilemapBuffer(0x1E, tileX, tileY + 1, ptr, 0x01);
-      OverwriteTileDataInTilemapBuffer(0x1F, tileX + 1, tileY + 1, ptr, 0x01);
-      break;
-    case 3:
-      OverwriteTileDataInTilemapBuffer(0x19, tileX, tileY, ptr, 0x01);
-      OverwriteTileDataInTilemapBuffer(0x1A, tileX + 1, tileY, ptr, 0x01);
-      OverwriteTileDataInTilemapBuffer(0x1E, tileX, tileY + 1, ptr, 0x01);
-      OverwriteTileDataInTilemapBuffer(0x1F, tileX + 1, tileY + 1, ptr, 0x01);
-      break;
-
-    case 4:
       OverwriteTileDataInTilemapBuffer(0x10, tileX, tileY, ptr, 0x01);
       OverwriteTileDataInTilemapBuffer(0x11, tileX + 1, tileY, ptr, 0x01);
       OverwriteTileDataInTilemapBuffer(0x15, tileX, tileY + 1, ptr, 0x01);
       OverwriteTileDataInTilemapBuffer(0x16, tileX + 1, tileY + 1, ptr, 0x01);
       break;
-    case 5:
+    case 3: 
       OverwriteTileDataInTilemapBuffer(0x0C, tileX, tileY, ptr, 0x01);
       OverwriteTileDataInTilemapBuffer(0x0D, tileX + 1, tileY, ptr, 0x01);
       OverwriteTileDataInTilemapBuffer(0x12, tileX, tileY + 1, ptr, 0x01);
       OverwriteTileDataInTilemapBuffer(0x13, tileX + 1, tileY + 1, ptr, 0x01);
       break;
-    
-    // layer 6 and 7 - tile 4
-    case 6:
+    case 4:
       OverwriteTileDataInTilemapBuffer(0x05, tileX, tileY, ptr, 0x01);
       OverwriteTileDataInTilemapBuffer(0x06, tileX + 1, tileY, ptr, 0x01);
       OverwriteTileDataInTilemapBuffer(0x0A, tileX, tileY + 1, ptr, 0x01);
       OverwriteTileDataInTilemapBuffer(0x0B, tileX + 1, tileY + 1, ptr, 0x01);
       break;
-    case 7:
-      OverwriteTileDataInTilemapBuffer(0x05, tileX, tileY, ptr, 0x01);
-      OverwriteTileDataInTilemapBuffer(0x06, tileX + 1, tileY, ptr, 0x01);
-      OverwriteTileDataInTilemapBuffer(0x0A, tileX, tileY + 1, ptr, 0x01);
-      OverwriteTileDataInTilemapBuffer(0x0B, tileX + 1, tileY + 1, ptr, 0x01);
+    case 5:
+      OverwriteTileDataInTilemapBuffer(0x01, tileX, tileY, ptr, 0x01);
+      OverwriteTileDataInTilemapBuffer(0x02, tileX + 1, tileY, ptr, 0x01);
+      OverwriteTileDataInTilemapBuffer(0x03, tileX, tileY + 1, ptr, 0x01);
+      OverwriteTileDataInTilemapBuffer(0x04, tileX + 1, tileY + 1, ptr, 0x01);
       break;
-
   }
 }
 
@@ -884,12 +866,19 @@ static void Excavation_DrawRandomTerrain(void) {
   // Pointer to the tilemap in VRAM
   u16* ptr = GetBgTilemapBuffer(2);
 
-  // Generate a 5-bit number and store that value in the layermap.
+  // Generate a 2-bit number and store that value in the layermap.
   for (i = 0; i < 96; i++) {
-    rnd = (Random() >> 13);
-    sExcavationUiState->layerMap[i] = rnd;
+    // 00000000 
+    // 
+    rnd = (u8)(Random() >> 14);
+    sExcavationUiState->layerMap[i] = 2;
   } 
-  
+
+  sExcavationUiState->layerMap[2] = 1;
+  sExcavationUiState->layerMap[6] = 1;
+  sExcavationUiState->layerMap[13] = 1;
+  sExcavationUiState->layerMap[95] = 4;
+ 
   i = 0; // Using 'i' again to get the layer of the layer map
   
   // Using 'x', 'y' and 'i' to draw the right layer_tiles from layerMap to the screen.
@@ -903,6 +892,7 @@ static void Excavation_DrawRandomTerrain(void) {
 
 // This function is like 'Terrain_DrawLayerTileToScreen(...);', but for updating a tile AND the layer in the layerMap (we want to sync it)
 static void Terrain_UpdateLayerTileOnScreen(u16* ptr) {
+  u8 i = (sExcavationUiState->cursorY*12) + sExcavationUiState->cursorX; // Issue with wrong replacing is prob because of wrong pos calc??!
   u8 tileX = sExcavationUiState->cursorX;
   u8 tileY = sExcavationUiState->cursorY;
   // Maybe this?
@@ -925,7 +915,10 @@ static void Terrain_UpdateLayerTileOnScreen(u16* ptr) {
   // Case 6 clears the tile so we can take a look at Bg3 (for the item sprite)!
   //
   // Other than that, the tiles here are in order.
-  switch (sExcavationUiState->layerMap[sExcavationUiState->cursorY*8 + sExcavationUiState->cursorX]++) { // Incrementing? Idk if thats the bug for wrong tile replacements...
+  
+sExcavationUiState->layerMap[i]++;
+
+  switch (sExcavationUiState->layerMap[i]) { // Incrementing? Idk if thats the bug for wrong tile replacements...
     case 1:
       OverwriteTileDataInTilemapBuffer(0x19, tileX, tileY, ptr, 0x01);
       OverwriteTileDataInTilemapBuffer(0x1A, tileX + 1, tileY, ptr, 0x01);
