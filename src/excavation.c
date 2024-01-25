@@ -786,7 +786,6 @@ static void Excavation_UpdateCracks(void) {
 // ******************************************************************************
 // TODO!!!: - Make the generation more like in the 3rd gen. 
 //          - Do the other Todos
-//          - Make the layer_tile updating/replacement, when hitting A, work.
 //          - Write some prettier docs.
 // ******************************************************************************
 //
@@ -866,18 +865,19 @@ static void Excavation_DrawRandomTerrain(void) {
   // Pointer to the tilemap in VRAM
   u16* ptr = GetBgTilemapBuffer(2);
 
-  // Generate a 2-bit number and store that value in the layermap.
   for (i = 0; i < 96; i++) {
-    // 00000000 
-    // 
-    rnd = (u8)(Random() >> 14);
-    sExcavationUiState->layerMap[i] = 2;
-  } 
+    sExcavationUiState->layerMap[i] = 4;
+  }
 
-  sExcavationUiState->layerMap[2] = 1;
-  sExcavationUiState->layerMap[6] = 1;
-  sExcavationUiState->layerMap[13] = 1;
-  sExcavationUiState->layerMap[95] = 4;
+  for (i = 0; i < 96; i++) {
+    rnd = (Random() >> 14);
+    if (rnd == 0) {
+      sExcavationUiState->layerMap[i] = 2;
+    } else if (rnd == 1 || rnd == 2) {
+      sExcavationUiState->layerMap[i] = 0;
+    }
+
+  }
  
   i = 0; // Using 'i' again to get the layer of the layer map
   
@@ -892,7 +892,7 @@ static void Excavation_DrawRandomTerrain(void) {
 
 // This function is like 'Terrain_DrawLayerTileToScreen(...);', but for updating a tile AND the layer in the layerMap (we want to sync it)
 static void Terrain_UpdateLayerTileOnScreen(u16* ptr) {
-  u8 i = (sExcavationUiState->cursorY*12) + sExcavationUiState->cursorX; // Issue with wrong replacing is prob because of wrong pos calc??!
+  u8 i = (sExcavationUiState->cursorY-2)*12 + sExcavationUiState->cursorX; // Why the minus 2? Because the cursorY value starts at 2, so when calculating the position of the cursor, we have that additional 2 with it!!
   u8 tileX = sExcavationUiState->cursorX;
   u8 tileY = sExcavationUiState->cursorY;
   // Maybe this?
