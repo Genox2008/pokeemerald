@@ -668,6 +668,11 @@ static void Crack_DrawCrack_3(u8 ofs, u8 ofs2, u16* ptr) {
 }
 
 static void Crack_DrawCrack_4(u8 ofs, u8 ofs2, u16* ptr) {
+  // The same clean up as Crack_DrawCrack_3 but only used when the hammer is used
+  OverwriteTileDataInTilemapBuffer(0x00, 20 - ofs * 4 + ofs2, 0, ptr, 0x01);
+  OverwriteTileDataInTilemapBuffer(0x00, 21 - ofs * 4 + ofs2, 0, ptr, 0x01);
+  OverwriteTileDataInTilemapBuffer(0x00, 22 - ofs * 4 + ofs2, 0, ptr, 0x01);
+  
   OverwriteTileDataInTilemapBuffer(0x38, 22 - ofs * 4 + ofs2, 0, ptr, 0x01);
   OverwriteTileDataInTilemapBuffer(0x39, 20 - ofs * 4 + ofs2, 1, ptr, 0x01);
   OverwriteTileDataInTilemapBuffer(0x3A, 21 - ofs * 4 + ofs2, 1, ptr, 0x01);
@@ -726,22 +731,37 @@ static void Crack_UpdateCracksRelativeToCrackPos(u8 offsetIn8, u8 ofs2, u16* ptr
   switch (sExcavationUiState->crackCount) {
     case 0:
       Crack_DrawCrack_0(offsetIn8, ofs2, ptr);
+      if (sExcavationUiState->mode == 1) { 
+        sExcavationUiState->crackCount++;
+      }
       sExcavationUiState->crackCount++;
       break;
     case 1:
       Crack_DrawCrack_1(offsetIn8, ofs2, ptr);
+      if (sExcavationUiState->mode == 1) { 
+        sExcavationUiState->crackCount++;
+      }
       sExcavationUiState->crackCount++;
       break;
     case 2:
       Crack_DrawCrack_2(offsetIn8, ofs2, ptr);
+      if (sExcavationUiState->mode == 1) { 
+        sExcavationUiState->crackCount++;
+      }
       sExcavationUiState->crackCount++;
       break;
     case 3:
       Crack_DrawCrack_3(offsetIn8, ofs2, ptr);
+      if (sExcavationUiState->mode == 1) { 
+        sExcavationUiState->crackCount++;
+      }
       sExcavationUiState->crackCount++;
       break;
     case 4:
       Crack_DrawCrack_4(offsetIn8, ofs2, ptr);
+      if (sExcavationUiState->mode == 1) { 
+        sExcavationUiState->crackCount++;
+      }
       sExcavationUiState->crackCount++;
       break;
     case 5:
@@ -788,7 +808,10 @@ static void Excavation_UpdateCracks(void) {
 }
 
 // ******************************************************************************
-// TODO!!!: - Make the generation more like in the 3rd gen. 
+// TODO!!!: - Make the generation more like in the 3rd gen.
+//          - Add hammer and pickaxe hit anim
+//          - Add item and stone generation
+//          - Make collaps screen 
 //          - Do the other Todos
 //          - Write some prettier docs.
 // ******************************************************************************
