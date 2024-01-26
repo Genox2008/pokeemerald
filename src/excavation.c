@@ -553,6 +553,9 @@ static void Task_ExcavationWaitFadeIn(u8 taskId)
 }
 
 #define CURSOR_SPRITE gSprites[sExcavationUiState->cursorSpriteIndex]
+#define BLUE_BUTTON 0
+#define RED_BUTTON 1
+
 
 static void Task_ExcavationMainInput(u8 taskId) {
   if (JOY_NEW(B_BUTTON)) {
@@ -585,10 +588,11 @@ static void Task_ExcavationMainInput(u8 taskId) {
   else if (gMain.newAndRepeatedKeys & R_BUTTON) {
     StartSpriteAnim(&gSprites[sExcavationUiState->bRedSpriteIndex], 1);
     StartSpriteAnim(&gSprites[sExcavationUiState->bBlueSpriteIndex],1);
-    sExcavationUiState->mode = 1;
+    sExcavationUiState->mode = RED_BUTTON;
   } else if (gMain.newAndRepeatedKeys & L_BUTTON) {
     StartSpriteAnim(&gSprites[sExcavationUiState->bRedSpriteIndex], 0);
     StartSpriteAnim(&gSprites[sExcavationUiState->bBlueSpriteIndex], 0);
+    sExcavationUiState->mode = BLUE_BUTTON;
   }
 }
 
@@ -891,24 +895,32 @@ static void Excavation_DrawRandomTerrain(void) {
 }
 
 // This function is like 'Terrain_DrawLayerTileToScreen(...);', but for updating a tile AND the layer in the layerMap (we want to sync it)
-static void Terrain_UpdateLayerTileOnScreen(u16* ptr) {
-  u8 i = (sExcavationUiState->cursorY-2)*12 + sExcavationUiState->cursorX; // Why the minus 2? Because the cursorY value starts at 2, so when calculating the position of the cursor, we have that additional 2 with it!!
-  u8 tileX = sExcavationUiState->cursorX;
-  u8 tileY = sExcavationUiState->cursorY;
+static void Terrain_UpdateLayerTileOnScreen(u16* ptr, s8 ofsX, s8 ofsY) {
+  u8 i;
+  u8 tileX;
+  u8 tileY;
+
+  //if ((ofsX + sExcavationUiState->cursorX) > 11 || (ofsX == -1 && sExcavationUiState->cursorX == 0)) {
+  //  ofsX = 0;
+  //}
+
+  i = (sExcavationUiState->cursorY-2+ofsY)*12 + sExcavationUiState->cursorX + ofsX; // Why the minus 2? Because the cursorY value starts at 2, so when calculating the position of the cursor, we have that additional 2 with it!!
+  tileX = sExcavationUiState->cursorX;
+  tileY = sExcavationUiState->cursorY;
   // Maybe this?
   //u8 layer = sExcavationUiState->layerMap[sExcavationUiState->cursorY*8 + sExcavationUiState->cursorX];
 
   // TODO: Change this as well
   if (sExcavationUiState->cursorX == 0) {
-    tileX = 0;
+    tileX = (0+ofsX)*2;
   } else {
-    tileX = sExcavationUiState->cursorX * 2;
+    tileX = (sExcavationUiState->cursorX+ofsX) * 2;
   }
   
   if (sExcavationUiState->cursorY == 0) {
-    tileY = 0;
+    tileY = (0+ofsY)*2;
   } else {
-    tileY = sExcavationUiState->cursorY * 2;
+    tileY = (sExcavationUiState->cursorY+ofsY) * 2;
   }
 
   // Here, case 0 is missing because it will never appear. Why? Because the value we are doing the switch statement on would need to be negative.
@@ -958,10 +970,60 @@ sExcavationUiState->layerMap[i]++;
   }
 }
 
+// Using this function here to overwrite the tilemap entry when hitting with the pickaxe (blue button is pressed)
+static void Terrain_Pickaxe_OverwriteTiles(u16* ptr) {
+  if (sExcavationUiState->cursorX != 0) {
+    Terrain_UpdateLayerTileOnScreen(ptr, -1, 0);
+  }
+  if (sExcavationUiState->cursorX != 11) {
+    Terrain_UpdateLayerTileOnScreen(ptr, 1, 0);
+  }
+
+  // We have to add '2' to 7 and 0 because, remember: The cursor spawns at Y_position 2!!!
+  if (sExcavationUiState->cursorY != 9) {
+    Terrain_UpdateLayerTileOnScreen(ptr, 0, 1);
+  }
+  if (sExcavationUiState->cursorY != 2) {
+    Terrain_UpdateLayerTileOnScreen(ptr, 0, -1);
+  }
+
+  // Center hit
+  Terrain_UpdateLayerTileOnScreen(ptr,0,0);
+}
+
+static void Terrain_Hammer_OverwriteTiles(u16* ptr) {
+  Terrain_Pickaxe_OverwriteTiles(ptr);
+  // Corners
+  // We have to add '2' to 7 and 0 because, remember: The cursor spawns at Y_position 2!!!
+  if (sExcavationUiState->cursorX != 11 && sExcavationUiState->cursorY != 9) {
+    Terrain_UpdateLayerTileOnScreen(ptr, 1, 1);
+  }
+
+  if (sExcavationUiState->cursorX != 0 && sExcavationUiState->cursorY != 9) {
+    Terrain_UpdateLayerTileOnScreen(ptr, -1, 1);
+  }
+  
+  if (sExcavationUiState->cursorX != 11 && sExcavationUiState->cursorY != 2) {
+    Terrain_UpdateLayerTileOnScreen(ptr, 1, -1);
+  }
+  
+  if (sExcavationUiState->cursorX != 0 && sExcavationUiState->cursorY != 2) {
+    Terrain_UpdateLayerTileOnScreen(ptr, -1, -1);
+  }
+
+}
+
 // Used in the Input task.
 static void Excavation_UpdateTerrain(void) {
   u16* ptr = GetBgTilemapBuffer(2);
-  Terrain_UpdateLayerTileOnScreen(ptr);
+  switch (sExcavationUiState->mode) {
+    case RED_BUTTON:
+      Terrain_Hammer_OverwriteTiles(ptr);
+      break;
+    case BLUE_BUTTON:
+      Terrain_Pickaxe_OverwriteTiles(ptr);
+      break;
+  }
 }
 
 static void Task_ExcavationFadeAndExitMenu(u8 taskId) {
