@@ -45,6 +45,7 @@ static void Excavation_FreeResources(void);
 static void Excavation_UpdateCracks(void);
 static void Excavation_UpdateTerrain(void);
 static void Excavation_DrawRandomTerrain(void);
+static void DrawRandomItem(void);
 static void Task_ExcavationWaitFadeIn(u8 taskId);
 static void Task_ExcavationMainInput(u8 taskId);
 static void Task_ExcavationFadeAndExitMenu(u8 taskId);
@@ -63,6 +64,7 @@ struct ExcavationState {
     u8 cursorX;
     u8 cursorY;
     u8 layerMap[96];
+    u8 itemMap[96];
 };
 
 // We will allocate that on the heap later on but for now we will just have a NULL pointer.
@@ -100,12 +102,15 @@ static const u16 sUiPalette[] = INCBIN_U16("graphics/excavation/ui.gbapal");
 
 #define TAG_CURSOR 1
 #define TAG_BUTTONS 2
+#define TAG_TESTITEM 3
 
 const u32 gCursorGfx[] = INCBIN_U32("graphics/pokenav/region_map/cursor_small.4bpp.lz");
 const u16 gCursorPal[] = INCBIN_U16("graphics/pokenav/region_map/cursor.gbapal");
 
 const u32 gButtonGfx[] = INCBIN_U32("graphics/excavation/buttons.4bpp.lz");
 const u16 gButtonPal[] = INCBIN_U16("graphics/excavation/buttons.gbapal");
+
+const u32 gTestItemGfx[] = INCBIN_U32("graphics/excavation/fire_stone.4bpp.lz");
 
 static const u32 gCracksAndTerrainTiles[] = INCBIN_U32("graphics/excavation/cracks_terrain.4bpp.lz");
 static const u32 gCracksAndTerrainTilemap[] = INCBIN_U32("graphics/excavation/cracks_terrain.bin.lz");
@@ -135,6 +140,11 @@ static const struct SpritePalette sSpritePal_Buttons[] =
     {NULL},
 };
 
+static const struct CompressedSpriteSheet sSpriteSheet_TestItem[] = {
+  {gTestItemGfx, 32*32, TAG_TESTITEM},
+  {NULL},
+};
+
 static const struct OamData gOamCursor = {
     .y = 0,
     .affineMode = 0,
@@ -160,6 +170,20 @@ static const struct OamData gOamButton = {
     .size = 3,
     .tileNum = 0,
     .priority = 0,
+    .paletteNum = 0,
+};
+
+static const struct OamData gOamTestitem = {
+    .y = 0,
+    .affineMode = 0,
+    .objMode = 0,
+    .bpp = 0,
+    .shape = 0,
+    .x = 0,
+    .matrixNum = 0,
+    .size = 2,
+    .tileNum = 0,
+    .priority = 3,
     .paletteNum = 0,
 };
 
@@ -238,6 +262,18 @@ static const struct SpriteTemplate gSpriteButtonBlue = {
     .affineAnims = gDummySpriteAffineAnimTable,
     .callback = CursorSprite_CB,
 };
+
+static const struct SpriteTemplate gSpriteTestItem = {
+    .tileTag = TAG_TESTITEM,
+    .paletteTag = TAG_TESTITEM,
+    .oam = &gOamTestitem,
+    .anims = gDummySpriteAnimTable,
+    .images = NULL,
+    // No rotating or scaling
+    .affineAnims = gDummySpriteAffineAnimTable,
+    .callback = CursorSprite_CB,
+};
+
 
 static void delay(unsigned int amount) {
     u32 i;
@@ -537,6 +573,8 @@ static void Excavation_LoadSpriteGraphics(void) {
   LoadSpritePalette(sSpritePal_Buttons);
   LoadCompressedSpriteSheet(sSpriteSheet_Buttons);
   
+  DrawRandomItem();
+
   sExcavationUiState->cursorSpriteIndex = CreateSprite(&gSpriteCursor, 8, 40, 0);
   sExcavationUiState->cursorX = 0;
   sExcavationUiState->cursorY = 2;
@@ -878,6 +916,54 @@ static void Terrain_DrawLayerTileToScreen(u8 x, u8 y, u8 layer, u16* ptr) {
       OverwriteTileDataInTilemapBuffer(0x03, tileX, tileY + 1, ptr, 0x01);
       OverwriteTileDataInTilemapBuffer(0x04, tileX + 1, tileY + 1, ptr, 0x01);
       break;
+  }
+}
+
+static void DrawRandomItemAtPos(u8 x, u8 y) {
+  // CreateSprite( x*16, (y*16)+(2*16) );
+  LoadCompressedSpriteSheet(sSpriteSheet_TestItem);
+  CreateSprite(&gSpriteTestItem, (x*16)+16, (y*16)+(2*16)+16, 3);
+}
+
+
+static void DrawRandomItem(void) {
+  u8 i;
+  u8 rnd;
+  u8 posX;
+  u8 posY;
+  u8 itemCount = 0;
+
+  // Clear the entire itemMap
+  for (i=0; i < 96; i++) {
+    sExcavationUiState->itemMap[i] = 0;
+  }
+  
+  for (i=0; i<96; i++) {
+    // the value given to rnd is used to determine wether an item should be drawn or not
+    if (itemCount == 0) {
+      rnd = (Random() >> 13);
+      if (rnd > 6) {
+
+        //PlaySE(407);
+        // Try to draw the item to the screen until it found a valid position
+        while(1) {
+          // 16 possiblities, but turn it into a number from 0-11.
+          posX = (Random() >> 12) > 4 ? (Random() >> 12)-4 : (Random() >> 12);
+          // 8 possiblities
+          posY = (Random() >> 13);
+
+          if (posY != 8 && posX != 11) {
+            DrawRandomItemAtPos(posX, posY);
+            sExcavationUiState->itemMap[posX + (posY * 16)] = 1;
+            sExcavationUiState->itemMap[posX + 1 + (posY *16)] = 1;
+            sExcavationUiState->itemMap[posX + (posY+1)*16] = 1;
+            sExcavationUiState->itemMap[posX+1 + (posY+1)*16] = 1;
+            itemCount++;
+            break;
+          }
+        }  
+      }
+    }
   }
 }
 
