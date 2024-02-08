@@ -46,6 +46,7 @@ static void Excavation_UpdateCracks(void);
 static void Excavation_UpdateTerrain(void);
 static void Excavation_DrawRandomTerrain(void);
 static void DrawRandomItem(void);
+static void Excavation_CheckItemFound(void);
 static void Task_ExcavationWaitFadeIn(u8 taskId);
 static void Task_ExcavationMainInput(u8 taskId);
 static void Task_ExcavationFadeAndExitMenu(u8 taskId);
@@ -65,6 +66,7 @@ struct ExcavationState {
     u8 cursorY;
     u8 layerMap[96];
     u8 itemMap[96];
+    u8 state_item1;
 };
 
 // We will allocate that on the heap later on but for now we will just have a NULL pointer.
@@ -173,6 +175,8 @@ static const struct OamData gOamButton = {
     .paletteNum = 0,
 };
 
+//#define TEST
+
 static const struct OamData gOamTestitem = {
     .y = 0,
     .affineMode = 0,
@@ -183,7 +187,11 @@ static const struct OamData gOamTestitem = {
     .matrixNum = 0,
     .size = 2,
     .tileNum = 0,
+    #ifdef TEST
+    .priority = 0,
+    #else
     .priority = 3,
+    #endif
     .paletteNum = 0,
 };
 
@@ -331,6 +339,8 @@ static void Excavation_Init(MainCallback callback) {
     sExcavationUiState->loadState = 0;
     sExcavationUiState->crackCount = 0;
     sExcavationUiState->crackPos = 0;
+    // CHANGE when other items join too, how do you know that item2, etc are used or not used?
+    sExcavationUiState->state_item1 = 0;
 
     SetMainCallback2(Excavation_SetupCB);
 }
@@ -481,6 +491,7 @@ static void Task_Excavation_WaitFadeAndBail(u8 taskId)
 static void Excavation_MainCB(void)
 {
     // Iterate through the Tasks list and run any active task callbacks
+    Excavation_CheckItemFound();
     RunTasks();
     // For all active sprites, call their callbacks and update their animation state
     AnimateSprites();
@@ -930,6 +941,7 @@ static void DrawRandomItem(void) {
   u8 i;
   u8 rnd;
   u8 posX;
+  u8 t;
   u8 posY;
   u8 itemCount = 0;
 
@@ -941,23 +953,23 @@ static void DrawRandomItem(void) {
   for (i=0; i<96; i++) {
     // the value given to rnd is used to determine wether an item should be drawn or not
     if (itemCount == 0) {
-      rnd = (Random() >> 13);
+      rnd = (Random() >> 5);
       if (rnd > 6) {
 
-        //PlaySE(407);
         // Try to draw the item to the screen until it found a valid position
         while(1) {
           // 16 possiblities, but turn it into a number from 0-11.
-          posX = (Random() >> 12) > 4 ? (Random() >> 12)-4 : (Random() >> 12);
+          t = (Random() >> 4); 
+          posX = t > 4 ? t-5 : t;
           // 8 possiblities
-          posY = (Random() >> 13);
+          posY = (Random() >> 5);
 
-          if (posY != 8 && posX != 11) {
+          if (posY < 7 && posX < 11) {
             DrawRandomItemAtPos(posX, posY);
-            sExcavationUiState->itemMap[posX + (posY * 16)] = 1;
-            sExcavationUiState->itemMap[posX + 1 + (posY *16)] = 1;
-            sExcavationUiState->itemMap[posX + (posY+1)*16] = 1;
-            sExcavationUiState->itemMap[posX+1 + (posY+1)*16] = 1;
+            sExcavationUiState->itemMap[posX + (posY * 12)] = 1;
+            sExcavationUiState->itemMap[posX + 1 + (posY *12)] = 1;
+            sExcavationUiState->itemMap[posX + (posY+1)*12] = 1;
+            sExcavationUiState->itemMap[posX+1 + (posY+1)*12] = 1;
             itemCount++;
             break;
           }
@@ -966,6 +978,30 @@ static void DrawRandomItem(void) {
     }
   }
 }
+
+#define FULL 4
+#define STOP 5
+
+static void Excavation_CheckItemFound(void) {
+  u8 i;
+
+  if (sExcavationUiState->state_item1 < FULL) {
+    for(i=0;i<96;i++) {
+      if(sExcavationUiState->itemMap[i] == 1 && sExcavationUiState->layerMap[i] == 6) {
+        PlaySE(SE_PC_OFF);
+        sExcavationUiState->itemMap[i] = 0;
+        sExcavationUiState->state_item1++;
+      }
+    }
+  } else if (sExcavationUiState->state_item1 == FULL) {
+    PlaySE(407);
+    sExcavationUiState->state_item1 = STOP;
+  }
+
+}
+
+#undef FULL
+#undef STOP
 
 // Randomly generates a terrain, stores the layering in an array and draw the right tiles, with the help of the layer map, to the screen.
 // Use the above function just to draw a tile once (for updating the tile, use Terrain_UpdateLayerTileOnScreen(...); )
