@@ -113,6 +113,7 @@ const u32 gButtonGfx[] = INCBIN_U32("graphics/excavation/buttons.4bpp.lz");
 const u16 gButtonPal[] = INCBIN_U16("graphics/excavation/buttons.gbapal");
 
 const u32 gTestItemGfx[] = INCBIN_U32("graphics/excavation/fire_stone.4bpp.lz");
+const u16 gTestItemPal[] = INCBIN_U16("graphics/items/icon_palettes/fire_stone.gbapal");
 
 static const u32 gCracksAndTerrainTiles[] = INCBIN_U32("graphics/excavation/cracks_terrain.4bpp.lz");
 static const u32 gCracksAndTerrainTilemap[] = INCBIN_U32("graphics/excavation/cracks_terrain.bin.lz");
@@ -146,6 +147,13 @@ static const struct CompressedSpriteSheet sSpriteSheet_TestItem[] = {
   {gTestItemGfx, 32*32, TAG_TESTITEM},
   {NULL},
 };
+
+static const struct SpritePalette sSpritePal_TestItem[] =
+{
+    {gTestItemPal, TAG_TESTITEM},
+    {NULL},
+};
+
 
 static const struct OamData gOamCursor = {
     .y = 0,
@@ -932,6 +940,7 @@ static void Terrain_DrawLayerTileToScreen(u8 x, u8 y, u8 layer, u16* ptr) {
 
 static void DrawRandomItemAtPos(u8 x, u8 y) {
   // CreateSprite( x*16, (y*16)+(2*16) );
+  LoadSpritePalette(sSpritePal_TestItem);
   LoadCompressedSpriteSheet(sSpriteSheet_TestItem);
   CreateSprite(&gSpriteTestItem, (x*16)+16, (y*16)+(2*16)+16, 3);
 }
@@ -988,13 +997,12 @@ static void Excavation_CheckItemFound(void) {
   if (sExcavationUiState->state_item1 < FULL) {
     for(i=0;i<96;i++) {
       if(sExcavationUiState->itemMap[i] == 1 && sExcavationUiState->layerMap[i] == 6) {
-        PlaySE(SE_PC_OFF);
         sExcavationUiState->itemMap[i] = 0;
         sExcavationUiState->state_item1++;
       }
     }
   } else if (sExcavationUiState->state_item1 == FULL) {
-    PlaySE(407);
+    BeginNormalPaletteFade(0x00040000, 2, 16, 0, RGB_WHITE);
     sExcavationUiState->state_item1 = STOP;
   }
 
