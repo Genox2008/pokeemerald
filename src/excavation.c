@@ -45,7 +45,7 @@ static void Excavation_FreeResources(void);
 static void Excavation_UpdateCracks(void);
 static void Excavation_UpdateTerrain(void);
 static void Excavation_DrawRandomTerrain(void);
-static void DrawRandomItem(void);
+static void DrawRandomItem(u8 item);
 static void Excavation_CheckItemFound(void);
 static void Task_ExcavationWaitFadeIn(u8 taskId);
 static void Task_ExcavationMainInput(u8 taskId);
@@ -67,6 +67,9 @@ struct ExcavationState {
     u8 layerMap[96];
     u8 itemMap[96];
     u8 state_item1;
+    u8 state_item2;
+    u8 state_item3;
+    u8 state_item4;
 };
 
 // We will allocate that on the heap later on but for now we will just have a NULL pointer.
@@ -243,9 +246,6 @@ static const union AnimCmd *const gButtonBlueAnim[] = {
     gAnimCmdButton_BlueNotPressed,
 };
 
-static void CursorSprite_CB(struct Sprite* sprite) {
-}
-
 static const struct SpriteTemplate gSpriteCursor = {
     .tileTag = TAG_CURSOR,
     .paletteTag = TAG_CURSOR,
@@ -254,7 +254,7 @@ static const struct SpriteTemplate gSpriteCursor = {
     .images = NULL,
     // No rotating or scaling
     .affineAnims = gDummySpriteAffineAnimTable,
-    .callback = CursorSprite_CB,
+    .callback = SpriteCallbackDummy,
 };
 
 static const struct SpriteTemplate gSpriteButtonRed = {
@@ -265,7 +265,7 @@ static const struct SpriteTemplate gSpriteButtonRed = {
     .images = NULL,
     // No rotating or scaling
     .affineAnims = gDummySpriteAffineAnimTable,
-    .callback = CursorSprite_CB,
+    .callback = SpriteCallbackDummy,
 };
 
 static const struct SpriteTemplate gSpriteButtonBlue = {
@@ -276,7 +276,7 @@ static const struct SpriteTemplate gSpriteButtonBlue = {
     .images = NULL,
     // No rotating or scaling
     .affineAnims = gDummySpriteAffineAnimTable,
-    .callback = CursorSprite_CB,
+    .callback = SpriteCallbackDummy,
 };
 
 static const struct SpriteTemplate gSpriteTestItem = {
@@ -287,9 +287,8 @@ static const struct SpriteTemplate gSpriteTestItem = {
     .images = NULL,
     // No rotating or scaling
     .affineAnims = gDummySpriteAffineAnimTable,
-    .callback = CursorSprite_CB,
+    .callback = SpriteCallbackDummy,
 };
-
 
 static void delay(unsigned int amount) {
     u32 i;
@@ -322,7 +321,7 @@ static void UiShake(void) {
     SetGpuReg(REG_OFFSET_BG2VOFS, -1);
     delay(1500);
 
-    // Stop shake
+    // Back to default offset
     SetGpuReg(REG_OFFSET_BG3VOFS, 0);
     SetGpuReg(REG_OFFSET_BG3HOFS, 0);
     SetGpuReg(REG_OFFSET_BG2HOFS, 0);
@@ -347,8 +346,14 @@ static void Excavation_Init(MainCallback callback) {
     sExcavationUiState->loadState = 0;
     sExcavationUiState->crackCount = 0;
     sExcavationUiState->crackPos = 0;
-    // CHANGE when other items join too, how do you know that item2, etc are used or not used?
+
+    // TODO: Make a proper 0 or 5 generation for each item state
+    // 0 means that the item is gonna be drawn
+    // 5 means that the item is not gonna be drawn
     sExcavationUiState->state_item1 = 0;
+    sExcavationUiState->state_item2 = 0;
+    sExcavationUiState->state_item3 = 5;
+    sExcavationUiState->state_item4 = 5;
 
     SetMainCallback2(Excavation_SetupCB);
 }
@@ -585,14 +590,34 @@ static bool8 Excavation_LoadBgGraphics(void) {
   return FALSE;
 }
 
+static void CleanItemMap(void) {
+  u8 i;
+
+  for (i=0; i < 96; i++) {
+    sExcavationUiState->itemMap[i] = 0;
+  }
+}
+
 static void Excavation_LoadSpriteGraphics(void) {
   LoadSpritePalette(sSpritePal_Cursor);
   LoadCompressedSpriteSheet(sSpriteSheet_Cursor);
 
   LoadSpritePalette(sSpritePal_Buttons);
   LoadCompressedSpriteSheet(sSpriteSheet_Buttons);
-  
-  DrawRandomItem();
+ 
+  CleanItemMap(); 
+  if (sExcavationUiState->state_item1 == 0) {
+    DrawRandomItem(1);
+  } 
+  if (sExcavationUiState->state_item2 == 0) {
+    DrawRandomItem(2);
+  }
+  if (sExcavationUiState->state_item3 == 0) {
+    DrawRandomItem(3);
+  }
+  if (sExcavationUiState->state_item4 == 0) {
+    DrawRandomItem(4);
+  }
 
   sExcavationUiState->cursorSpriteIndex = CreateSprite(&gSpriteCursor, 8, 40, 0);
   sExcavationUiState->cursorX = 0;
@@ -938,6 +963,7 @@ static void Terrain_DrawLayerTileToScreen(u8 x, u8 y, u8 layer, u16* ptr) {
   }
 }
 
+// TODO: Make every item have a palette, even if two items have the same palette
 static void DrawRandomItemAtPos(u8 x, u8 y) {
   // CreateSprite( x*16, (y*16)+(2*16) );
   LoadSpritePalette(sSpritePal_TestItem);
@@ -945,20 +971,17 @@ static void DrawRandomItemAtPos(u8 x, u8 y) {
   CreateSprite(&gSpriteTestItem, (x*16)+16, (y*16)+(2*16)+16, 3);
 }
 
-
-static void DrawRandomItem(void) {
+// TODO: Make generation of not only 2x2 items, but also larger items
+// u8 item is for which item to draw (item1, item2, item3 or item4)
+static void DrawRandomItem(u8 item) {
   u8 i;
   u8 rnd;
   u8 posX;
-  u8 t;
   u8 posY;
+  u8 t;
   u8 itemCount = 0;
 
-  // Clear the entire itemMap
-  for (i=0; i < 96; i++) {
-    sExcavationUiState->itemMap[i] = 0;
-  }
-  
+  // Currently only 2x2 item sprites!!
   for (i=0; i<96; i++) {
     // the value given to rnd is used to determine wether an item should be drawn or not
     if (itemCount == 0) {
@@ -975,10 +998,10 @@ static void DrawRandomItem(void) {
 
           if (posY < 7 && posX < 11) {
             DrawRandomItemAtPos(posX, posY);
-            sExcavationUiState->itemMap[posX + (posY * 12)] = 1;
-            sExcavationUiState->itemMap[posX + 1 + (posY *12)] = 1;
-            sExcavationUiState->itemMap[posX + (posY+1)*12] = 1;
-            sExcavationUiState->itemMap[posX+1 + (posY+1)*12] = 1;
+            sExcavationUiState->itemMap[posX + (posY * 12)] = item;
+            sExcavationUiState->itemMap[posX + 1 + (posY *12)] = item;
+            sExcavationUiState->itemMap[posX + (posY+1)*12] = item;
+            sExcavationUiState->itemMap[posX+1 + (posY+1)*12] = item;
             itemCount++;
             break;
           }
@@ -991,6 +1014,9 @@ static void DrawRandomItem(void) {
 #define FULL 4
 #define STOP 5
 
+// TODO: Make BeginNormalPaletteFade work
+// TODO: Finish function for all 2x2 items
+// TODO: Then make it work for all items with different size
 static void Excavation_CheckItemFound(void) {
   u8 i;
 
@@ -1004,6 +1030,18 @@ static void Excavation_CheckItemFound(void) {
   } else if (sExcavationUiState->state_item1 == FULL) {
     BeginNormalPaletteFade(0x00040000, 2, 16, 0, RGB_WHITE);
     sExcavationUiState->state_item1 = STOP;
+  }
+
+  if (sExcavationUiState->state_item2 < FULL) {
+    for(i=0;i<96;i++) {
+      if(sExcavationUiState->itemMap[i] == 2 && sExcavationUiState->layerMap[i] == 6) {
+        sExcavationUiState->itemMap[i] = 0;
+        sExcavationUiState->state_item2++;
+      }
+    }
+  } else if (sExcavationUiState->state_item2 == FULL) {
+    BeginNormalPaletteFade(0x00060000, 2, 16, 0, RGB_WHITE); 
+    sExcavationUiState->state_item2 = STOP;
   }
 
 }
