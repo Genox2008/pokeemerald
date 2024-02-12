@@ -45,7 +45,7 @@ static void Excavation_FreeResources(void);
 static void Excavation_UpdateCracks(void);
 static void Excavation_UpdateTerrain(void);
 static void Excavation_DrawRandomTerrain(void);
-static void DrawRandomItem(u8 item);
+static void DoDrawRandomItem(u8 itemStateId, u8 itemId);
 static void Excavation_CheckItemFound(void);
 static void Task_ExcavationWaitFadeIn(u8 taskId);
 static void Task_ExcavationMainInput(u8 taskId);
@@ -66,10 +66,18 @@ struct ExcavationState {
     u8 cursorY;
     u8 layerMap[96];
     u8 itemMap[96];
+
     u8 state_item1;
+    u8 Item1_TilesToDigUp;
+
     u8 state_item2;
+    u8 Item2_TilesToDigUp;
+    
     u8 state_item3;
+    u8 Item3_TilesToDigUp;
+    
     u8 state_item4;
+    u8 Item4_TilesToDigUp;
 };
 
 // We will allocate that on the heap later on but for now we will just have a NULL pointer.
@@ -100,38 +108,61 @@ static const struct BgTemplate sExcavationBgTemplates[] =
     },
 };
 
-
+// UI 
 static const u32 sUiTiles[] = INCBIN_U32("graphics/excavation/ui.4bpp.lz");
 static const u32 sUiTilemap[] = INCBIN_U32("graphics/excavation/ui.bin.lz");
 static const u16 sUiPalette[] = INCBIN_U16("graphics/excavation/ui.gbapal");
 
+static const u32 gCracksAndTerrainTiles[] = INCBIN_U32("graphics/excavation/cracks_terrain.4bpp.lz");
+static const u32 gCracksAndTerrainTilemap[] = INCBIN_U32("graphics/excavation/cracks_terrain.bin.lz");
+static const u16 gCracksAndTerrainPalette[] = INCBIN_U16("graphics/excavation/cracks_terrain.gbapal");
+
+
+// Other Sprite Tags
 #define TAG_CURSOR 1
 #define TAG_BUTTONS 2
-#define TAG_TESTITEM 3
 
+// Sprite data
 const u32 gCursorGfx[] = INCBIN_U32("graphics/pokenav/region_map/cursor_small.4bpp.lz");
 const u16 gCursorPal[] = INCBIN_U16("graphics/pokenav/region_map/cursor.gbapal");
 
 const u32 gButtonGfx[] = INCBIN_U32("graphics/excavation/buttons.4bpp.lz");
 const u16 gButtonPal[] = INCBIN_U16("graphics/excavation/buttons.gbapal");
 
-const u32 gTestItemGfx[] = INCBIN_U32("graphics/excavation/fire_stone.4bpp.lz");
-const u16 gTestItemPal[] = INCBIN_U16("graphics/items/icon_palettes/fire_stone.gbapal");
 
-static const u32 gCracksAndTerrainTiles[] = INCBIN_U32("graphics/excavation/cracks_terrain.4bpp.lz");
-static const u32 gCracksAndTerrainTilemap[] = INCBIN_U32("graphics/excavation/cracks_terrain.bin.lz");
-static const u16 gCracksAndTerrainPalette[] = INCBIN_U16("graphics/excavation/cracks_terrain.gbapal");
+// Item Tags
+#define TAG_ITEM_HEARTSCALE 3
+#define TAG_ITEM_HARDSTONE  4
+#define TAG_ITEM_REVIVE     5
+#define TAG_ITEM_STAR_PIECE 6
+#define TAG_ITEM_REVIVE_MAX 7
+
+// Item sprite data
+const u32 gItemHeartScaleGfx[] = INCBIN_U32("graphics/excavation/items/heart_scale.4bpp.lz");
+const u16 gItemHeartScalePal[] = INCBIN_U16("graphics/excavation/items/heart_scale.gbapal");
+
+const u32 gItemHardStoneGfx[] = INCBIN_U32("graphics/excavation/items/hard_stone.4bpp.lz");
+const u16 gItemHardStonePal[] = INCBIN_U16("graphics/excavation/items/hard_stone.gbapal");
+
+const u32 gItemReviveGfx[] = INCBIN_U32("graphics/excavation/items/revive.4bpp.lz");
+const u16 gItemRevivePal[] = INCBIN_U16("graphics/excavation/items/revive.gbapal");
+
+const u32 gItemStarPieceGfx[] = INCBIN_U32("graphics/excavation/items/star_piece.4bpp.lz");
+const u16 gItemStarPiecePal[] = INCBIN_U16("graphics/excavation/items/star_piece.gbapal");
+
+const u32 gItemReviveMaxGfx[] = INCBIN_U32("graphics/excavation/items/revive_max.4bpp.lz");
+const u16 gItemReviveMaxPal[] = INCBIN_U16("graphics/excavation/items/revive_max.gbapal");
 
 static const struct CompressedSpriteSheet sSpriteSheet_Cursor[] =
 {
-    {gCursorGfx, 256, TAG_CURSOR},
-    {NULL},
+  {gCursorGfx, 256, TAG_CURSOR},
+  {NULL},
 };
 
 static const struct SpritePalette sSpritePal_Cursor[] =
 {
-    {gCursorPal, TAG_CURSOR},
-    {NULL},
+  {gCursorPal, TAG_CURSOR},
+  {NULL},
 };
 
 static const struct CompressedSpriteSheet sSpriteSheet_Buttons[] = 
@@ -142,21 +173,64 @@ static const struct CompressedSpriteSheet sSpriteSheet_Buttons[] =
 
 static const struct SpritePalette sSpritePal_Buttons[] = 
 {
-    {gButtonPal, TAG_BUTTONS},
-    {NULL},
-};
-
-static const struct CompressedSpriteSheet sSpriteSheet_TestItem[] = {
-  {gTestItemGfx, 32*32, TAG_TESTITEM},
+  {gButtonPal, TAG_BUTTONS},
   {NULL},
 };
 
-static const struct SpritePalette sSpritePal_TestItem[] =
-{
-    {gTestItemPal, TAG_TESTITEM},
-    {NULL},
+static const struct CompressedSpriteSheet sSpriteSheet_ItemHeartScale[] = {
+  {gItemHeartScaleGfx, 32*32, TAG_ITEM_HEARTSCALE},
+  {NULL},
 };
 
+static const struct SpritePalette sSpritePal_ItemHeartScale[] =
+{
+  {gItemHeartScalePal, TAG_ITEM_HEARTSCALE},
+  {NULL},
+};
+
+static const struct CompressedSpriteSheet sSpriteSheet_ItemHardStone[] = {
+  {gItemHardStoneGfx, 32*32, TAG_ITEM_HARDSTONE},
+  {NULL},
+};
+
+static const struct SpritePalette sSpritePal_ItemHardStone[] =
+{
+  {gItemHardStonePal, TAG_ITEM_HARDSTONE},
+  {NULL},
+};
+
+static const struct CompressedSpriteSheet sSpriteSheet_ItemRevive[] = {
+  {gItemReviveGfx, 64*64, TAG_ITEM_REVIVE},
+  {NULL},
+};
+
+static const struct SpritePalette sSpritePal_ItemRevive[] =
+{
+  {gItemRevivePal, TAG_ITEM_REVIVE},
+  {NULL},
+};
+
+static const struct CompressedSpriteSheet sSpriteSheet_ItemStarPiece[] = {
+  {gItemStarPieceGfx, 64*64, TAG_ITEM_STAR_PIECE},
+  {NULL},
+};
+
+static const struct SpritePalette sSpritePal_ItemStarPiece[] =
+{
+  {gItemStarPiecePal, TAG_ITEM_STAR_PIECE},
+  {NULL},
+};
+
+static const struct CompressedSpriteSheet sSpriteSheet_ItemReviveMax[] = {
+  {gItemReviveMaxGfx, 64*64, TAG_ITEM_REVIVE_MAX},
+  {NULL},
+};
+
+static const struct SpritePalette sSpritePal_ItemReviveMax[] =
+{
+  {gItemReviveMaxPal, TAG_ITEM_REVIVE_MAX},
+  {NULL},
+};
 
 static const struct OamData gOamCursor = {
     .y = 0,
@@ -186,9 +260,9 @@ static const struct OamData gOamButton = {
     .paletteNum = 0,
 };
 
-//#define TEST
+#define DEBUG_ITEM_GEN
 
-static const struct OamData gOamTestitem = {
+static const struct OamData gOamItem32x32 = {
     .y = 0,
     .affineMode = 0,
     .objMode = 0,
@@ -198,7 +272,25 @@ static const struct OamData gOamTestitem = {
     .matrixNum = 0,
     .size = 2,
     .tileNum = 0,
-    #ifdef TEST
+    #ifdef DEBUG_ITEM_GEN
+    .priority = 0,
+    #else
+    .priority = 3,
+    #endif
+    .paletteNum = 0,
+};
+
+static const struct OamData gOamItem64x64 = {
+    .y = 0,
+    .affineMode = 0,
+    .objMode = 0,
+    .bpp = 0,
+    .shape = 0,
+    .x = 0,
+    .matrixNum = 0,
+    .size = 3,
+    .tileNum = 0,
+    #ifdef DEBUG_ITEM_GEN
     .priority = 0,
     #else
     .priority = 3,
@@ -263,7 +355,6 @@ static const struct SpriteTemplate gSpriteButtonRed = {
     .oam = &gOamButton,
     .anims = gButtonRedAnim,
     .images = NULL,
-    // No rotating or scaling
     .affineAnims = gDummySpriteAffineAnimTable,
     .callback = SpriteCallbackDummy,
 };
@@ -274,18 +365,56 @@ static const struct SpriteTemplate gSpriteButtonBlue = {
     .oam = &gOamButton,
     .anims = gButtonBlueAnim,
     .images = NULL,
-    // No rotating or scaling
     .affineAnims = gDummySpriteAffineAnimTable,
     .callback = SpriteCallbackDummy,
 };
 
-static const struct SpriteTemplate gSpriteTestItem = {
-    .tileTag = TAG_TESTITEM,
-    .paletteTag = TAG_TESTITEM,
-    .oam = &gOamTestitem,
+static const struct SpriteTemplate gSpriteItemHeartScale = {
+    .tileTag = TAG_ITEM_HEARTSCALE,
+    .paletteTag = TAG_ITEM_HEARTSCALE,
+    .oam = &gOamItem32x32,
     .anims = gDummySpriteAnimTable,
     .images = NULL,
-    // No rotating or scaling
+    .affineAnims = gDummySpriteAffineAnimTable,
+    .callback = SpriteCallbackDummy,
+};
+
+static const struct SpriteTemplate gSpriteItemHardStone = {
+    .tileTag = TAG_ITEM_HARDSTONE,
+    .paletteTag = TAG_ITEM_HARDSTONE,
+    .oam = &gOamItem32x32,
+    .anims = gDummySpriteAnimTable,
+    .images = NULL,
+    .affineAnims = gDummySpriteAffineAnimTable,
+    .callback = SpriteCallbackDummy,
+};
+
+static const struct SpriteTemplate gSpriteItemRevive = {
+    .tileTag = TAG_ITEM_REVIVE,
+    .paletteTag = TAG_ITEM_REVIVE,
+    .oam = &gOamItem64x64,
+    .anims = gDummySpriteAnimTable,
+    .images = NULL,
+    .affineAnims = gDummySpriteAffineAnimTable,
+    .callback = SpriteCallbackDummy,
+};
+
+static const struct SpriteTemplate gSpriteItemStarPiece = {
+    .tileTag = TAG_ITEM_STAR_PIECE,
+    .paletteTag = TAG_ITEM_STAR_PIECE,
+    .oam = &gOamItem64x64,
+    .anims = gDummySpriteAnimTable,
+    .images = NULL,
+    .affineAnims = gDummySpriteAffineAnimTable,
+    .callback = SpriteCallbackDummy,
+};
+
+static const struct SpriteTemplate gSpriteItemReviveMax = {
+    .tileTag = TAG_ITEM_REVIVE_MAX,
+    .paletteTag = TAG_ITEM_REVIVE_MAX,
+    .oam = &gOamItem64x64,
+    .anims = gDummySpriteAnimTable,
+    .images = NULL,
     .affineAnims = gDummySpriteAffineAnimTable,
     .callback = SpriteCallbackDummy,
 };
@@ -347,18 +476,17 @@ static void Excavation_Init(MainCallback callback) {
     sExcavationUiState->crackCount = 0;
     sExcavationUiState->crackPos = 0;
 
-    // TODO: Make a proper 0 or 5 generation for each item state
+    // TODO: Make a proper SELECTION generation for each item state
     // 0 means that the item is gonna be drawn
-    // 5 means that the item is not gonna be drawn
-    sExcavationUiState->state_item1 = 0;
-    sExcavationUiState->state_item2 = 0;
-    sExcavationUiState->state_item3 = 5;
-    sExcavationUiState->state_item4 = 5;
+    // 255 means that the item is not gonna be drawn
+    sExcavationUiState->state_item1 = SELECTED;
+    sExcavationUiState->state_item2 = SELECTED;
+    sExcavationUiState->state_item3 = SELECTED;
+    sExcavationUiState->state_item4 = SELECTED;
 
     SetMainCallback2(Excavation_SetupCB);
 }
 
-// TODO: Finish switch statement 
 static void Excavation_SetupCB(void) {
   u8 taskId;
   switch(gMain.state) {
@@ -433,7 +561,6 @@ static void Excavation_SetupCB(void) {
   }
 }
 
-// TODO: Create VARs and FUNCTIONs 
 static bool8 Excavation_InitBgs(void)
 {
     /*
@@ -557,9 +684,6 @@ static void Excavation_FadeAndBail(void)
     SetMainCallback2(Excavation_MainCB);
 }
 
-// TODO:
-// * Create tiles
-// * Create palette
 static bool8 Excavation_LoadBgGraphics(void) {
   
   switch (sExcavationUiState->loadState) {
@@ -606,17 +730,21 @@ static void Excavation_LoadSpriteGraphics(void) {
   LoadCompressedSpriteSheet(sSpriteSheet_Buttons);
  
   CleanItemMap(); 
-  if (sExcavationUiState->state_item1 == 0) {
-    DrawRandomItem(1);
+  if (sExcavationUiState->state_item1 == SELECTED) {
+    DoDrawRandomItem(1, ITEMID_REVIVE_MAX);
+    sExcavationUiState->Item1_TilesToDigUp = 9;
   } 
-  if (sExcavationUiState->state_item2 == 0) {
-    DrawRandomItem(2);
+  if (sExcavationUiState->state_item2 == SELECTED) {
+    DoDrawRandomItem(2, ITEMID_STAR_PIECE);
+    sExcavationUiState->Item2_TilesToDigUp = 5;
   }
-  if (sExcavationUiState->state_item3 == 0) {
-    DrawRandomItem(3);
+  if (sExcavationUiState->state_item3 == SELECTED) {
+    DoDrawRandomItem(3, ITEMID_HARD_STONE);
+    sExcavationUiState->Item3_TilesToDigUp = 4;
   }
-  if (sExcavationUiState->state_item4 == 0) {
-    DrawRandomItem(4);
+  if (sExcavationUiState->state_item4 == SELECTED) {
+    DoDrawRandomItem(4, ITEMID_HEART_SCALE);
+    sExcavationUiState->Item4_TilesToDigUp = 3;
   }
 
   sExcavationUiState->cursorSpriteIndex = CreateSprite(&gSpriteCursor, 8, 40, 0);
@@ -637,7 +765,6 @@ static void Task_ExcavationWaitFadeIn(u8 taskId)
 #define CURSOR_SPRITE gSprites[sExcavationUiState->cursorSpriteIndex]
 #define BLUE_BUTTON 0
 #define RED_BUTTON 1
-
 
 static void Task_ExcavationMainInput(u8 taskId) {
   if (JOY_NEW(B_BUTTON)) {
@@ -963,17 +1090,114 @@ static void Terrain_DrawLayerTileToScreen(u8 x, u8 y, u8 layer, u16* ptr) {
   }
 }
 
+//#define ITEMID_HEART_SCALE  0
+//#define ITEMID_HARD_STONE   1
+//#define ITEMID_REVIVE       2
+
+// These offset values are important because I dont want the sprites to be placed somewhere regarding the center and not the top left corner
+//
+// Basically what these offset do is this: (c is the center the sprite uses to navigate the position and @ is the point we want, the top left corner; for a 32x32 sprite)
+//
+// @--|--|
+// |--c--|
+// |--|--|
+//
+// x + 16:
+//
+//    @--|--| 
+//    c--|--|
+//    |--|--|
+//
+// and finally, y + 16
+// 
+//    (@c)--|--|
+//    | - - |--|
+//    | - - |--|
+//
+
+#define POS_OFFS_32X32 16
+#define POS_OFFS_64x64 32
+
 // TODO: Make every item have a palette, even if two items have the same palette
-static void DrawRandomItemAtPos(u8 x, u8 y) {
-  // CreateSprite( x*16, (y*16)+(2*16) );
-  LoadSpritePalette(sSpritePal_TestItem);
-  LoadCompressedSpriteSheet(sSpriteSheet_TestItem);
-  CreateSprite(&gSpriteTestItem, (x*16)+16, (y*16)+(2*16)+16, 3);
+static void DrawItemSprite(u8 x, u8 y, u8 itemId) {
+  u8 posX = x * 16;
+  u8 posY = y * 16 + 32;
+  //ExcavationItem_LoadPalette(gTestItemPal, tag);
+
+  //LoadPalette(gTestItemPal, OBJ_PLTT_ID(3), PLTT_SIZE_4BPP);
+  switch(itemId) {
+    case ITEMID_HEART_SCALE:
+      LoadSpritePalette(sSpritePal_ItemHeartScale);
+      LoadCompressedSpriteSheet(sSpriteSheet_ItemHeartScale);
+      CreateSprite(&gSpriteItemHeartScale, posX+POS_OFFS_32X32, posY+POS_OFFS_32X32, 3);
+      break;
+    case ITEMID_HARD_STONE: 
+      LoadSpritePalette(sSpritePal_ItemHardStone);
+      LoadCompressedSpriteSheet(sSpriteSheet_ItemHardStone);
+      CreateSprite(&gSpriteItemHardStone, posX+POS_OFFS_32X32, posY+POS_OFFS_32X32, 3);
+      break;
+    case ITEMID_REVIVE:
+      LoadSpritePalette(sSpritePal_ItemRevive);
+      LoadCompressedSpriteSheet(sSpriteSheet_ItemRevive);
+      CreateSprite(&gSpriteItemRevive, posX+POS_OFFS_64x64, posY+POS_OFFS_64x64, 3);
+      break;
+    case ITEMID_STAR_PIECE:
+      LoadSpritePalette(sSpritePal_ItemStarPiece);
+      LoadCompressedSpriteSheet(sSpriteSheet_ItemStarPiece);
+      CreateSprite(&gSpriteItemStarPiece, posX+POS_OFFS_64x64, posY+POS_OFFS_64x64, 3);
+      break;
+    case ITEMID_REVIVE_MAX:
+      LoadSpritePalette(sSpritePal_ItemReviveMax);
+      LoadCompressedSpriteSheet(sSpriteSheet_ItemReviveMax);
+      CreateSprite(&gSpriteItemReviveMax, posX+POS_OFFS_64x64, posY+POS_OFFS_64x64, 3);
+      break; 
+  }
+}
+
+static void OverwriteItemMapData(u8 posX, u8 posY, u8 itemStateId, u8 itemId) {
+  switch (itemId) {
+    case ITEMID_HEART_SCALE:
+      sExcavationUiState->itemMap[posX + posY * 12]           = itemStateId;
+      sExcavationUiState->itemMap[posX + (posY + 1) * 12]     = itemStateId;
+      sExcavationUiState->itemMap[posX + 1 + (posY + 1) * 12] = itemStateId;
+      break;
+    case ITEMID_HARD_STONE:
+      sExcavationUiState->itemMap[posX + posY * 12]           = itemStateId;
+      sExcavationUiState->itemMap[posX + 1 + posY * 12]       = itemStateId;
+      sExcavationUiState->itemMap[posX + (posY + 1) * 12]     = itemStateId;
+      sExcavationUiState->itemMap[posX + 1 + (posY + 1) * 12] = itemStateId;
+      break;
+    case ITEMID_REVIVE:
+      sExcavationUiState->itemMap[posX + 1 + (posY + 1) * 12] = itemStateId;
+      sExcavationUiState->itemMap[posX + 1 + posY * 12]       = itemStateId;
+      sExcavationUiState->itemMap[posX + (posY + 1) * 12]     = itemStateId;
+      sExcavationUiState->itemMap[posX + 2 + (posY + 1) * 12] = itemStateId;
+      sExcavationUiState->itemMap[posX + 1 + (posY + 2) * 12] = itemStateId;
+      break;
+    case ITEMID_STAR_PIECE:
+      sExcavationUiState->itemMap[posX + 1 + (posY + 1) * 12] = itemStateId;
+      sExcavationUiState->itemMap[posX + 1 + posY * 12]       = itemStateId;
+      sExcavationUiState->itemMap[posX + (posY + 1) * 12]     = itemStateId;
+      sExcavationUiState->itemMap[posX + 2 + (posY + 1) * 12] = itemStateId;
+      sExcavationUiState->itemMap[posX + 1 + (posY + 2) * 12] = itemStateId;
+      break;
+    case ITEMID_REVIVE_MAX:
+      sExcavationUiState->itemMap[posX + 1 + (posY + 1) * 12] = itemStateId;
+      sExcavationUiState->itemMap[posX + 1 + posY * 12]       = itemStateId;
+      sExcavationUiState->itemMap[posX + (posY + 1) * 12]     = itemStateId;
+      sExcavationUiState->itemMap[posX + 2 + (posY + 1) * 12] = itemStateId;
+      sExcavationUiState->itemMap[posX + 1 + (posY + 2) * 12] = itemStateId;
+      sExcavationUiState->itemMap[posX + posY * 12]           = itemStateId;
+      sExcavationUiState->itemMap[posX + 2 + posY * 12]       = itemStateId;
+      sExcavationUiState->itemMap[posX + (posY + 2) * 12]     = itemStateId;
+      sExcavationUiState->itemMap[posX + 2 + (posY + 2) * 12] = itemStateId;
+      break;
+  }
 }
 
 // TODO: Make generation of not only 2x2 items, but also larger items
 // u8 item is for which item to draw (item1, item2, item3 or item4)
-static void DrawRandomItem(u8 item) {
+static void DoDrawRandomItem(u8 itemStateId, u8 itemId) {
   u8 i;
   u8 rnd;
   u8 posX;
@@ -997,11 +1221,8 @@ static void DrawRandomItem(u8 item) {
           posY = (Random() >> 5);
 
           if (posY < 7 && posX < 11) {
-            DrawRandomItemAtPos(posX, posY);
-            sExcavationUiState->itemMap[posX + (posY * 12)] = item;
-            sExcavationUiState->itemMap[posX + 1 + (posY *12)] = item;
-            sExcavationUiState->itemMap[posX + (posY+1)*12] = item;
-            sExcavationUiState->itemMap[posX+1 + (posY+1)*12] = item;
+            DrawItemSprite(posX, posY, itemId); // First, only draw the sprite
+            OverwriteItemMapData(posX, posY, itemStateId, itemId); // For the collection logic, overwrite the itemmap data
             itemCount++;
             break;
           }
@@ -1011,43 +1232,75 @@ static void DrawRandomItem(u8 item) {
   }
 }
 
-#define FULL 4
-#define STOP 5
-
 // TODO: Make BeginNormalPaletteFade work
 // TODO: Finish function for all 2x2 items
 // TODO: Then make it work for all items with different size
 static void Excavation_CheckItemFound(void) {
+  u8 full;
+  u8 stop;
   u8 i;
 
-  if (sExcavationUiState->state_item1 < FULL) {
+  full = sExcavationUiState->Item1_TilesToDigUp;
+  stop = full+1;
+
+  if (sExcavationUiState->state_item1 < full) {
     for(i=0;i<96;i++) {
       if(sExcavationUiState->itemMap[i] == 1 && sExcavationUiState->layerMap[i] == 6) {
         sExcavationUiState->itemMap[i] = 0;
         sExcavationUiState->state_item1++;
       }
     }
-  } else if (sExcavationUiState->state_item1 == FULL) {
+  } else if (sExcavationUiState->state_item1 == full) {
     BeginNormalPaletteFade(0x00040000, 2, 16, 0, RGB_WHITE);
-    sExcavationUiState->state_item1 = STOP;
+    sExcavationUiState->state_item1 = stop;
   }
 
-  if (sExcavationUiState->state_item2 < FULL) {
+  full = sExcavationUiState->Item2_TilesToDigUp;
+  stop = full+1;
+
+  if (sExcavationUiState->state_item2 < full) {
     for(i=0;i<96;i++) {
       if(sExcavationUiState->itemMap[i] == 2 && sExcavationUiState->layerMap[i] == 6) {
         sExcavationUiState->itemMap[i] = 0;
         sExcavationUiState->state_item2++;
       }
     }
-  } else if (sExcavationUiState->state_item2 == FULL) {
-    BeginNormalPaletteFade(0x00060000, 2, 16, 0, RGB_WHITE); 
-    sExcavationUiState->state_item2 = STOP;
+  } else if (sExcavationUiState->state_item2 == full) {
+    BeginNormalPaletteFade(0x00080000, 2, 16, 0, RGB_WHITE); 
+    sExcavationUiState->state_item2 = stop;
+  }
+
+  full = sExcavationUiState->Item3_TilesToDigUp;
+  stop = full+1;
+  
+  if (sExcavationUiState->state_item3 < full) {
+    for(i=0;i<96;i++) {
+      if(sExcavationUiState->itemMap[i] == 3 && sExcavationUiState->layerMap[i] == 6) {
+        sExcavationUiState->itemMap[i] = 0;
+        sExcavationUiState->state_item3++;
+      }
+    }
+  } else if (sExcavationUiState->state_item3 == full) {
+    BeginNormalPaletteFade(0x00100000, 2, 16, 0, RGB_WHITE); 
+    sExcavationUiState->state_item3 = stop;
+  }
+
+  full = sExcavationUiState->Item4_TilesToDigUp;
+  stop = full+1;
+  
+  if (sExcavationUiState->state_item4 < full) {
+    for(i=0;i<96;i++) {
+      if(sExcavationUiState->itemMap[i] == 4 && sExcavationUiState->layerMap[i] == 6) {
+        sExcavationUiState->itemMap[i] = 0;
+        sExcavationUiState->state_item4++;
+      }
+    }
+  } else if (sExcavationUiState->state_item4 == full) {
+    BeginNormalPaletteFade(0x00200000, 2, 16, 0, RGB_WHITE); 
+    sExcavationUiState->state_item4 = stop;
   }
 
 }
-
-#undef FULL
-#undef STOP
 
 // Randomly generates a terrain, stores the layering in an array and draw the right tiles, with the help of the layer map, to the screen.
 // Use the above function just to draw a tile once (for updating the tile, use Terrain_UpdateLayerTileOnScreen(...); )
