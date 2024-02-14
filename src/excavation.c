@@ -260,7 +260,7 @@ static const struct OamData gOamButton = {
     .paletteNum = 0,
 };
 
-#define DEBUG_ITEM_GEN
+// #define DEBUG_ITEM_GEN
 
 static const struct OamData gOamItem32x32 = {
     .y = 0,
@@ -1195,6 +1195,67 @@ static void OverwriteItemMapData(u8 posX, u8 posY, u8 itemStateId, u8 itemId) {
   }
 }
 
+// This function is used to determine wether an item should be placed or not.
+// Items could generate on top of each other if this function isnt used to check if the next placement will overwrite other data in itemMap
+// It does that by checking if the value at position `some x` and `some y` in itemMap, is holding either the value 1,2,3 or 4;
+// If yes, return 0 (false, so item should not be drawn and instead new positions should be generated)
+// If no, return 1 (true) and the item can be drawn to the screen
+static u8 CheckIfItemCanBePlaced(u8 itemId, u8 posX, u8 posY) {
+  u8 i;
+
+  for(i=1;i<=4;i++) {
+  
+    switch (itemId) {
+      case ITEMID_HEART_SCALE:
+        if (
+          sExcavationUiState->itemMap[posX + posY * 12]           == i ||
+          sExcavationUiState->itemMap[posX + (posY + 1) * 12]     == i || 
+          sExcavationUiState->itemMap[posX + 1 + (posY + 1) * 12] == i
+        ) { return 0;}
+        break;
+      case ITEMID_HARD_STONE:
+        if (
+          sExcavationUiState->itemMap[posX + posY * 12]           == i ||
+          sExcavationUiState->itemMap[posX + 1 + posY * 12]       == i ||
+          sExcavationUiState->itemMap[posX + (posY + 1) * 12]     == i ||
+          sExcavationUiState->itemMap[posX + 1 + (posY + 1) * 12] == i
+        ) {return 0;}
+        break;
+      case ITEMID_REVIVE:
+        if (
+          sExcavationUiState->itemMap[posX + 1 + (posY + 1) * 12] == i ||
+          sExcavationUiState->itemMap[posX + 1 + posY * 12]       == i ||
+          sExcavationUiState->itemMap[posX + (posY + 1) * 12]     == i ||
+          sExcavationUiState->itemMap[posX + 2 + (posY + 1) * 12] == i ||
+          sExcavationUiState->itemMap[posX + 1 + (posY + 2) * 12] == i
+        ) {return 0;}
+        break;
+      case ITEMID_STAR_PIECE:
+        if (
+          sExcavationUiState->itemMap[posX + 1 + (posY + 1) * 12] == i ||
+          sExcavationUiState->itemMap[posX + 1 + posY * 12]       == i ||
+          sExcavationUiState->itemMap[posX + (posY + 1) * 12]     == i ||
+          sExcavationUiState->itemMap[posX + 2 + (posY + 1) * 12] == i ||
+          sExcavationUiState->itemMap[posX + 1 + (posY + 2) * 12] == i
+        ) {return 0;}
+        break;
+      case ITEMID_REVIVE_MAX:
+        if (
+          sExcavationUiState->itemMap[posX + 1 + (posY + 1) * 12] == i ||
+          sExcavationUiState->itemMap[posX + 1 + posY * 12]       == i ||
+          sExcavationUiState->itemMap[posX + (posY + 1) * 12]     == i ||
+          sExcavationUiState->itemMap[posX + 2 + (posY + 1) * 12] == i ||
+          sExcavationUiState->itemMap[posX + 1 + (posY + 2) * 12] == i ||
+          sExcavationUiState->itemMap[posX + posY * 12]           == i ||
+          sExcavationUiState->itemMap[posX + 2 + posY * 12]       == i ||
+          sExcavationUiState->itemMap[posX + (posY + 2) * 12]     == i ||
+          sExcavationUiState->itemMap[posX + 2 + (posY + 2) * 12] == i
+        ) {return 0;}
+        break;
+      }
+  }
+  return TRUE;
+}
 // TODO: Make generation of not only 2x2 items, but also larger items
 // u8 item is for which item to draw (item1, item2, item3 or item4)
 static void DoDrawRandomItem(u8 itemStateId, u8 itemId) {
@@ -1203,6 +1264,7 @@ static void DoDrawRandomItem(u8 itemStateId, u8 itemId) {
   u8 posX;
   u8 posY;
   u8 t;
+  u8 canItemBePlaced = 1;
   u8 itemCount = 0;
 
   // Currently only 2x2 item sprites!!
@@ -1219,8 +1281,8 @@ static void DoDrawRandomItem(u8 itemStateId, u8 itemId) {
           posX = t > 4 ? t-5 : t;
           // 8 possiblities
           posY = (Random() >> 5);
-
-          if (posY < 7 && posX < 11) {
+          canItemBePlaced = CheckIfItemCanBePlaced(itemId, posX, posY);
+          if (posY < 7 && posX < 11 && canItemBePlaced == 1) {
             DrawItemSprite(posX, posY, itemId); // First, only draw the sprite
             OverwriteItemMapData(posX, posY, itemStateId, itemId); // For the collection logic, overwrite the itemmap data
             itemCount++;
