@@ -260,7 +260,7 @@ static const struct OamData gOamButton = {
     .paletteNum = 0,
 };
 
-// #define DEBUG_ITEM_GEN
+#define DEBUG_ITEM_GEN
 
 static const struct OamData gOamItem32x32 = {
     .y = 0,
@@ -1200,6 +1200,10 @@ static void OverwriteItemMapData(u8 posX, u8 posY, u8 itemStateId, u8 itemId) {
 // It does that by checking if the value at position `some x` and `some y` in itemMap, is holding either the value 1,2,3 or 4;
 // If yes, return 0 (false, so item should not be drawn and instead new positions should be generated)
 // If no, return 1 (true) and the item can be drawn to the screen
+//
+// And theres the posX and posY check. They are there to make sure that the item sprite will not be drawn outside the box.
+// *_RIGHT tells whats the max. amount of tiles if you go from left to right (starting with 0)
+// the same with *_BOTTOM but going down from top to bottom
 static u8 CheckIfItemCanBePlaced(u8 itemId, u8 posX, u8 posY) {
   u8 i;
 
@@ -1210,7 +1214,9 @@ static u8 CheckIfItemCanBePlaced(u8 itemId, u8 posX, u8 posY) {
         if (
           sExcavationUiState->itemMap[posX + posY * 12]           == i ||
           sExcavationUiState->itemMap[posX + (posY + 1) * 12]     == i || 
-          sExcavationUiState->itemMap[posX + 1 + (posY + 1) * 12] == i
+          sExcavationUiState->itemMap[posX + 1 + (posY + 1) * 12] == i ||
+          posX + HEART_SCALE_TILE_AMOUNT_RIGHT > 11 ||
+          posY + HEART_SCALE_TILE_AMOUNT_BOTTOM > 7
         ) { return 0;}
         break;
       case ITEMID_HARD_STONE:
@@ -1218,7 +1224,9 @@ static u8 CheckIfItemCanBePlaced(u8 itemId, u8 posX, u8 posY) {
           sExcavationUiState->itemMap[posX + posY * 12]           == i ||
           sExcavationUiState->itemMap[posX + 1 + posY * 12]       == i ||
           sExcavationUiState->itemMap[posX + (posY + 1) * 12]     == i ||
-          sExcavationUiState->itemMap[posX + 1 + (posY + 1) * 12] == i
+          sExcavationUiState->itemMap[posX + 1 + (posY + 1) * 12] == i ||
+          posX + HARD_STONE_TILE_AMOUNT_RIGHT > 11 ||
+          posY + HARD_STONE_TILE_AMOUNT_BOTTOM > 7
         ) {return 0;}
         break;
       case ITEMID_REVIVE:
@@ -1227,7 +1235,9 @@ static u8 CheckIfItemCanBePlaced(u8 itemId, u8 posX, u8 posY) {
           sExcavationUiState->itemMap[posX + 1 + posY * 12]       == i ||
           sExcavationUiState->itemMap[posX + (posY + 1) * 12]     == i ||
           sExcavationUiState->itemMap[posX + 2 + (posY + 1) * 12] == i ||
-          sExcavationUiState->itemMap[posX + 1 + (posY + 2) * 12] == i
+          sExcavationUiState->itemMap[posX + 1 + (posY + 2) * 12] == i ||
+          posX + REVIVE_TILE_AMOUNT_RIGHT > 11 ||
+          posY + REVIVE_TILE_AMOUNT_BOTTOM > 7
         ) {return 0;}
         break;
       case ITEMID_STAR_PIECE:
@@ -1236,7 +1246,9 @@ static u8 CheckIfItemCanBePlaced(u8 itemId, u8 posX, u8 posY) {
           sExcavationUiState->itemMap[posX + 1 + posY * 12]       == i ||
           sExcavationUiState->itemMap[posX + (posY + 1) * 12]     == i ||
           sExcavationUiState->itemMap[posX + 2 + (posY + 1) * 12] == i ||
-          sExcavationUiState->itemMap[posX + 1 + (posY + 2) * 12] == i
+          sExcavationUiState->itemMap[posX + 1 + (posY + 2) * 12] == i ||
+          posX + STAR_PIECE_TILE_AMOUNT_RIGHT > 11 ||
+          posY + STAR_PIECE_TILE_AMOUNT_BOTTOM > 7 
         ) {return 0;}
         break;
       case ITEMID_REVIVE_MAX:
@@ -1249,7 +1261,9 @@ static u8 CheckIfItemCanBePlaced(u8 itemId, u8 posX, u8 posY) {
           sExcavationUiState->itemMap[posX + posY * 12]           == i ||
           sExcavationUiState->itemMap[posX + 2 + posY * 12]       == i ||
           sExcavationUiState->itemMap[posX + (posY + 2) * 12]     == i ||
-          sExcavationUiState->itemMap[posX + 2 + (posY + 2) * 12] == i
+          sExcavationUiState->itemMap[posX + 2 + (posY + 2) * 12] == i ||
+          posX + REVIVE_MAX_TILE_AMOUNT_RIGHT > 11 ||
+          posY + REVIVE_MAX_TILE_AMOUNT_BOTTOM > 7
         ) {return 0;}
         break;
       }

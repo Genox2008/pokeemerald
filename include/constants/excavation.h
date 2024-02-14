@@ -1,9 +1,25 @@
 #define SELECTED   0
 #define DESELECTED 255
 
+
 #define ITEMID_HEART_SCALE  0
+// I count the tiles beginning with 0
+#define HEART_SCALE_TILE_AMOUNT_RIGHT   1
+#define HEART_SCALE_TILE_AMOUNT_BOTTOM  1
+
 #define ITEMID_HARD_STONE   1
-#define ITEMID_REVIVE       2
+#define HARD_STONE_TILE_AMOUNT_RIGHT    1
+#define HARD_STONE_TILE_AMOUNT_BOTTOM   1  
+
+#define ITEMID_REVIVE                   2
+#define REVIVE_TILE_AMOUNT_RIGHT        2
+#define REVIVE_TILE_AMOUNT_BOTTOM       2
+
 #define ITEMID_STAR_PIECE   3
-#define ITEMID_REVIVE_MAX   4
+#define STAR_PIECE_TILE_AMOUNT_RIGHT    2
+#define STAR_PIECE_TILE_AMOUNT_BOTTOM   2
+
+#define ITEMID_REVIVE_MAX               4
+#define REVIVE_MAX_TILE_AMOUNT_RIGHT    2
+#define REVIVE_MAX_TILE_AMOUNT_BOTTOM   2
 
