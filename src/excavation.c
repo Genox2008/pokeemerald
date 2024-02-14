@@ -117,7 +117,6 @@ static const u32 gCracksAndTerrainTiles[] = INCBIN_U32("graphics/excavation/crac
 static const u32 gCracksAndTerrainTilemap[] = INCBIN_U32("graphics/excavation/cracks_terrain.bin.lz");
 static const u16 gCracksAndTerrainPalette[] = INCBIN_U16("graphics/excavation/cracks_terrain.gbapal");
 
-
 // Other Sprite Tags
 #define TAG_CURSOR 1
 #define TAG_BUTTONS 2
@@ -129,13 +128,16 @@ const u16 gCursorPal[] = INCBIN_U16("graphics/pokenav/region_map/cursor.gbapal")
 const u32 gButtonGfx[] = INCBIN_U32("graphics/excavation/buttons.4bpp.lz");
 const u16 gButtonPal[] = INCBIN_U16("graphics/excavation/buttons.gbapal");
 
-
 // Item Tags
 #define TAG_ITEM_HEARTSCALE 3
 #define TAG_ITEM_HARDSTONE  4
 #define TAG_ITEM_REVIVE     5
 #define TAG_ITEM_STAR_PIECE 6
-#define TAG_ITEM_REVIVE_MAX 7
+#define TAG_ITEM_DAMP_ROCK  7
+#define TAG_ITEM_RED_SHARD  8
+#define TAG_ITEM_BLUE_SHARD 9
+#define TAG_ITEM_IRON_BALL  10
+#define TAG_ITEM_REVIVE_MAX 11
 
 // Item sprite data
 const u32 gItemHeartScaleGfx[] = INCBIN_U32("graphics/excavation/items/heart_scale.4bpp.lz");
@@ -149,6 +151,18 @@ const u16 gItemRevivePal[] = INCBIN_U16("graphics/excavation/items/revive.gbapal
 
 const u32 gItemStarPieceGfx[] = INCBIN_U32("graphics/excavation/items/star_piece.4bpp.lz");
 const u16 gItemStarPiecePal[] = INCBIN_U16("graphics/excavation/items/star_piece.gbapal");
+
+const u32 gItemDampRockGfx[] = INCBIN_U32("graphics/excavation/items/damp_rock.4bpp.lz");
+const u16 gItemDampRockPal[] = INCBIN_U16("graphics/excavation/items/damp_rock.gbapal");
+
+const u32 gItemRedShardGfx[] = INCBIN_U32("graphics/excavation/items/red_shard.4bpp.lz");
+const u16 gItemRedShardPal[] = INCBIN_U16("graphics/excavation/items/red_shard.gbapal");
+
+const u32 gItemBlueShardGfx[] = INCBIN_U32("graphics/excavation/items/blue_shard.4bpp.lz");
+const u16 gItemBlueShardPal[] = INCBIN_U16("graphics/excavation/items/blue_shard.gbapal");
+
+const u32 gItemIronBallGfx[] = INCBIN_U32("graphics/excavation/items/iron_ball.4bpp.lz");
+const u16 gItemIronBallPal[] = INCBIN_U16("graphics/excavation/items/iron_ball.gbapal");
 
 const u32 gItemReviveMaxGfx[] = INCBIN_U32("graphics/excavation/items/revive_max.4bpp.lz");
 const u16 gItemReviveMaxPal[] = INCBIN_U16("graphics/excavation/items/revive_max.gbapal");
@@ -218,6 +232,50 @@ static const struct CompressedSpriteSheet sSpriteSheet_ItemStarPiece[] = {
 static const struct SpritePalette sSpritePal_ItemStarPiece[] =
 {
   {gItemStarPiecePal, TAG_ITEM_STAR_PIECE},
+  {NULL},
+};
+ 
+static const struct CompressedSpriteSheet sSpriteSheet_ItemDampRock[] = {
+  {gItemDampRockGfx, 64*64, TAG_ITEM_DAMP_ROCK},
+  {NULL},
+};
+
+static const struct SpritePalette sSpritePal_ItemDampRock[] =
+{
+  {gItemDampRockPal, TAG_ITEM_DAMP_ROCK},
+  {NULL},
+};
+ 
+static const struct CompressedSpriteSheet sSpriteSheet_ItemRedShard[] = {
+  {gItemRedShardGfx, 64*64, TAG_ITEM_RED_SHARD},
+  {NULL},
+};
+
+static const struct SpritePalette sSpritePal_ItemRedShard[] =
+{
+  {gItemRedShardPal, TAG_ITEM_RED_SHARD},
+  {NULL},
+};
+
+static const struct CompressedSpriteSheet sSpriteSheet_ItemBlueShard[] = {
+  {gItemBlueShardGfx, 64*64, TAG_ITEM_BLUE_SHARD},
+  {NULL},
+};
+
+static const struct SpritePalette sSpritePal_ItemBlueShard[] =
+{
+  {gItemBlueShardPal, TAG_ITEM_BLUE_SHARD},
+  {NULL},
+};
+
+static const struct CompressedSpriteSheet sSpriteSheet_ItemIronBall[] = {
+  {gItemIronBallGfx, 64*64, TAG_ITEM_IRON_BALL},
+  {NULL},
+};
+
+static const struct SpritePalette sSpritePal_ItemIronBall[] =
+{
+  {gItemIronBallPal, TAG_ITEM_IRON_BALL},
   {NULL},
 };
 
@@ -402,6 +460,46 @@ static const struct SpriteTemplate gSpriteItemRevive = {
 static const struct SpriteTemplate gSpriteItemStarPiece = {
     .tileTag = TAG_ITEM_STAR_PIECE,
     .paletteTag = TAG_ITEM_STAR_PIECE,
+    .oam = &gOamItem64x64,
+    .anims = gDummySpriteAnimTable,
+    .images = NULL,
+    .affineAnims = gDummySpriteAffineAnimTable,
+    .callback = SpriteCallbackDummy,
+};
+
+static const struct SpriteTemplate gSpriteItemDampRock = {
+    .tileTag = TAG_ITEM_DAMP_ROCK,
+    .paletteTag = TAG_ITEM_DAMP_ROCK,
+    .oam = &gOamItem64x64,
+    .anims = gDummySpriteAnimTable,
+    .images = NULL,
+    .affineAnims = gDummySpriteAffineAnimTable,
+    .callback = SpriteCallbackDummy,
+};
+
+static const struct SpriteTemplate gSpriteItemRedShard = {
+    .tileTag = TAG_ITEM_RED_SHARD,
+    .paletteTag = TAG_ITEM_RED_SHARD,
+    .oam = &gOamItem64x64,
+    .anims = gDummySpriteAnimTable,
+    .images = NULL,
+    .affineAnims = gDummySpriteAffineAnimTable,
+    .callback = SpriteCallbackDummy,
+};
+
+static const struct SpriteTemplate gSpriteItemBlueShard = {
+    .tileTag = TAG_ITEM_BLUE_SHARD,
+    .paletteTag = TAG_ITEM_BLUE_SHARD,
+    .oam = &gOamItem64x64,
+    .anims = gDummySpriteAnimTable,
+    .images = NULL,
+    .affineAnims = gDummySpriteAffineAnimTable,
+    .callback = SpriteCallbackDummy,
+};
+
+static const struct SpriteTemplate gSpriteItemIronBall = {
+    .tileTag = TAG_ITEM_IRON_BALL,
+    .paletteTag = TAG_ITEM_IRON_BALL,
     .oam = &gOamItem64x64,
     .anims = gDummySpriteAnimTable,
     .images = NULL,
@@ -731,20 +829,20 @@ static void Excavation_LoadSpriteGraphics(void) {
  
   CleanItemMap(); 
   if (sExcavationUiState->state_item1 == SELECTED) {
-    DoDrawRandomItem(1, ITEMID_REVIVE_MAX);
-    sExcavationUiState->Item1_TilesToDigUp = 9;
+    DoDrawRandomItem(1, ITEMID_IRON_BALL);
+    sExcavationUiState->Item1_TilesToDigUp = IRON_BALL_TOTAL_TILES;
   } 
   if (sExcavationUiState->state_item2 == SELECTED) {
-    DoDrawRandomItem(2, ITEMID_STAR_PIECE);
-    sExcavationUiState->Item2_TilesToDigUp = 5;
+    DoDrawRandomItem(2, ITEMID_DAMP_ROCK);
+    sExcavationUiState->Item2_TilesToDigUp = DAMP_ROCK_TOTAL_TILES;
   }
   if (sExcavationUiState->state_item3 == SELECTED) {
-    DoDrawRandomItem(3, ITEMID_HARD_STONE);
-    sExcavationUiState->Item3_TilesToDigUp = 4;
+    DoDrawRandomItem(3, ITEMID_RED_SHARD);
+    sExcavationUiState->Item3_TilesToDigUp = RED_SHARD_TOTAL_TILES;
   }
   if (sExcavationUiState->state_item4 == SELECTED) {
-    DoDrawRandomItem(4, ITEMID_HEART_SCALE);
-    sExcavationUiState->Item4_TilesToDigUp = 3;
+    DoDrawRandomItem(4, ITEMID_BLUE_SHARD);
+    sExcavationUiState->Item4_TilesToDigUp = BLUE_SHARD_TOTAL_TILES;
   }
 
   sExcavationUiState->cursorSpriteIndex = CreateSprite(&gSpriteCursor, 8, 40, 0);
@@ -1146,6 +1244,26 @@ static void DrawItemSprite(u8 x, u8 y, u8 itemId) {
       LoadCompressedSpriteSheet(sSpriteSheet_ItemStarPiece);
       CreateSprite(&gSpriteItemStarPiece, posX+POS_OFFS_64x64, posY+POS_OFFS_64x64, 3);
       break;
+    case ITEMID_DAMP_ROCK:
+      LoadSpritePalette(sSpritePal_ItemDampRock);
+      LoadCompressedSpriteSheet(sSpriteSheet_ItemDampRock);
+      CreateSprite(&gSpriteItemDampRock, posX+POS_OFFS_64x64, posY+POS_OFFS_64x64, 3);
+      break;
+    case ITEMID_RED_SHARD:
+      LoadSpritePalette(sSpritePal_ItemRedShard);
+      LoadCompressedSpriteSheet(sSpriteSheet_ItemRedShard);
+      CreateSprite(&gSpriteItemRedShard, posX+POS_OFFS_64x64, posY+POS_OFFS_64x64, 3);
+      break;
+    case ITEMID_BLUE_SHARD:
+      LoadSpritePalette(sSpritePal_ItemBlueShard);
+      LoadCompressedSpriteSheet(sSpriteSheet_ItemBlueShard);
+      CreateSprite(&gSpriteItemBlueShard, posX+POS_OFFS_64x64, posY+POS_OFFS_64x64, 3);
+      break;
+    case ITEMID_IRON_BALL:
+      LoadSpritePalette(sSpritePal_ItemIronBall);
+      LoadCompressedSpriteSheet(sSpriteSheet_ItemIronBall);
+      CreateSprite(&gSpriteItemIronBall, posX+POS_OFFS_64x64, posY+POS_OFFS_64x64, 3);
+      break;
     case ITEMID_REVIVE_MAX:
       LoadSpritePalette(sSpritePal_ItemReviveMax);
       LoadCompressedSpriteSheet(sSpriteSheet_ItemReviveMax);
@@ -1180,6 +1298,47 @@ static void OverwriteItemMapData(u8 posX, u8 posY, u8 itemStateId, u8 itemId) {
       sExcavationUiState->itemMap[posX + (posY + 1) * 12]     = itemStateId;
       sExcavationUiState->itemMap[posX + 2 + (posY + 1) * 12] = itemStateId;
       sExcavationUiState->itemMap[posX + 1 + (posY + 2) * 12] = itemStateId;
+      break;
+    case ITEMID_DAMP_ROCK:
+      sExcavationUiState->itemMap[posX + 1 + (posY + 1) * 12] = itemStateId;
+      sExcavationUiState->itemMap[posX + 1 + posY * 12]       = itemStateId;
+      sExcavationUiState->itemMap[posX + (posY + 1) * 12]     = itemStateId;
+      sExcavationUiState->itemMap[posX + 2 + (posY + 1) * 12] = itemStateId;
+      sExcavationUiState->itemMap[posX + posY * 12]           = itemStateId;
+      sExcavationUiState->itemMap[posX + 2 + posY * 12]       = itemStateId;
+      sExcavationUiState->itemMap[posX + (posY + 2) * 12]     = itemStateId;
+      sExcavationUiState->itemMap[posX + 2 + (posY + 2) * 12] = itemStateId;
+      break;
+    case ITEMID_RED_SHARD:
+      sExcavationUiState->itemMap[posX + 1 + (posY + 1) * 12] = itemStateId;
+      sExcavationUiState->itemMap[posX + 1 + posY * 12]       = itemStateId;
+      sExcavationUiState->itemMap[posX + (posY + 1) * 12]     = itemStateId;
+      sExcavationUiState->itemMap[posX + 1 + (posY + 2) * 12] = itemStateId;
+      sExcavationUiState->itemMap[posX + posY * 12]           = itemStateId;
+      sExcavationUiState->itemMap[posX + 2 + posY * 12]       = itemStateId;
+      sExcavationUiState->itemMap[posX + (posY + 2) * 12]     = itemStateId;
+      sExcavationUiState->itemMap[posX + 2 + (posY + 2) * 12] = itemStateId;
+      break;
+    case ITEMID_BLUE_SHARD:
+      sExcavationUiState->itemMap[posX + 1 + (posY + 1) * 12] = itemStateId;
+      sExcavationUiState->itemMap[posX + 1 + posY * 12]       = itemStateId;
+      sExcavationUiState->itemMap[posX + (posY + 1) * 12]     = itemStateId;
+      sExcavationUiState->itemMap[posX + 2 + (posY + 1) * 12] = itemStateId;
+      sExcavationUiState->itemMap[posX + 1 + (posY + 2) * 12] = itemStateId;
+      sExcavationUiState->itemMap[posX + posY * 12]           = itemStateId;
+      sExcavationUiState->itemMap[posX + 2 + posY * 12]       = itemStateId;
+      sExcavationUiState->itemMap[posX + (posY + 2) * 12]     = itemStateId;
+      break;
+    case ITEMID_IRON_BALL:
+      sExcavationUiState->itemMap[posX + 1 + (posY + 1) * 12] = itemStateId;
+      sExcavationUiState->itemMap[posX + 1 + posY * 12]       = itemStateId;
+      sExcavationUiState->itemMap[posX + (posY + 1) * 12]     = itemStateId;
+      sExcavationUiState->itemMap[posX + 2 + (posY + 1) * 12] = itemStateId;
+      sExcavationUiState->itemMap[posX + 1 + (posY + 2) * 12] = itemStateId;
+      sExcavationUiState->itemMap[posX + posY * 12]           = itemStateId;
+      sExcavationUiState->itemMap[posX + 2 + posY * 12]       = itemStateId;
+      sExcavationUiState->itemMap[posX + (posY + 2) * 12]     = itemStateId;
+      sExcavationUiState->itemMap[posX + 2 + (posY + 2) * 12] = itemStateId;
       break;
     case ITEMID_REVIVE_MAX:
       sExcavationUiState->itemMap[posX + 1 + (posY + 1) * 12] = itemStateId;
@@ -1249,6 +1408,63 @@ static u8 CheckIfItemCanBePlaced(u8 itemId, u8 posX, u8 posY) {
           sExcavationUiState->itemMap[posX + 1 + (posY + 2) * 12] == i ||
           posX + STAR_PIECE_TILE_AMOUNT_RIGHT > 11 ||
           posY + STAR_PIECE_TILE_AMOUNT_BOTTOM > 7 
+        ) {return 0;}
+        break;
+      case ITEMID_DAMP_ROCK:
+        if (
+          sExcavationUiState->itemMap[posX + 1 + (posY + 1) * 12] == i ||
+          sExcavationUiState->itemMap[posX + 1 + posY * 12]       == i ||
+          sExcavationUiState->itemMap[posX + (posY + 1) * 12]     == i ||
+          sExcavationUiState->itemMap[posX + 2 + (posY + 1) * 12] == i ||
+          sExcavationUiState->itemMap[posX + posY * 12]           == i ||
+          sExcavationUiState->itemMap[posX + 2 + posY * 12]       == i ||
+          sExcavationUiState->itemMap[posX + (posY + 2) * 12]     == i ||
+          sExcavationUiState->itemMap[posX + 2 + (posY + 2) * 12] == i ||
+          posX + DAMP_ROCK_TILE_AMOUNT_RIGHT > 11 ||
+          posY + DAMP_ROCK_TILE_AMOUNT_BOTTOM > 7
+        ) {return 0;}
+        break;
+      case ITEMID_RED_SHARD:
+        if (
+          sExcavationUiState->itemMap[posX + 1 + (posY + 1) * 12] == i ||
+          sExcavationUiState->itemMap[posX + 1 + posY * 12]       == i ||
+          sExcavationUiState->itemMap[posX + (posY + 1) * 12]     == i ||
+          sExcavationUiState->itemMap[posX + 1 + (posY + 2) * 12] == i ||
+          sExcavationUiState->itemMap[posX + posY * 12]           == i ||
+          sExcavationUiState->itemMap[posX + 2 + posY * 12]       == i ||
+          sExcavationUiState->itemMap[posX + (posY + 2) * 12]     == i ||
+          sExcavationUiState->itemMap[posX + 2 + (posY + 2) * 12] == i ||
+          posX + RED_SHARD_TILE_AMOUNT_RIGHT > 11 ||
+          posY + RED_SHARD_TILE_AMOUNT_BOTTOM > 7
+        ) {return 0;}
+        break;
+      case ITEMID_BLUE_SHARD:
+        if (
+          sExcavationUiState->itemMap[posX + 1 + (posY + 1) * 12] == i ||
+          sExcavationUiState->itemMap[posX + 1 + posY * 12]       == i ||
+          sExcavationUiState->itemMap[posX + (posY + 1) * 12]     == i ||
+          sExcavationUiState->itemMap[posX + 2 + (posY + 1) * 12] == i ||
+          sExcavationUiState->itemMap[posX + 1 + (posY + 2) * 12] == i ||
+          sExcavationUiState->itemMap[posX + posY * 12]           == i ||
+          sExcavationUiState->itemMap[posX + 2 + posY * 12]       == i ||
+          sExcavationUiState->itemMap[posX + (posY + 2) * 12]     == i ||
+          posX + BLUE_SHARD_TILE_AMOUNT_RIGHT > 11 ||
+          posY + BLUE_SHARD_TILE_AMOUNT_BOTTOM > 7
+        ) {return 0;}
+        break;
+      case ITEMID_IRON_BALL:
+        if (
+          sExcavationUiState->itemMap[posX + 1 + (posY + 1) * 12] == i ||
+          sExcavationUiState->itemMap[posX + 1 + posY * 12]       == i ||
+          sExcavationUiState->itemMap[posX + (posY + 1) * 12]     == i ||
+          sExcavationUiState->itemMap[posX + 2 + (posY + 1) * 12] == i ||
+          sExcavationUiState->itemMap[posX + 1 + (posY + 2) * 12] == i ||
+          sExcavationUiState->itemMap[posX + posY * 12]           == i ||
+          sExcavationUiState->itemMap[posX + 2 + posY * 12]       == i ||
+          sExcavationUiState->itemMap[posX + (posY + 2) * 12]     == i ||
+          sExcavationUiState->itemMap[posX + 2 + (posY + 2) * 12] == i ||
+          posX + IRON_BALL_TILE_AMOUNT_RIGHT > 11 ||
+          posY + IRON_BALL_TILE_AMOUNT_BOTTOM > 7
         ) {return 0;}
         break;
       case ITEMID_REVIVE_MAX:
