@@ -616,14 +616,12 @@ static void Excavation_Init(MainCallback callback) {
     sExcavationUiState->state_item1 = SELECTED;
     sExcavationUiState->state_item2 = SELECTED;
 
-    if (rnd < 63) {
+    if (rnd < 85) {
       rnd = 0;
-    } else if (rnd < 126) {
+    } else if (rnd < 185) {
       rnd = 1;
-    } else if (rnd < 200) {
-      rnd = 2;
     } else {
-      rnd = 3;
+      rnd = 2;
     }
 
     switch(rnd) {
@@ -636,10 +634,6 @@ static void Excavation_Init(MainCallback callback) {
         sExcavationUiState->state_item4 = DESELECTED;
         break;
       case 2:
-        sExcavationUiState->state_item3 = DESELECTED;
-        sExcavationUiState->state_item4 = SELECTED;
-        break;
-      case 3: 
         sExcavationUiState->state_item3 = SELECTED;
         sExcavationUiState->state_item4 = SELECTED;
         break;
