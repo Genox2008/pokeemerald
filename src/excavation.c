@@ -318,7 +318,7 @@ static const struct OamData gOamButton = {
     .paletteNum = 0,
 };
 
-#define DEBUG_ITEM_GEN
+//#define DEBUG_ITEM_GEN
 
 static const struct OamData gOamItem32x32 = {
     .y = 0,
@@ -816,7 +816,7 @@ static void CleanItemMap(void) {
   u8 i;
 
   for (i=0; i < 96; i++) {
-    sExcavationUiState->itemMap[i] = 0;
+    sExcavationUiState->itemMap[i] = ITEM_TILE_NONE;
   }
 }
 
@@ -1497,7 +1497,6 @@ static void DoDrawRandomItem(u8 itemStateId, u8 itemId) {
   u8 canItemBePlaced = 1;
   u8 itemCount = 0;
 
-  // Currently only 2x2 item sprites!!
   for (i=0; i<96; i++) {
     // the value given to rnd is used to determine wether an item should be drawn or not
     if (itemCount == 0) {
@@ -1538,7 +1537,7 @@ static void Excavation_CheckItemFound(void) {
   if (sExcavationUiState->state_item1 < full) {
     for(i=0;i<96;i++) {
       if(sExcavationUiState->itemMap[i] == 1 && sExcavationUiState->layerMap[i] == 6) {
-        sExcavationUiState->itemMap[i] = 0;
+        sExcavationUiState->itemMap[i] = ITEM_TILE_DUG_UP;
         sExcavationUiState->state_item1++;
       }
     }
@@ -1553,7 +1552,7 @@ static void Excavation_CheckItemFound(void) {
   if (sExcavationUiState->state_item2 < full) {
     for(i=0;i<96;i++) {
       if(sExcavationUiState->itemMap[i] == 2 && sExcavationUiState->layerMap[i] == 6) {
-        sExcavationUiState->itemMap[i] = 0;
+        sExcavationUiState->itemMap[i] = ITEM_TILE_DUG_UP;
         sExcavationUiState->state_item2++;
       }
     }
@@ -1568,7 +1567,7 @@ static void Excavation_CheckItemFound(void) {
   if (sExcavationUiState->state_item3 < full) {
     for(i=0;i<96;i++) {
       if(sExcavationUiState->itemMap[i] == 3 && sExcavationUiState->layerMap[i] == 6) {
-        sExcavationUiState->itemMap[i] = 0;
+        sExcavationUiState->itemMap[i] = ITEM_TILE_DUG_UP;
         sExcavationUiState->state_item3++;
       }
     }
@@ -1583,7 +1582,7 @@ static void Excavation_CheckItemFound(void) {
   if (sExcavationUiState->state_item4 < full) {
     for(i=0;i<96;i++) {
       if(sExcavationUiState->itemMap[i] == 4 && sExcavationUiState->layerMap[i] == 6) {
-        sExcavationUiState->itemMap[i] = 0;
+        sExcavationUiState->itemMap[i] = ITEM_TILE_DUG_UP;
         sExcavationUiState->state_item4++;
       }
     }
@@ -1707,46 +1706,57 @@ sExcavationUiState->layerMap[i]++;
 }
 
 // Using this function here to overwrite the tilemap entry when hitting with the pickaxe (blue button is pressed)
-static void Terrain_Pickaxe_OverwriteTiles(u16* ptr) {
-  if (sExcavationUiState->cursorX != 0) {
-    Terrain_UpdateLayerTileOnScreen(ptr, -1, 0);
-  }
-  if (sExcavationUiState->cursorX != 11) {
-    Terrain_UpdateLayerTileOnScreen(ptr, 1, 0);
-  }
+static u8 Terrain_Pickaxe_OverwriteTiles(u16* ptr) {
+  u8 pos = sExcavationUiState->cursorX + (sExcavationUiState->cursorY-2)*12; 
+  if (sExcavationUiState->itemMap[pos] != ITEM_TILE_DUG_UP && sExcavationUiState->layerMap[pos] != 5) {
+    if (sExcavationUiState->cursorX != 0) {
+      Terrain_UpdateLayerTileOnScreen(ptr, -1, 0);
+    }
+    if (sExcavationUiState->cursorX != 11) {
+      Terrain_UpdateLayerTileOnScreen(ptr, 1, 0);
+    }
 
-  // We have to add '2' to 7 and 0 because, remember: The cursor spawns at Y_position 2!!!
-  if (sExcavationUiState->cursorY != 9) {
-    Terrain_UpdateLayerTileOnScreen(ptr, 0, 1);
-  }
-  if (sExcavationUiState->cursorY != 2) {
-    Terrain_UpdateLayerTileOnScreen(ptr, 0, -1);
-  }
+    // We have to add '2' to 7 and 0 because, remember: The cursor spawns at Y_position 2!!!
+    if (sExcavationUiState->cursorY != 9) {
+      Terrain_UpdateLayerTileOnScreen(ptr, 0, 1);
+    }
+    if (sExcavationUiState->cursorY != 2) {
+      Terrain_UpdateLayerTileOnScreen(ptr, 0, -1);
+    }
 
-  // Center hit
-  Terrain_UpdateLayerTileOnScreen(ptr,0,0);
+    // Center hit
+    Terrain_UpdateLayerTileOnScreen(ptr,0,0);
+    return 0;
+  } else {
+    // Center hit
+    Terrain_UpdateLayerTileOnScreen(ptr,0,0);
+    return 1;
+  }
 }
 
 static void Terrain_Hammer_OverwriteTiles(u16* ptr) {
-  Terrain_Pickaxe_OverwriteTiles(ptr);
-  // Corners
-  // We have to add '2' to 7 and 0 because, remember: The cursor spawns at Y_position 2!!!
-  if (sExcavationUiState->cursorX != 11 && sExcavationUiState->cursorY != 9) {
-    Terrain_UpdateLayerTileOnScreen(ptr, 1, 1);
-  }
-
-  if (sExcavationUiState->cursorX != 0 && sExcavationUiState->cursorY != 9) {
-    Terrain_UpdateLayerTileOnScreen(ptr, -1, 1);
-  }
+  u8 isItemDugUp;
   
-  if (sExcavationUiState->cursorX != 11 && sExcavationUiState->cursorY != 2) {
-    Terrain_UpdateLayerTileOnScreen(ptr, 1, -1);
-  }
-  
-  if (sExcavationUiState->cursorX != 0 && sExcavationUiState->cursorY != 2) {
-    Terrain_UpdateLayerTileOnScreen(ptr, -1, -1);
-  }
+  isItemDugUp = Terrain_Pickaxe_OverwriteTiles(ptr);
+  if (isItemDugUp == 0) {
+    // Corners
+    // We have to add '2' to 7 and 0 because, remember: The cursor spawns at Y_position 2!!!
+    if (sExcavationUiState->cursorX != 11 && sExcavationUiState->cursorY != 9) {
+      Terrain_UpdateLayerTileOnScreen(ptr, 1, 1);
+    }
 
+    if (sExcavationUiState->cursorX != 0 && sExcavationUiState->cursorY != 9) {
+      Terrain_UpdateLayerTileOnScreen(ptr, -1, 1);
+    }
+  
+    if (sExcavationUiState->cursorX != 11 && sExcavationUiState->cursorY != 2) {
+      Terrain_UpdateLayerTileOnScreen(ptr, 1, -1);
+    }
+  
+    if (sExcavationUiState->cursorX != 0 && sExcavationUiState->cursorY != 2) {
+      Terrain_UpdateLayerTileOnScreen(ptr, -1, -1);
+    }
+  }
 }
 
 // Used in the Input task.

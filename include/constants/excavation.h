@@ -1,5 +1,7 @@
 #define SELECTED   0
 #define DESELECTED 255
+#define ITEM_TILE_NONE    0
+#define ITEM_TILE_DUG_UP  5
 
 
 #define ITEMID_HEART_SCALE              0
