@@ -1743,7 +1743,7 @@ sExcavationUiState->layerMap[i]++;
 // Using this function here to overwrite the tilemap entry when hitting with the pickaxe (blue button is pressed)
 static u8 Terrain_Pickaxe_OverwriteTiles(u16* ptr) {
   u8 pos = sExcavationUiState->cursorX + (sExcavationUiState->cursorY-2)*12; 
-  if (sExcavationUiState->itemMap[pos] != ITEM_TILE_DUG_UP && sExcavationUiState->layerMap[pos] != 5) {
+  if (sExcavationUiState->itemMap[pos] != ITEM_TILE_DUG_UP) {
     if (sExcavationUiState->cursorX != 0) {
       Terrain_UpdateLayerTileOnScreen(ptr, -1, 0);
     }
