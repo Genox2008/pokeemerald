@@ -595,6 +595,7 @@ void Excavation_ItemUseCB(void) {
 }
 
 static void Excavation_Init(MainCallback callback) {
+    u8 rnd = Random();
     // Allocation on the heap
     sExcavationUiState = AllocZeroed(sizeof(struct ExcavationState));
     
@@ -614,9 +615,35 @@ static void Excavation_Init(MainCallback callback) {
     // 255 means that the item is not gonna be drawn
     sExcavationUiState->state_item1 = SELECTED;
     sExcavationUiState->state_item2 = SELECTED;
-    sExcavationUiState->state_item3 = SELECTED;
-    sExcavationUiState->state_item4 = SELECTED;
 
+    if (rnd < 63) {
+      rnd = 0;
+    } else if (rnd < 126) {
+      rnd = 1;
+    } else if (rnd < 200) {
+      rnd = 2;
+    } else {
+      rnd = 3;
+    }
+
+    switch(rnd) {
+      case 0:
+        sExcavationUiState->state_item3 = DESELECTED;
+        sExcavationUiState->state_item4 = DESELECTED;
+        break;
+      case 1:
+        sExcavationUiState->state_item3 = SELECTED;
+        sExcavationUiState->state_item4 = DESELECTED;
+        break;
+      case 2:
+        sExcavationUiState->state_item3 = DESELECTED;
+        sExcavationUiState->state_item4 = SELECTED;
+        break;
+      case 3: 
+        sExcavationUiState->state_item3 = SELECTED;
+        sExcavationUiState->state_item4 = SELECTED;
+        break;
+    }
     SetMainCallback2(Excavation_SetupCB);
 }
 
