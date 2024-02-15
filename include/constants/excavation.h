@@ -3,10 +3,35 @@
 #define ITEM_TILE_NONE    0
 #define ITEM_TILE_DUG_UP  5
 
+/*          --Stones--                  */
+#define ID_STONE_1x4  250
+#define STONE_1x4_TILE_AMOUNT_RIGHT     4
+#define STONE_1x4_TILE_AMOUNT_BOTTOM    0
 
+#define ID_STONE_4x1  251
+#define STONE_4x1_TILE_AMOUNT_RIGHT     0
+#define STONE_4x1_TILE_AMOUNT_BOTTOM    4
+
+#define ID_STONE_2x4  252
+#define STONE_2x4_TILE_AMOUNT_RIGHT     4
+#define STONE_2x4_TILE_AMOUNT_BOTTOM    1
+
+#define ID_STONE_4x2  253
+#define STONE_4x2_TILE_AMOUNT_RIGHT     1
+#define STONE_4x2_TILE_AMOUNT_BOTTOM    4
+
+#define ID_STONE_2x2  254
+#define STONE_2x2_TILE_AMOUNT_RIGHT     1
+#define STONE_2x2_TILE_AMOUNT_BOTTOM    1
+
+#define ID_STONE_3x3  255
+#define STONE_3x3_TILE_AMOUNT_RIGHT     2
+#define STONE_3x3_TILE_AMOUNT_BOTTOM    2
+// TEMPLATE: #define ID_STONE_
+
+/*          --Items--                   */
 #define ITEMID_HEART_SCALE              0
 #define HEART_SCALE_TOTAL_TILES         3
-// I count the tiles beginning with 0
 #define HEART_SCALE_TILE_AMOUNT_RIGHT   1
 #define HEART_SCALE_TILE_AMOUNT_BOTTOM  1
 

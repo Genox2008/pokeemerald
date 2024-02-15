@@ -517,6 +517,41 @@ static const struct SpriteTemplate gSpriteItemReviveMax = {
     .callback = SpriteCallbackDummy,
 };
 
+static u8 ExcavationUtil_GetTotalTileAmount(u8 itemId) {
+  switch(itemId) {
+    case ITEMID_HEART_SCALE:
+      return HEART_SCALE_TOTAL_TILES;
+      break;
+    case ITEMID_HARD_STONE:
+      return HARD_STONE_TOTAL_TILES;
+      break;
+    case ITEMID_REVIVE:
+      return REVIVE_TOTAL_TILES;
+      break;
+    case ITEMID_STAR_PIECE:
+      return STAR_PIECE_TOTAL_TILES;
+      break;
+    case ITEMID_DAMP_ROCK:
+      return DAMP_ROCK_TOTAL_TILES;
+      break;
+    case ITEMID_RED_SHARD:
+      return RED_SHARD_TOTAL_TILES;
+      break;
+    case ITEMID_BLUE_SHARD:
+      return BLUE_SHARD_TOTAL_TILES;
+      break;
+    case ITEMID_IRON_BALL:
+      return IRON_BALL_TOTAL_TILES;
+      break;
+    case ITEMID_REVIVE_MAX:
+      return REVIVE_MAX_TOTAL_TILES;
+      break;
+    default: 
+      return 0;
+      break;
+  }
+}
+
 static void delay(unsigned int amount) {
     u32 i;
     for (i = 0; i < amount * 10; i++) {};
@@ -830,19 +865,19 @@ static void Excavation_LoadSpriteGraphics(void) {
   CleanItemMap(); 
   if (sExcavationUiState->state_item1 == SELECTED) {
     DoDrawRandomItem(1, ITEMID_IRON_BALL);
-    sExcavationUiState->Item1_TilesToDigUp = IRON_BALL_TOTAL_TILES;
+    sExcavationUiState->Item1_TilesToDigUp = ExcavationUtil_GetTotalTileAmount(ITEMID_IRON_BALL);
   } 
   if (sExcavationUiState->state_item2 == SELECTED) {
     DoDrawRandomItem(2, ITEMID_DAMP_ROCK);
-    sExcavationUiState->Item2_TilesToDigUp = DAMP_ROCK_TOTAL_TILES;
+    sExcavationUiState->Item2_TilesToDigUp = ExcavationUtil_GetTotalTileAmount(ITEMID_DAMP_ROCK);
   }
   if (sExcavationUiState->state_item3 == SELECTED) {
     DoDrawRandomItem(3, ITEMID_RED_SHARD);
-    sExcavationUiState->Item3_TilesToDigUp = RED_SHARD_TOTAL_TILES;
+    sExcavationUiState->Item3_TilesToDigUp = ExcavationUtil_GetTotalTileAmount(ITEMID_RED_SHARD);
   }
   if (sExcavationUiState->state_item4 == SELECTED) {
     DoDrawRandomItem(4, ITEMID_BLUE_SHARD);
-    sExcavationUiState->Item4_TilesToDigUp = BLUE_SHARD_TOTAL_TILES;
+    sExcavationUiState->Item4_TilesToDigUp = ExcavationUtil_GetTotalTileAmount(ITEMID_BLUE_SHARD);
   }
 
   sExcavationUiState->cursorSpriteIndex = CreateSprite(&gSpriteCursor, 8, 40, 0);
