@@ -53,31 +53,35 @@ static void Task_ExcavationFadeAndExitMenu(u8 taskId);
 
 
 struct ExcavationState {
-    // Callback which we will use to leave from this menu
-    MainCallback leavingCallback;
-    u8 loadState;
-    bool8 mode;
-    u8 cursorSpriteIndex;
-    u8 bRedSpriteIndex;
-    u8 bBlueSpriteIndex;
-    u8 crackCount;
-    u8 crackPos;
-    u8 cursorX;
-    u8 cursorY;
-    u8 layerMap[96];
-    u8 itemMap[96];
-
-    u8 state_item1;
-    u8 Item1_TilesToDigUp;
-
-    u8 state_item2;
-    u8 Item2_TilesToDigUp;
+  // Callback which we will use to leave from this menu
+  MainCallback leavingCallback;
+  u8 loadState;
+  bool8 mode;
+  u8 cursorSpriteIndex;
+  u8 bRedSpriteIndex;
+  u8 bBlueSpriteIndex;
+  u8 crackCount;
+  u8 crackPos;
+  u8 cursorX;
+  u8 cursorY;
+  u8 layerMap[96];
+  u8 itemMap[96];
     
-    u8 state_item3;
-    u8 Item3_TilesToDigUp;
+  // Item 1
+  u8 state_item1;
+  u8 Item1_TilesToDigUp;
+
+  // Item 2
+  u8 state_item2;
+  u8 Item2_TilesToDigUp;
     
-    u8 state_item4;
-    u8 Item4_TilesToDigUp;
+  // Item 3
+  u8 state_item3;
+  u8 Item3_TilesToDigUp;
+    
+  // Item 4
+  u8 state_item4;
+  u8 Item4_TilesToDigUp;
 };
 
 // We will allocate that on the heap later on but for now we will just have a NULL pointer.
@@ -139,7 +143,7 @@ const u16 gButtonPal[] = INCBIN_U16("graphics/excavation/buttons.gbapal");
 #define TAG_ITEM_IRON_BALL  10
 #define TAG_ITEM_REVIVE_MAX 11
 
-// Item sprite data
+// Item sprite & palette data
 const u32 gItemHeartScaleGfx[] = INCBIN_U32("graphics/excavation/items/heart_scale.4bpp.lz");
 const u16 gItemHeartScalePal[] = INCBIN_U16("graphics/excavation/items/heart_scale.gbapal");
 
@@ -191,6 +195,7 @@ static const struct SpritePalette sSpritePal_Buttons[] =
   {NULL},
 };
 
+// Item SpriteSheets and SpritePalettes
 static const struct CompressedSpriteSheet sSpriteSheet_ItemHeartScale[] = {
   {gItemHeartScaleGfx, 32*32, TAG_ITEM_HEARTSCALE},
   {NULL},
@@ -427,6 +432,7 @@ static const struct SpriteTemplate gSpriteButtonBlue = {
     .callback = SpriteCallbackDummy,
 };
 
+// Item SpriteTemplates
 static const struct SpriteTemplate gSpriteItemHeartScale = {
     .tileTag = TAG_ITEM_HEARTSCALE,
     .paletteTag = TAG_ITEM_HEARTSCALE,
@@ -884,6 +890,7 @@ static void Excavation_LoadSpriteGraphics(void) {
   LoadCompressedSpriteSheet(sSpriteSheet_Buttons);
  
   CleanItemMap(); 
+  // ITEMs
   if (sExcavationUiState->state_item1 == SELECTED) {
     DoDrawRandomItem(1, ITEMID_IRON_BALL);
     sExcavationUiState->Item1_TilesToDigUp = ExcavationUtil_GetTotalTileAmount(ITEMID_IRON_BALL);
@@ -1270,7 +1277,7 @@ static void Terrain_DrawLayerTileToScreen(u8 x, u8 y, u8 layer, u16* ptr) {
 //
 
 #define POS_OFFS_32X32 16
-#define POS_OFFS_64x64 32
+#define POS_OFFS_64X64 32
 
 // TODO: Make every item have a palette, even if two items have the same palette
 static void DrawItemSprite(u8 x, u8 y, u8 itemId) {
@@ -1293,37 +1300,37 @@ static void DrawItemSprite(u8 x, u8 y, u8 itemId) {
     case ITEMID_REVIVE:
       LoadSpritePalette(sSpritePal_ItemRevive);
       LoadCompressedSpriteSheet(sSpriteSheet_ItemRevive);
-      CreateSprite(&gSpriteItemRevive, posX+POS_OFFS_64x64, posY+POS_OFFS_64x64, 3);
+      CreateSprite(&gSpriteItemRevive, posX+POS_OFFS_64X64, posY+POS_OFFS_64X64, 3);
       break;
     case ITEMID_STAR_PIECE:
       LoadSpritePalette(sSpritePal_ItemStarPiece);
       LoadCompressedSpriteSheet(sSpriteSheet_ItemStarPiece);
-      CreateSprite(&gSpriteItemStarPiece, posX+POS_OFFS_64x64, posY+POS_OFFS_64x64, 3);
+      CreateSprite(&gSpriteItemStarPiece, posX+POS_OFFS_64X64, posY+POS_OFFS_64X64, 3);
       break;
     case ITEMID_DAMP_ROCK:
       LoadSpritePalette(sSpritePal_ItemDampRock);
       LoadCompressedSpriteSheet(sSpriteSheet_ItemDampRock);
-      CreateSprite(&gSpriteItemDampRock, posX+POS_OFFS_64x64, posY+POS_OFFS_64x64, 3);
+      CreateSprite(&gSpriteItemDampRock, posX+POS_OFFS_64X64, posY+POS_OFFS_64X64, 3);
       break;
     case ITEMID_RED_SHARD:
       LoadSpritePalette(sSpritePal_ItemRedShard);
       LoadCompressedSpriteSheet(sSpriteSheet_ItemRedShard);
-      CreateSprite(&gSpriteItemRedShard, posX+POS_OFFS_64x64, posY+POS_OFFS_64x64, 3);
+      CreateSprite(&gSpriteItemRedShard, posX+POS_OFFS_64X64, posY+POS_OFFS_64X64, 3);
       break;
     case ITEMID_BLUE_SHARD:
       LoadSpritePalette(sSpritePal_ItemBlueShard);
       LoadCompressedSpriteSheet(sSpriteSheet_ItemBlueShard);
-      CreateSprite(&gSpriteItemBlueShard, posX+POS_OFFS_64x64, posY+POS_OFFS_64x64, 3);
+      CreateSprite(&gSpriteItemBlueShard, posX+POS_OFFS_64X64, posY+POS_OFFS_64X64, 3);
       break;
     case ITEMID_IRON_BALL:
       LoadSpritePalette(sSpritePal_ItemIronBall);
       LoadCompressedSpriteSheet(sSpriteSheet_ItemIronBall);
-      CreateSprite(&gSpriteItemIronBall, posX+POS_OFFS_64x64, posY+POS_OFFS_64x64, 3);
+      CreateSprite(&gSpriteItemIronBall, posX+POS_OFFS_64X64, posY+POS_OFFS_64X64, 3);
       break;
     case ITEMID_REVIVE_MAX:
       LoadSpritePalette(sSpritePal_ItemReviveMax);
       LoadCompressedSpriteSheet(sSpriteSheet_ItemReviveMax);
-      CreateSprite(&gSpriteItemReviveMax, posX+POS_OFFS_64x64, posY+POS_OFFS_64x64, 3);
+      CreateSprite(&gSpriteItemReviveMax, posX+POS_OFFS_64X64, posY+POS_OFFS_64X64, 3);
       break; 
   }
 }
