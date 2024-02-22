@@ -323,7 +323,7 @@ static const struct OamData gOamButton = {
     .paletteNum = 0,
 };
 
-//#define DEBUG_ITEM_GEN
+#define DEBUG_ITEM_GEN
 
 static const struct OamData gOamItem32x32 = {
     .y = 0,
@@ -620,7 +620,7 @@ static void Excavation_Init(MainCallback callback) {
     // 0 means that the item is gonna be drawn
     // 255 means that the item is not gonna be drawn
     sExcavationUiState->state_item1 = SELECTED;
-    sExcavationUiState->state_item2 = SELECTED;
+    sExcavationUiState->state_item4 = SELECTED;
 
     if (rnd < 85) {
       rnd = 0;
@@ -633,15 +633,15 @@ static void Excavation_Init(MainCallback callback) {
     switch(rnd) {
       case 0:
         sExcavationUiState->state_item3 = DESELECTED;
-        sExcavationUiState->state_item4 = DESELECTED;
+        sExcavationUiState->state_item2 = DESELECTED;
         break;
       case 1:
         sExcavationUiState->state_item3 = SELECTED;
-        sExcavationUiState->state_item4 = DESELECTED;
+        sExcavationUiState->state_item2 = DESELECTED;
         break;
       case 2:
         sExcavationUiState->state_item3 = SELECTED;
-        sExcavationUiState->state_item4 = SELECTED;
+        sExcavationUiState->state_item2 = SELECTED;
         break;
     }
     SetMainCallback2(Excavation_SetupCB);
@@ -1426,7 +1426,7 @@ static void OverwriteItemMapData(u8 posX, u8 posY, u8 itemStateId, u8 itemId) {
 // And theres the posX and posY check. They are there to make sure that the item sprite will not be drawn outside the box.
 // *_RIGHT tells whats the max. amount of tiles if you go from left to right (starting with 0)
 // the same with *_BOTTOM but going down from top to bottom
-static u8 CheckIfItemCanBePlaced(u8 itemId, u8 posX, u8 posY) {
+static u8 CheckIfItemCanBePlaced(u8 itemId, u8 posX, u8 posY, u8 xBorder, u8 yBorder) {
   u8 i;
 
   for(i=1;i<=4;i++) {
@@ -1437,8 +1437,8 @@ static u8 CheckIfItemCanBePlaced(u8 itemId, u8 posX, u8 posY) {
           sExcavationUiState->itemMap[posX + posY * 12]           == i ||
           sExcavationUiState->itemMap[posX + (posY + 1) * 12]     == i || 
           sExcavationUiState->itemMap[posX + 1 + (posY + 1) * 12] == i ||
-          posX + HEART_SCALE_TILE_AMOUNT_RIGHT > 11 ||
-          posY + HEART_SCALE_TILE_AMOUNT_BOTTOM > 7
+          posX + HEART_SCALE_TILE_AMOUNT_RIGHT > xBorder ||
+          posY + HEART_SCALE_TILE_AMOUNT_BOTTOM > yBorder
         ) { return 0;}
         break;
       case ITEMID_HARD_STONE:
@@ -1447,8 +1447,8 @@ static u8 CheckIfItemCanBePlaced(u8 itemId, u8 posX, u8 posY) {
           sExcavationUiState->itemMap[posX + 1 + posY * 12]       == i ||
           sExcavationUiState->itemMap[posX + (posY + 1) * 12]     == i ||
           sExcavationUiState->itemMap[posX + 1 + (posY + 1) * 12] == i ||
-          posX + HARD_STONE_TILE_AMOUNT_RIGHT > 11 ||
-          posY + HARD_STONE_TILE_AMOUNT_BOTTOM > 7
+          posX + HARD_STONE_TILE_AMOUNT_RIGHT > xBorder ||
+          posY + HARD_STONE_TILE_AMOUNT_BOTTOM > yBorder
         ) {return 0;}
         break;
       case ITEMID_REVIVE:
@@ -1458,8 +1458,8 @@ static u8 CheckIfItemCanBePlaced(u8 itemId, u8 posX, u8 posY) {
           sExcavationUiState->itemMap[posX + (posY + 1) * 12]     == i ||
           sExcavationUiState->itemMap[posX + 2 + (posY + 1) * 12] == i ||
           sExcavationUiState->itemMap[posX + 1 + (posY + 2) * 12] == i ||
-          posX + REVIVE_TILE_AMOUNT_RIGHT > 11 ||
-          posY + REVIVE_TILE_AMOUNT_BOTTOM > 7
+          posX + REVIVE_TILE_AMOUNT_RIGHT > xBorder ||
+          posY + REVIVE_TILE_AMOUNT_BOTTOM > yBorder
         ) {return 0;}
         break;
       case ITEMID_STAR_PIECE:
@@ -1469,8 +1469,8 @@ static u8 CheckIfItemCanBePlaced(u8 itemId, u8 posX, u8 posY) {
           sExcavationUiState->itemMap[posX + (posY + 1) * 12]     == i ||
           sExcavationUiState->itemMap[posX + 2 + (posY + 1) * 12] == i ||
           sExcavationUiState->itemMap[posX + 1 + (posY + 2) * 12] == i ||
-          posX + STAR_PIECE_TILE_AMOUNT_RIGHT > 11 ||
-          posY + STAR_PIECE_TILE_AMOUNT_BOTTOM > 7 
+          posX + STAR_PIECE_TILE_AMOUNT_RIGHT > xBorder ||
+          posY + STAR_PIECE_TILE_AMOUNT_BOTTOM > yBorder
         ) {return 0;}
         break;
       case ITEMID_DAMP_ROCK:
@@ -1483,8 +1483,8 @@ static u8 CheckIfItemCanBePlaced(u8 itemId, u8 posX, u8 posY) {
           sExcavationUiState->itemMap[posX + 2 + posY * 12]       == i ||
           sExcavationUiState->itemMap[posX + (posY + 2) * 12]     == i ||
           sExcavationUiState->itemMap[posX + 2 + (posY + 2) * 12] == i ||
-          posX + DAMP_ROCK_TILE_AMOUNT_RIGHT > 11 ||
-          posY + DAMP_ROCK_TILE_AMOUNT_BOTTOM > 7
+          posX + DAMP_ROCK_TILE_AMOUNT_RIGHT > xBorder ||
+          posY + DAMP_ROCK_TILE_AMOUNT_BOTTOM > yBorder
         ) {return 0;}
         break;
       case ITEMID_RED_SHARD:
@@ -1497,8 +1497,8 @@ static u8 CheckIfItemCanBePlaced(u8 itemId, u8 posX, u8 posY) {
           sExcavationUiState->itemMap[posX + 2 + posY * 12]       == i ||
           sExcavationUiState->itemMap[posX + (posY + 2) * 12]     == i ||
           sExcavationUiState->itemMap[posX + 2 + (posY + 2) * 12] == i ||
-          posX + RED_SHARD_TILE_AMOUNT_RIGHT > 11 ||
-          posY + RED_SHARD_TILE_AMOUNT_BOTTOM > 7
+          posX + RED_SHARD_TILE_AMOUNT_RIGHT > xBorder ||
+          posY + RED_SHARD_TILE_AMOUNT_BOTTOM > yBorder
         ) {return 0;}
         break;
       case ITEMID_BLUE_SHARD:
@@ -1511,8 +1511,8 @@ static u8 CheckIfItemCanBePlaced(u8 itemId, u8 posX, u8 posY) {
           sExcavationUiState->itemMap[posX + posY * 12]           == i ||
           sExcavationUiState->itemMap[posX + 2 + posY * 12]       == i ||
           sExcavationUiState->itemMap[posX + (posY + 2) * 12]     == i ||
-          posX + BLUE_SHARD_TILE_AMOUNT_RIGHT > 11 ||
-          posY + BLUE_SHARD_TILE_AMOUNT_BOTTOM > 7
+          posX + BLUE_SHARD_TILE_AMOUNT_RIGHT > xBorder ||
+          posY + BLUE_SHARD_TILE_AMOUNT_BOTTOM > yBorder
         ) {return 0;}
         break;
       case ITEMID_IRON_BALL:
@@ -1526,8 +1526,8 @@ static u8 CheckIfItemCanBePlaced(u8 itemId, u8 posX, u8 posY) {
           sExcavationUiState->itemMap[posX + 2 + posY * 12]       == i ||
           sExcavationUiState->itemMap[posX + (posY + 2) * 12]     == i ||
           sExcavationUiState->itemMap[posX + 2 + (posY + 2) * 12] == i ||
-          posX + IRON_BALL_TILE_AMOUNT_RIGHT > 11 ||
-          posY + IRON_BALL_TILE_AMOUNT_BOTTOM > 7
+          posX + IRON_BALL_TILE_AMOUNT_RIGHT > xBorder ||
+          posY + IRON_BALL_TILE_AMOUNT_BOTTOM > yBorder
         ) {return 0;}
         break;
       case ITEMID_REVIVE_MAX:
@@ -1541,54 +1541,116 @@ static u8 CheckIfItemCanBePlaced(u8 itemId, u8 posX, u8 posY) {
           sExcavationUiState->itemMap[posX + 2 + posY * 12]       == i ||
           sExcavationUiState->itemMap[posX + (posY + 2) * 12]     == i ||
           sExcavationUiState->itemMap[posX + 2 + (posY + 2) * 12] == i ||
-          posX + REVIVE_MAX_TILE_AMOUNT_RIGHT > 11 ||
-          posY + REVIVE_MAX_TILE_AMOUNT_BOTTOM > 7
+          posX + REVIVE_MAX_TILE_AMOUNT_RIGHT > xBorder ||
+          posY + REVIVE_MAX_TILE_AMOUNT_BOTTOM > yBorder
         ) {return 0;}
         break;
       }
   }
   return TRUE;
 }
-// TODO: Make generation of not only 2x2 items, but also larger items
-// u8 item is for which item to draw (item1, item2, item3 or item4)
+
 static void DoDrawRandomItem(u8 itemStateId, u8 itemId) {
-  u8 i;
-  u8 rnd;
+  u8 y;
+  u8 x;
+  u16 rnd;
   u8 posX;
   u8 posY;
   u8 t;
   u8 canItemBePlaced = 1;
-  u8 itemCount = 0;
+  u8 isItemPlaced = 0;
 
-  for (i=0; i<96; i++) {
-    // the value given to rnd is used to determine wether an item should be drawn or not
-    if (itemCount == 0) {
-      rnd = (Random() >> 5);
-      if (rnd > 6) {
-
-        // Try to draw the item to the screen until it found a valid position
-        while(1) {
-          // 16 possiblities, but turn it into a number from 0-11.
-          t = (Random() >> 4); 
-          posX = t > 4 ? t-5 : t;
-          // 8 possiblities
-          posY = (Random() >> 5);
-          canItemBePlaced = CheckIfItemCanBePlaced(itemId, posX, posY);
-          if (posY < 7 && posX < 11 && canItemBePlaced == 1) {
-            DrawItemSprite(posX, posY, itemId); // First, only draw the sprite
-            OverwriteItemMapData(posX, posY, itemStateId, itemId); // For the collection logic, overwrite the itemmap data
-            itemCount++;
-            break;
+  // Zone Split
+  //
+  // The wall is splitted into 4x6 tiles zones. Each zone is reserved for 1 item
+  //
+  // |item1|item3|
+  // |item2|item4|
+  switch(itemStateId) {
+    case 1:
+      for(y=0; y<=3; y++) {
+        for(x=0; x<=5; x++) {
+          if (isItemPlaced == 0) {
+            if (Random() > 49151) {
+              canItemBePlaced = CheckIfItemCanBePlaced(itemId, x, y, 5, 3);
+              if (canItemBePlaced == 1) {
+                DrawItemSprite(x,y,itemId);
+                OverwriteItemMapData(x, y, itemStateId, itemId); // For the collection logic, overwrite the itemmap data
+                isItemPlaced = 1;
+                break;
+              }
+            }
           }
-        }  
+        }
+        // If it hasn't placed an Item (that's very unlikely but while debuggin, this happened), just retry
+        if (y == 3 && isItemPlaced == 0) {
+          y = 0;
+        }
+      }
+    case 2:
+      for(y=4; y<=7; y++) {
+        for(x=0; x<=5; x++) {
+          if (isItemPlaced == 0) {
+            if (Random() > 49151) {
+              canItemBePlaced = CheckIfItemCanBePlaced(itemId, x, y, 5, 7);
+              if (canItemBePlaced == 1) {
+                DrawItemSprite(x,y,itemId);
+                OverwriteItemMapData(x, y, itemStateId, itemId); // For the collection logic, overwrite the itemmap data
+                isItemPlaced = 1;
+                break;
+              }
+            }
+          }
+        }
+        if (y == 7 && isItemPlaced == 0) {
+          y = 0;
+        }
+      }
+
+    case 3:
+      for(y=0; y<=3; y++) {
+        for(x=6; x<=11; x++) {
+          if (isItemPlaced == 0) {
+            if (Random() > 49151) {
+              canItemBePlaced = CheckIfItemCanBePlaced(itemId, x, y, 11, 3);
+              if (canItemBePlaced == 1) {
+                DrawItemSprite(x,y,itemId);
+                OverwriteItemMapData(x, y, itemStateId, itemId); // For the collection logic, overwrite the itemmap data
+                isItemPlaced = 1;
+                break;
+              }
+            }
+          }
+        }
+        // If it hasn't placed an Item (that's very unlikely but while debuggin, this happened), just retry
+        if (y == 3 && isItemPlaced == 0) {
+          y = 0;
+        }
+      }
+ 
+    case 4:
+     for(y=4; y<=7; y++) {
+      for(x=6; x<=11; x++) {
+        if (isItemPlaced == 0) {
+          if (Random() > 49151) {
+            canItemBePlaced = CheckIfItemCanBePlaced(itemId, x, y, 11, 7);
+            if (canItemBePlaced == 1) {
+              DrawItemSprite(x,y,itemId);
+              OverwriteItemMapData(x, y, itemStateId, itemId); // For the collection logic, overwrite the itemmap data
+              isItemPlaced = 1;
+              break;
+            }
+          }
+        }
+      }
+      // If it hasn't placed an Item (that's very unlikely but while debuggin, this happened), just retry
+      if (y == 7 && isItemPlaced == 0) {
+        y = 0;
       }
     }
   }
 }
 
-// TODO: Make BeginNormalPaletteFade work
-// TODO: Finish function for all 2x2 items
-// TODO: Then make it work for all items with different size
 static void Excavation_CheckItemFound(void) {
   u8 full;
   u8 stop;
