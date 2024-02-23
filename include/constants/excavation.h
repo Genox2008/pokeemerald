@@ -49,3 +49,11 @@
 #define REVIVE_MAX_TILE_AMOUNT_RIGHT    2
 #define REVIVE_MAX_TILE_AMOUNT_BOTTOM   2
 
+#define ITEMID_EVER_STONE               9
+#define EVER_STONE_TOTAL_TILES          8
+#define EVER_STONE_TILE_AMOUNT_RIGHT    3
+#define EVER_STONE_TILE_AMOUNT_BOTTOM   1
+
+// TODO: change this value to the max itemId
+#define EXCAVATION_ITEM_COUNT ITEMID_REVIVE_MAX
+

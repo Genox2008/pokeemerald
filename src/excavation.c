@@ -142,6 +142,7 @@ const u16 gButtonPal[] = INCBIN_U16("graphics/excavation/buttons.gbapal");
 #define TAG_ITEM_BLUE_SHARD 9
 #define TAG_ITEM_IRON_BALL  10
 #define TAG_ITEM_REVIVE_MAX 11
+#define TAG_ITEM_EVER_STONE 12
 
 // Item sprite & palette data
 const u32 gItemHeartScaleGfx[] = INCBIN_U32("graphics/excavation/items/heart_scale.4bpp.lz");
@@ -170,6 +171,9 @@ const u16 gItemIronBallPal[] = INCBIN_U16("graphics/excavation/items/iron_ball.g
 
 const u32 gItemReviveMaxGfx[] = INCBIN_U32("graphics/excavation/items/revive_max.4bpp.lz");
 const u16 gItemReviveMaxPal[] = INCBIN_U16("graphics/excavation/items/revive_max.gbapal");
+
+const u32 gItemEverStoneGfx[] = INCBIN_U32("graphics/excavation/items/ever_stone.4bpp.lz");
+const u16 gItemEverStonePal[] = INCBIN_U16("graphics/excavation/items/ever_stone.gbapal");
 
 static const struct CompressedSpriteSheet sSpriteSheet_Cursor[] =
 {
@@ -294,6 +298,18 @@ static const struct SpritePalette sSpritePal_ItemReviveMax[] =
   {gItemReviveMaxPal, TAG_ITEM_REVIVE_MAX},
   {NULL},
 };
+
+static const struct CompressedSpriteSheet sSpriteSheet_ItemEverStone[] = {
+  {gItemEverStoneGfx, 64*64, TAG_ITEM_EVER_STONE},
+  {NULL},
+};
+
+static const struct SpritePalette sSpritePal_ItemEverStone[] =
+{
+  {gItemEverStonePal, TAG_ITEM_EVER_STONE},
+  {NULL},
+};
+
 
 static const struct OamData gOamCursor = {
     .y = 0,
@@ -523,6 +539,23 @@ static const struct SpriteTemplate gSpriteItemReviveMax = {
     .callback = SpriteCallbackDummy,
 };
 
+static const struct SpriteTemplate gSpriteItemEverStone = {
+    .tileTag = TAG_ITEM_EVER_STONE,
+    .paletteTag = TAG_ITEM_EVER_STONE,
+    .oam = &gOamItem64x64,
+    .anims = gDummySpriteAnimTable,
+    .images = NULL,
+    .affineAnims = gDummySpriteAffineAnimTable,
+    .callback = SpriteCallbackDummy,
+};
+
+// For item generation
+/*static const u8 RarityTable_Common[] = {
+  ITEMID_BLUE_SHARD,
+  ITEMID_HEART_SCALE,
+  ITEMID_RED_SHARD,
+};*/
+
 static u8 ExcavationUtil_GetTotalTileAmount(u8 itemId) {
   switch(itemId) {
     case ITEMID_HEART_SCALE:
@@ -551,6 +584,9 @@ static u8 ExcavationUtil_GetTotalTileAmount(u8 itemId) {
       break;
     case ITEMID_REVIVE_MAX:
       return REVIVE_MAX_TOTAL_TILES;
+      break;
+    case ITEMID_EVER_STONE:
+      return EVER_STONE_TOTAL_TILES;
       break;
     default: 
       return 0;
@@ -616,9 +652,7 @@ static void Excavation_Init(MainCallback callback) {
     sExcavationUiState->crackCount = 0;
     sExcavationUiState->crackPos = 0;
 
-    // TODO: Make a proper SELECTION generation for each item state
-    // 0 means that the item is gonna be drawn
-    // 255 means that the item is not gonna be drawn
+    // Random generation of item-amount (1 item - 4 items)
     sExcavationUiState->state_item1 = SELECTED;
     sExcavationUiState->state_item4 = SELECTED;
 
@@ -883,6 +917,7 @@ static void CleanItemMap(void) {
 }
 
 static void Excavation_LoadSpriteGraphics(void) {
+  u8 itemId1, itemId2, itemId3, itemId4;
   LoadSpritePalette(sSpritePal_Cursor);
   LoadCompressedSpriteSheet(sSpriteSheet_Cursor);
 
@@ -890,10 +925,13 @@ static void Excavation_LoadSpriteGraphics(void) {
   LoadCompressedSpriteSheet(sSpriteSheet_Buttons);
  
   CleanItemMap(); 
+  
+  
+
   // ITEMs
   if (sExcavationUiState->state_item1 == SELECTED) {
-    DoDrawRandomItem(1, ITEMID_IRON_BALL);
-    sExcavationUiState->Item1_TilesToDigUp = ExcavationUtil_GetTotalTileAmount(ITEMID_IRON_BALL);
+    DoDrawRandomItem(1, ITEMID_EVER_STONE);
+    sExcavationUiState->Item1_TilesToDigUp = ExcavationUtil_GetTotalTileAmount(ITEMID_EVER_STONE);
   } 
   if (sExcavationUiState->state_item2 == SELECTED) {
     DoDrawRandomItem(2, ITEMID_DAMP_ROCK);
@@ -1177,16 +1215,6 @@ static void Excavation_UpdateCracks(void) {
   }
 }
 
-// ******************************************************************************
-// TODO!!!: - Make the generation more like in the 3rd gen.
-//          - Add hammer and pickaxe hit anim
-//          - Add item and stone generation
-//          - Make collaps screen 
-//          - Do the other Todos
-//          - Write some prettier docs.
-// ******************************************************************************
-//
-//
 // Draws a tile layer (of the terrain) to the screen.
 // This function is used to make a random sequence of terrain tiles.
 // 
@@ -1331,6 +1359,11 @@ static void DrawItemSprite(u8 x, u8 y, u8 itemId) {
       LoadSpritePalette(sSpritePal_ItemReviveMax);
       LoadCompressedSpriteSheet(sSpriteSheet_ItemReviveMax);
       CreateSprite(&gSpriteItemReviveMax, posX+POS_OFFS_64X64, posY+POS_OFFS_64X64, 3);
+      break;
+    case ITEMID_EVER_STONE:
+      LoadSpritePalette(sSpritePal_ItemEverStone);
+      LoadCompressedSpriteSheet(sSpriteSheet_ItemEverStone);
+      CreateSprite(&gSpriteItemEverStone, posX+POS_OFFS_64X64, posY+POS_OFFS_64X64, 3);
       break; 
   }
 }
@@ -1413,6 +1446,16 @@ static void OverwriteItemMapData(u8 posX, u8 posY, u8 itemStateId, u8 itemId) {
       sExcavationUiState->itemMap[posX + 2 + posY * 12]       = itemStateId;
       sExcavationUiState->itemMap[posX + (posY + 2) * 12]     = itemStateId;
       sExcavationUiState->itemMap[posX + 2 + (posY + 2) * 12] = itemStateId;
+      break;
+    case ITEMID_EVER_STONE:
+      sExcavationUiState->itemMap[posX + posY * 12]           = itemStateId;
+      sExcavationUiState->itemMap[posX + 1 + posY * 12]       = itemStateId;
+      sExcavationUiState->itemMap[posX + 2 + posY * 12]       = itemStateId;
+      sExcavationUiState->itemMap[posX + 3 + posY * 12]       = itemStateId;
+      sExcavationUiState->itemMap[posX + (posY + 1) * 12]     = itemStateId;
+      sExcavationUiState->itemMap[posX + 1 + (posY + 1) * 12] = itemStateId;
+      sExcavationUiState->itemMap[posX + 2 + (posY + 1) * 12] = itemStateId;
+      sExcavationUiState->itemMap[posX + 3 + (posY + 1) * 12] = itemStateId;
       break;
   }
 }
@@ -1545,6 +1588,21 @@ static u8 CheckIfItemCanBePlaced(u8 itemId, u8 posX, u8 posY, u8 xBorder, u8 yBo
           posY + REVIVE_MAX_TILE_AMOUNT_BOTTOM > yBorder
         ) {return 0;}
         break;
+      case ITEMID_EVER_STONE:
+        if (
+          sExcavationUiState->itemMap[posX + posY * 12]           == i ||
+          sExcavationUiState->itemMap[posX + 1 + posY * 12]       == i ||
+          sExcavationUiState->itemMap[posX + 2 + posY * 12]       == i ||
+          sExcavationUiState->itemMap[posX + 3 + posY * 12]       == i ||
+          sExcavationUiState->itemMap[posX + (posY + 1) * 12]     == i ||
+          sExcavationUiState->itemMap[posX + 1 + (posY + 1) * 12] == i ||
+          sExcavationUiState->itemMap[posX + 2 + (posY + 1) * 12] == i ||
+          sExcavationUiState->itemMap[posX + 3 + (posY + 1) * 12] == i ||
+          posX + EVER_STONE_TILE_AMOUNT_RIGHT > xBorder ||
+          posY + EVER_STONE_TILE_AMOUNT_BOTTOM > yBorder
+        ) {return 0;}
+        break;
+
       }
   }
   return TRUE;
