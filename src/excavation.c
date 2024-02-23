@@ -1605,7 +1605,7 @@ static u8 CheckIfItemCanBePlaced(u8 itemId, u8 posX, u8 posY, u8 xBorder, u8 yBo
 
       }
   }
-  return TRUE;
+  return 1;
 }
 
 static void DoDrawRandomItem(u8 itemStateId, u8 itemId) {
@@ -1624,13 +1624,14 @@ static void DoDrawRandomItem(u8 itemStateId, u8 itemId) {
   //
   // |item1|item3|
   // |item2|item4|
+
   switch(itemStateId) {
     case 1:
-      for(y=0; y<=3; y++) {
-        for(x=0; x<=5; x++) {
+      for(y=0; y<4; y++) {
+        for(x=0; x<6; x++) {
           if (isItemPlaced == 0) {
             if (Random() > 49151) {
-              canItemBePlaced = CheckIfItemCanBePlaced(itemId, x, y, 5, 3);
+              canItemBePlaced = CheckIfItemCanBePlaced(itemId, x, y, 5, 4);
               if (canItemBePlaced == 1) {
                 DrawItemSprite(x,y,itemId);
                 OverwriteItemMapData(x, y, itemStateId, itemId); // For the collection logic, overwrite the itemmap data
@@ -1646,8 +1647,8 @@ static void DoDrawRandomItem(u8 itemStateId, u8 itemId) {
         }
       }
     case 2:
-      for(y=4; y<=7; y++) {
-        for(x=0; x<=5; x++) {
+      for(y=4; y<8; y++) {
+        for(x=0; x<6; x++) {
           if (isItemPlaced == 0) {
             if (Random() > 49151) {
               canItemBePlaced = CheckIfItemCanBePlaced(itemId, x, y, 5, 7);
@@ -1661,13 +1662,13 @@ static void DoDrawRandomItem(u8 itemStateId, u8 itemId) {
           }
         }
         if (y == 7 && isItemPlaced == 0) {
-          y = 0;
+          y = 4;
         }
       }
 
     case 3:
-      for(y=0; y<=3; y++) {
-        for(x=6; x<=11; x++) {
+      for(y=0; y<4; y++) {
+        for(x=6; x<12; x++) {
           if (isItemPlaced == 0) {
             if (Random() > 49151) {
               canItemBePlaced = CheckIfItemCanBePlaced(itemId, x, y, 11, 3);
@@ -1687,8 +1688,8 @@ static void DoDrawRandomItem(u8 itemStateId, u8 itemId) {
       }
  
     case 4:
-     for(y=4; y<=7; y++) {
-      for(x=6; x<=11; x++) {
+     for(y=4; y<8; y++) {
+      for(x=6; x<12; x++) {
         if (isItemPlaced == 0) {
           if (Random() > 49151) {
             canItemBePlaced = CheckIfItemCanBePlaced(itemId, x, y, 11, 7);
@@ -1703,7 +1704,7 @@ static void DoDrawRandomItem(u8 itemStateId, u8 itemId) {
       }
       // If it hasn't placed an Item (that's very unlikely but while debuggin, this happened), just retry
       if (y == 7 && isItemPlaced == 0) {
-        y = 0;
+        y = 4;
       }
     }
   }
