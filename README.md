@@ -1,11 +1,7 @@
-# Pokémon Emerald
+# Pokémon Emerald | Excavation Ui
 
-This is a decompilation of Pokémon Emerald.
-
-It builds the following ROM:
-
-* [**pokeemerald.gba**](https://datomatic.no-intro.org/index.php?page=show_record&s=23&n=1961) `sha1: f3ae088181bf583e55daf962a92bb46f4f1d07b7`
+This branch is aiming to port the Mining Minigame to the 3rd generation Pokemon games
 
 To set up the repository, see [INSTALL.md](INSTALL.md).
 
-For contacts and other pret projects, see [pret.github.io](https://pret.github.io/).
+Using Vanilla Pokeemerald: [pokeemerald](https://github.com/pret/pokeemerald)
