@@ -1627,11 +1627,11 @@ static void DoDrawRandomItem(u8 itemStateId, u8 itemId) {
 
   switch(itemStateId) {
     case 1:
-      for(y=0; y<4; y++) {
-        for(x=0; x<6; x++) {
+      for(y=0; y<=3; y++) {
+        for(x=0; x<=5; x++) {
           if (isItemPlaced == 0) {
             if (Random() > 49151) {
-              canItemBePlaced = CheckIfItemCanBePlaced(itemId, x, y, 5, 4);
+              canItemBePlaced = CheckIfItemCanBePlaced(itemId, x, y, 5, 3);
               if (canItemBePlaced == 1) {
                 DrawItemSprite(x,y,itemId);
                 OverwriteItemMapData(x, y, itemStateId, itemId); // For the collection logic, overwrite the itemmap data
@@ -1647,8 +1647,8 @@ static void DoDrawRandomItem(u8 itemStateId, u8 itemId) {
         }
       }
     case 2:
-      for(y=4; y<8; y++) {
-        for(x=0; x<6; x++) {
+      for(y=4; y<=7; y++) {
+        for(x=0; x<=5; x++) {
           if (isItemPlaced == 0) {
             if (Random() > 49151) {
               canItemBePlaced = CheckIfItemCanBePlaced(itemId, x, y, 5, 7);
@@ -1667,8 +1667,8 @@ static void DoDrawRandomItem(u8 itemStateId, u8 itemId) {
       }
 
     case 3:
-      for(y=0; y<4; y++) {
-        for(x=6; x<12; x++) {
+      for(y=0; y<=3; y++) {
+        for(x=6; x<=11; x++) {
           if (isItemPlaced == 0) {
             if (Random() > 49151) {
               canItemBePlaced = CheckIfItemCanBePlaced(itemId, x, y, 11, 3);
@@ -1688,8 +1688,8 @@ static void DoDrawRandomItem(u8 itemStateId, u8 itemId) {
       }
  
     case 4:
-     for(y=4; y<8; y++) {
-      for(x=6; x<12; x++) {
+     for(y=4; y<=7; y++) {
+      for(x=6; x<=11; x++) {
         if (isItemPlaced == 0) {
           if (Random() > 49151) {
             canItemBePlaced = CheckIfItemCanBePlaced(itemId, x, y, 11, 7);
