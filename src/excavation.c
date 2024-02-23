@@ -926,8 +926,6 @@ static void Excavation_LoadSpriteGraphics(void) {
  
   CleanItemMap(); 
   
-  
-
   // ITEMs
   if (sExcavationUiState->state_item1 == SELECTED) {
     DoDrawRandomItem(1, ITEMID_EVER_STONE);
