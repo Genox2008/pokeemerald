@@ -82,6 +82,14 @@ struct ExcavationState {
   // Item 4
   u8 state_item4;
   u8 Item4_TilesToDigUp;
+
+  // Stone 1
+  u8 state_stone1;
+  u8 stone1_TilesToDigUp;
+
+  // Stone 2
+  u8 state_stone2;
+  u8 stone2_TilesToDigUp;
 };
 
 // We will allocate that on the heap later on but for now we will just have a NULL pointer.
@@ -189,7 +197,7 @@ static const struct SpritePalette sSpritePal_Cursor[] =
 
 static const struct CompressedSpriteSheet sSpriteSheet_Buttons[] = 
 {
-  {gButtonGfx, 8192, TAG_BUTTONS},
+  {gButtonGfx, 8192/2 , TAG_BUTTONS},
   {NULL},
 };
 
@@ -201,7 +209,7 @@ static const struct SpritePalette sSpritePal_Buttons[] =
 
 // Item SpriteSheets and SpritePalettes
 static const struct CompressedSpriteSheet sSpriteSheet_ItemHeartScale[] = {
-  {gItemHeartScaleGfx, 32*32, TAG_ITEM_HEARTSCALE},
+  {gItemHeartScaleGfx, 32*32/2, TAG_ITEM_HEARTSCALE},
   {NULL},
 };
 
@@ -212,7 +220,7 @@ static const struct SpritePalette sSpritePal_ItemHeartScale[] =
 };
 
 static const struct CompressedSpriteSheet sSpriteSheet_ItemHardStone[] = {
-  {gItemHardStoneGfx, 32*32, TAG_ITEM_HARDSTONE},
+  {gItemHardStoneGfx, 32*32/2, TAG_ITEM_HARDSTONE},
   {NULL},
 };
 
@@ -223,7 +231,7 @@ static const struct SpritePalette sSpritePal_ItemHardStone[] =
 };
 
 static const struct CompressedSpriteSheet sSpriteSheet_ItemRevive[] = {
-  {gItemReviveGfx, 64*64, TAG_ITEM_REVIVE},
+  {gItemReviveGfx, 64*64/2, TAG_ITEM_REVIVE},
   {NULL},
 };
 
@@ -234,7 +242,7 @@ static const struct SpritePalette sSpritePal_ItemRevive[] =
 };
 
 static const struct CompressedSpriteSheet sSpriteSheet_ItemStarPiece[] = {
-  {gItemStarPieceGfx, 64*64, TAG_ITEM_STAR_PIECE},
+  {gItemStarPieceGfx, 64*64/2, TAG_ITEM_STAR_PIECE},
   {NULL},
 };
 
@@ -245,7 +253,7 @@ static const struct SpritePalette sSpritePal_ItemStarPiece[] =
 };
  
 static const struct CompressedSpriteSheet sSpriteSheet_ItemDampRock[] = {
-  {gItemDampRockGfx, 64*64, TAG_ITEM_DAMP_ROCK},
+  {gItemDampRockGfx, 64*64/2, TAG_ITEM_DAMP_ROCK},
   {NULL},
 };
 
@@ -256,7 +264,7 @@ static const struct SpritePalette sSpritePal_ItemDampRock[] =
 };
  
 static const struct CompressedSpriteSheet sSpriteSheet_ItemRedShard[] = {
-  {gItemRedShardGfx, 64*64, TAG_ITEM_RED_SHARD},
+  {gItemRedShardGfx, 64*64/2, TAG_ITEM_RED_SHARD},
   {NULL},
 };
 
@@ -267,7 +275,7 @@ static const struct SpritePalette sSpritePal_ItemRedShard[] =
 };
 
 static const struct CompressedSpriteSheet sSpriteSheet_ItemBlueShard[] = {
-  {gItemBlueShardGfx, 64*64, TAG_ITEM_BLUE_SHARD},
+  {gItemBlueShardGfx, 64*64/2, TAG_ITEM_BLUE_SHARD},
   {NULL},
 };
 
@@ -278,7 +286,7 @@ static const struct SpritePalette sSpritePal_ItemBlueShard[] =
 };
 
 static const struct CompressedSpriteSheet sSpriteSheet_ItemIronBall[] = {
-  {gItemIronBallGfx, 64*64, TAG_ITEM_IRON_BALL},
+  {gItemIronBallGfx, 64*64/2, TAG_ITEM_IRON_BALL},
   {NULL},
 };
 
@@ -289,7 +297,7 @@ static const struct SpritePalette sSpritePal_ItemIronBall[] =
 };
 
 static const struct CompressedSpriteSheet sSpriteSheet_ItemReviveMax[] = {
-  {gItemReviveMaxGfx, 64*64, TAG_ITEM_REVIVE_MAX},
+  {gItemReviveMaxGfx, 64*64/2, TAG_ITEM_REVIVE_MAX},
   {NULL},
 };
 
@@ -300,7 +308,7 @@ static const struct SpritePalette sSpritePal_ItemReviveMax[] =
 };
 
 static const struct CompressedSpriteSheet sSpriteSheet_ItemEverStone[] = {
-  {gItemEverStoneGfx, 64*64, TAG_ITEM_EVER_STONE},
+  {gItemEverStoneGfx, 64*64/2, TAG_ITEM_EVER_STONE},
   {NULL},
 };
 
@@ -309,7 +317,6 @@ static const struct SpritePalette sSpritePal_ItemEverStone[] =
   {gItemEverStonePal, TAG_ITEM_EVER_STONE},
   {NULL},
 };
-
 
 static const struct OamData gOamCursor = {
     .y = 0,
@@ -339,7 +346,7 @@ static const struct OamData gOamButton = {
     .paletteNum = 0,
 };
 
-#define DEBUG_ITEM_GEN
+//#define DEBUG_ITEM_GEN
 
 static const struct OamData gOamItem32x32 = {
     .y = 0,
@@ -656,6 +663,10 @@ static void Excavation_Init(MainCallback callback) {
     sExcavationUiState->state_item1 = SELECTED;
     sExcavationUiState->state_item4 = SELECTED;
 
+    // Always two stones
+    sExcavationUiState->state_stone1 = SELECTED;
+    sExcavationUiState->state_stone2 = SELECTED;
+
     if (rnd < 85) {
       rnd = 0;
     } else if (rnd < 185) {
@@ -688,15 +699,17 @@ static void Excavation_SetupCB(void) {
     case 0:
       // This is cool, we use `Direct Memory Access` to clear VRAM. 
       // What does that mean? Well, everything which has to do with graphics lives in VRAM, and because we wanna clean up everything, we have to clean up the VRAM, yeah. :D Happy
+      SetVBlankHBlankCallbacksToNull();
+      ClearScheduledBgCopiesToVram();
+      ScanlineEffect_Stop();
+
       DmaClearLarge16(3, (void *)VRAM, VRAM_SIZE, 0x1000);
       // No, No thats poopy, we don't want any callbacks to VBlank and HBlank. Set them to NULL >:(
-      SetVBlankHBlankCallbacksToNull();
 
       // Not sure why we need this but I guess it works with it :DDDDD
-      ClearScheduledBgCopiesToVram();
+      
      
       // idk man, just remember that it works
-      ScanlineEffect_Stop();
       gMain.state++;
       break;
     
@@ -942,7 +955,7 @@ static void Excavation_LoadSpriteGraphics(void) {
   if (sExcavationUiState->state_item4 == SELECTED) {
     DoDrawRandomItem(4, ITEMID_BLUE_SHARD);
     sExcavationUiState->Item4_TilesToDigUp = ExcavationUtil_GetTotalTileAmount(ITEMID_BLUE_SHARD);
-  }
+  } 
 
   sExcavationUiState->cursorSpriteIndex = CreateSprite(&gSpriteCursor, 8, 40, 0);
   sExcavationUiState->cursorX = 0;

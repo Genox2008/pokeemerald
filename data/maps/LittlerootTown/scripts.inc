@@ -399,6 +399,7 @@ LittlerootTown_EventScript_TownSign::
 LittlerootTown_EventScript_GetDebugUiItem::
 	lockall
 	giveitem ITEM_DEBUG_UI
+  giveitem ITEM_POKEBLOCK_CASE
 	releaseall
 	end
 
