@@ -46,6 +46,7 @@ static void Excavation_UpdateCracks(void);
 static void Excavation_UpdateTerrain(void);
 static void Excavation_DrawRandomTerrain(void);
 static void DoDrawRandomItem(u8 itemStateId, u8 itemId);
+static void DoDrawRandomStone(u8 itemId); 
 static void Excavation_CheckItemFound(void);
 static void Task_ExcavationWaitFadeIn(u8 taskId);
 static void Task_ExcavationMainInput(u8 taskId);
@@ -85,11 +86,9 @@ struct ExcavationState {
 
   // Stone 1
   u8 state_stone1;
-  u8 stone1_TilesToDigUp;
 
   // Stone 2
   u8 state_stone2;
-  u8 stone2_TilesToDigUp;
 };
 
 // We will allocate that on the heap later on but for now we will just have a NULL pointer.
@@ -152,7 +151,23 @@ const u16 gButtonPal[] = INCBIN_U16("graphics/excavation/buttons.gbapal");
 #define TAG_ITEM_REVIVE_MAX 11
 #define TAG_ITEM_EVER_STONE 12
 
+#define TAG_STONE_1X4       13
+#define TAG_STONE_4X1       14
+#define TAG_STONE_2X4       15
+#define TAG_STONE_4X2       16
+#define TAG_STONE_2X2       17
+#define TAG_STONE_3X3       18
+
 // Item sprite & palette data
+const u16 gStonePal[] = INCBIN_U16("graphics/excavation/stones/stones.gbapal");
+
+const u32 gStone1x4Gfx[] = INCBIN_U32("graphics/excavation/stones/stone_1x4.4bpp.lz");
+const u32 gStone4x1Gfx[] = INCBIN_U32("graphics/excavation/stones/stone_4x1.4bpp.lz");
+const u32 gStone2x4Gfx[] = INCBIN_U32("graphics/excavation/stones/stone_2x4.4bpp.lz");
+const u32 gStone4x2Gfx[] = INCBIN_U32("graphics/excavation/stones/stone_4x2.4bpp.lz");
+const u32 gStone2x2Gfx[] = INCBIN_U32("graphics/excavation/stones/stone_2x2.4bpp.lz");
+const u32 gStone3x3Gfx[] = INCBIN_U32("graphics/excavation/stones/stone_3x3.4bpp.lz");
+
 const u32 gItemHeartScaleGfx[] = INCBIN_U32("graphics/excavation/items/heart_scale.4bpp.lz");
 const u16 gItemHeartScalePal[] = INCBIN_U16("graphics/excavation/items/heart_scale.gbapal");
 
@@ -204,6 +219,73 @@ static const struct CompressedSpriteSheet sSpriteSheet_Buttons[] =
 static const struct SpritePalette sSpritePal_Buttons[] = 
 {
   {gButtonPal, TAG_BUTTONS},
+  {NULL},
+};
+
+// Stone SpriteSheets and SpritePalettes
+static const struct CompressedSpriteSheet sSpriteSheet_Stone1x4[] = {
+  {gStone1x4Gfx, 64*64/2, TAG_STONE_1X4},
+  {NULL},
+};
+
+static const struct SpritePalette sSpritePal_Stone1x4[] =
+{
+  {gStonePal, TAG_STONE_1X4},
+  {NULL},
+};
+
+static const struct CompressedSpriteSheet sSpriteSheet_Stone4x1[] = {
+  {gStone4x1Gfx, 64*64/2, TAG_STONE_4X1},
+  {NULL},
+};
+
+static const struct SpritePalette sSpritePal_Stone4x1[] =
+{
+  {gStonePal, TAG_STONE_4X1},
+  {NULL},
+};
+
+static const struct CompressedSpriteSheet sSpriteSheet_Stone2x4[] = {
+  {gStone2x4Gfx, 64*64/2, TAG_STONE_2X4},
+  {NULL},
+};
+
+static const struct SpritePalette sSpritePal_Stone2x4[] =
+{
+  {gStonePal, TAG_STONE_2X4},
+  {NULL},
+};
+
+static const struct CompressedSpriteSheet sSpriteSheet_Stone4x2[] = {
+  {gStone4x2Gfx, 64*64/2, TAG_STONE_4X2},
+  {NULL},
+};
+
+static const struct SpritePalette sSpritePal_Stone4x2[] =
+{
+  {gStonePal, TAG_STONE_4X2},
+  {NULL},
+};
+
+static const struct CompressedSpriteSheet sSpriteSheet_Stone2x2[] = {
+  {gStone2x2Gfx, 64*64/2, TAG_STONE_2X2},
+  {NULL},
+};
+
+static const struct SpritePalette sSpritePal_Stone2x2[] =
+{
+  {gStonePal, TAG_STONE_2X2},
+  {NULL},
+};
+
+static const struct CompressedSpriteSheet sSpriteSheet_Stone3x3[] = {
+  {gStone3x3Gfx, 64*64/2, TAG_STONE_3X3},
+  {NULL},
+};
+
+static const struct SpritePalette sSpritePal_Stone3x3[] =
+{
+  {gStonePal, TAG_STONE_3X3},
   {NULL},
 };
 
@@ -346,7 +428,7 @@ static const struct OamData gOamButton = {
     .paletteNum = 0,
 };
 
-//#define DEBUG_ITEM_GEN
+#define DEBUG_ITEM_GEN
 
 static const struct OamData gOamItem32x32 = {
     .y = 0,
@@ -450,6 +532,67 @@ static const struct SpriteTemplate gSpriteButtonBlue = {
     .paletteTag = TAG_BUTTONS,
     .oam = &gOamButton,
     .anims = gButtonBlueAnim,
+    .images = NULL,
+    .affineAnims = gDummySpriteAffineAnimTable,
+    .callback = SpriteCallbackDummy,
+};
+
+// Stone SpriteTemplates
+static const struct SpriteTemplate gSpriteStone1x4 = {
+    .tileTag = TAG_STONE_1X4,
+    .paletteTag = TAG_STONE_1X4,
+    .oam = &gOamItem64x64,
+    .anims = gDummySpriteAnimTable,
+    .images = NULL,
+    .affineAnims = gDummySpriteAffineAnimTable,
+    .callback = SpriteCallbackDummy,
+};
+
+static const struct SpriteTemplate gSpriteStone4x1 = {
+    .tileTag = TAG_STONE_4X1,
+    .paletteTag = TAG_STONE_4X1,
+    .oam = &gOamItem64x64,
+    .anims = gDummySpriteAnimTable,
+    .images = NULL,
+    .affineAnims = gDummySpriteAffineAnimTable,
+    .callback = SpriteCallbackDummy,
+};
+
+static const struct SpriteTemplate gSpriteStone2x4 = {
+    .tileTag = TAG_STONE_2X4,
+    .paletteTag = TAG_STONE_2X4,
+    .oam = &gOamItem64x64,
+    .anims = gDummySpriteAnimTable,
+    .images = NULL,
+    .affineAnims = gDummySpriteAffineAnimTable,
+    .callback = SpriteCallbackDummy,
+};
+
+static const struct SpriteTemplate gSpriteStone4x2 = {
+    .tileTag = TAG_STONE_4X2,
+    .paletteTag = TAG_STONE_4X2,
+    .oam = &gOamItem64x64,
+    .anims = gDummySpriteAnimTable,
+    .images = NULL,
+    .affineAnims = gDummySpriteAffineAnimTable,
+    .callback = SpriteCallbackDummy,
+};
+
+static const struct SpriteTemplate gSpriteStone2x2 = {
+    .tileTag = TAG_STONE_2X2,
+    .paletteTag = TAG_STONE_2X2,
+    .oam = &gOamItem64x64,
+    .anims = gDummySpriteAnimTable,
+    .images = NULL,
+    .affineAnims = gDummySpriteAffineAnimTable,
+    .callback = SpriteCallbackDummy,
+};
+
+static const struct SpriteTemplate gSpriteStone3x3 = {
+    .tileTag = TAG_STONE_3X3,
+    .paletteTag = TAG_STONE_3X3,
+    .oam = &gOamItem64x64,
+    .anims = gDummySpriteAnimTable,
     .images = NULL,
     .affineAnims = gDummySpriteAffineAnimTable,
     .callback = SpriteCallbackDummy,
@@ -697,19 +840,10 @@ static void Excavation_SetupCB(void) {
   switch(gMain.state) {
     // Clear Screen
     case 0:
-      // This is cool, we use `Direct Memory Access` to clear VRAM. 
-      // What does that mean? Well, everything which has to do with graphics lives in VRAM, and because we wanna clean up everything, we have to clean up the VRAM, yeah. :D Happy
       SetVBlankHBlankCallbacksToNull();
       ClearScheduledBgCopiesToVram();
       ScanlineEffect_Stop();
-
-      DmaClearLarge16(3, (void *)VRAM, VRAM_SIZE, 0x1000);
-      // No, No thats poopy, we don't want any callbacks to VBlank and HBlank. Set them to NULL >:(
-
-      // Not sure why we need this but I guess it works with it :DDDDD
-      
-     
-      // idk man, just remember that it works
+      DmaClearLarge16(3, (void *)VRAM, VRAM_SIZE, 0x1000); 
       gMain.state++;
       break;
     
@@ -955,7 +1089,9 @@ static void Excavation_LoadSpriteGraphics(void) {
   if (sExcavationUiState->state_item4 == SELECTED) {
     DoDrawRandomItem(4, ITEMID_BLUE_SHARD);
     sExcavationUiState->Item4_TilesToDigUp = ExcavationUtil_GetTotalTileAmount(ITEMID_BLUE_SHARD);
-  } 
+  }
+  DoDrawRandomStone(ID_STONE_4x1);
+  DoDrawRandomStone(ID_STONE_1x4);
 
   sExcavationUiState->cursorSpriteIndex = CreateSprite(&gSpriteCursor, 8, 40, 0);
   sExcavationUiState->cursorX = 0;
@@ -1326,6 +1462,36 @@ static void DrawItemSprite(u8 x, u8 y, u8 itemId) {
 
   //LoadPalette(gTestItemPal, OBJ_PLTT_ID(3), PLTT_SIZE_4BPP);
   switch(itemId) {
+    case ID_STONE_1x4:
+      LoadSpritePalette(sSpritePal_Stone1x4);
+      LoadCompressedSpriteSheet(sSpriteSheet_Stone1x4);
+      CreateSprite(&gSpriteStone1x4, posX+POS_OFFS_64X64, posY+POS_OFFS_64X64, 3);
+      break;
+    case ID_STONE_4x1:
+      LoadSpritePalette(sSpritePal_Stone4x1);
+      LoadCompressedSpriteSheet(sSpriteSheet_Stone4x1);
+      CreateSprite(&gSpriteStone4x1, posX+POS_OFFS_64X64, posY+POS_OFFS_64X64, 3);
+      break;
+    case ID_STONE_2x4:
+      LoadSpritePalette(sSpritePal_Stone2x4);
+      LoadCompressedSpriteSheet(sSpriteSheet_Stone2x4);
+      CreateSprite(&gSpriteStone2x4, posX+POS_OFFS_64X64, posY+POS_OFFS_64X64, 3);
+      break;
+    case ID_STONE_4x2:
+      LoadSpritePalette(sSpritePal_Stone4x2);
+      LoadCompressedSpriteSheet(sSpriteSheet_Stone4x2);
+      CreateSprite(&gSpriteStone4x2, posX+POS_OFFS_64X64, posY+POS_OFFS_64X64, 3);
+      break;
+    case ID_STONE_2x2:
+      LoadSpritePalette(sSpritePal_Stone2x2);
+      LoadCompressedSpriteSheet(sSpriteSheet_Stone2x2);
+      CreateSprite(&gSpriteStone2x2, posX+POS_OFFS_64X64, posY+POS_OFFS_64X64, 3);
+      break;
+    case ID_STONE_3x3:
+      LoadSpritePalette(sSpritePal_Stone3x3);
+      LoadCompressedSpriteSheet(sSpriteSheet_Stone3x3);
+      CreateSprite(&gSpriteStone3x3, posX+POS_OFFS_64X64, posY+POS_OFFS_64X64, 3);
+      break;
     case ITEMID_HEART_SCALE:
       LoadSpritePalette(sSpritePal_ItemHeartScale);
       LoadCompressedSpriteSheet(sSpriteSheet_ItemHeartScale);
@@ -1381,6 +1547,55 @@ static void DrawItemSprite(u8 x, u8 y, u8 itemId) {
 
 static void OverwriteItemMapData(u8 posX, u8 posY, u8 itemStateId, u8 itemId) {
   switch (itemId) {
+    case ID_STONE_1x4:
+      sExcavationUiState->itemMap[posX + posY * 12]           = itemStateId;
+      sExcavationUiState->itemMap[posX + (posY + 1) * 12]     = itemStateId;
+      sExcavationUiState->itemMap[posX + (posY + 2) * 12]     = itemStateId;
+      sExcavationUiState->itemMap[posX + (posY + 3) * 12]     = itemStateId;
+      break;
+    case ID_STONE_4x1:
+      sExcavationUiState->itemMap[posX + posY * 12]           = itemStateId;
+      sExcavationUiState->itemMap[posX + 1 + posY * 12]       = itemStateId;
+      sExcavationUiState->itemMap[posX + 2 + posY * 12]       = itemStateId;
+      sExcavationUiState->itemMap[posX + 3 + posY * 12]       = itemStateId;
+      break;
+    case ID_STONE_2x4:
+      sExcavationUiState->itemMap[posX + posY * 12]           = itemStateId;
+      sExcavationUiState->itemMap[posX + (posY + 1) * 12]     = itemStateId;
+      sExcavationUiState->itemMap[posX + (posY + 2) * 12]     = itemStateId;
+      sExcavationUiState->itemMap[posX + (posY + 3) * 12]     = itemStateId;
+      sExcavationUiState->itemMap[posX + 1 + posY * 12]       = itemStateId;
+      sExcavationUiState->itemMap[posX + 1 + (posY + 1) * 12] = itemStateId;
+      sExcavationUiState->itemMap[posX + 1 + (posY + 2) * 12] = itemStateId;
+      sExcavationUiState->itemMap[posX + 1 + (posY + 3) * 12] = itemStateId;
+      break;
+    case ID_STONE_4x2:
+      sExcavationUiState->itemMap[posX + posY * 12]           = itemStateId;
+      sExcavationUiState->itemMap[posX + 1 + posY * 12]       = itemStateId;
+      sExcavationUiState->itemMap[posX + 2 + posY * 12]       = itemStateId;
+      sExcavationUiState->itemMap[posX + 3 + posY * 12]       = itemStateId;
+      sExcavationUiState->itemMap[posX + (posY + 1) * 12]     = itemStateId;
+      sExcavationUiState->itemMap[posX + 1 + (posY + 1) * 12] = itemStateId;
+      sExcavationUiState->itemMap[posX + 2 + (posY + 1) * 12] = itemStateId;
+      sExcavationUiState->itemMap[posX + 3 + (posY + 1) * 12] = itemStateId;
+      break;
+    case ID_STONE_2x2:
+      sExcavationUiState->itemMap[posX + posY * 12]           = itemStateId;
+      sExcavationUiState->itemMap[posX + (posY + 1) * 12]     = itemStateId;
+      sExcavationUiState->itemMap[posX + 1 + posY * 12]       = itemStateId;
+      sExcavationUiState->itemMap[posX + 1 + (posY + 3) * 12] = itemStateId;
+      break;
+     case ID_STONE_3x3:
+      sExcavationUiState->itemMap[posX + posY * 12]           = itemStateId;
+      sExcavationUiState->itemMap[posX + (posY + 1) * 12]     = itemStateId;
+      sExcavationUiState->itemMap[posX + 1 + posY * 12]       = itemStateId;
+      sExcavationUiState->itemMap[posX + 1 + (posY + 1) * 12] = itemStateId;
+      sExcavationUiState->itemMap[posX + (posY + 2) * 12]     = itemStateId;
+      sExcavationUiState->itemMap[posX + 1 + (posY + 2) * 12] = itemStateId;
+      sExcavationUiState->itemMap[posX + 2 + (posY + 2) * 12] = itemStateId;
+      sExcavationUiState->itemMap[posX + 2 + (posY + 1) * 12] = itemStateId;
+      sExcavationUiState->itemMap[posX + 2 + posY * 12]       = itemStateId;
+      break;
     case ITEMID_HEART_SCALE:
       sExcavationUiState->itemMap[posX + posY * 12]           = itemStateId;
       sExcavationUiState->itemMap[posX + (posY + 1) * 12]     = itemStateId;
@@ -1721,6 +1936,52 @@ static void DoDrawRandomItem(u8 itemStateId, u8 itemId) {
   }
 }
 
+// TODO: Fill this function with the rest of the stones
+static void DoDrawRandomStone(u8 itemId) {
+  u8 x;
+  u8 y;
+
+  for(y=0;y<8;y++) {
+    for(x=0;x<12;x++) {
+      switch(itemId) {
+        case ID_STONE_1x4: 
+          if (
+            sExcavationUiState->itemMap[x + y * 12]       == 0 &&
+            sExcavationUiState->itemMap[x + (y + 1) * 12] == 0 &&
+            sExcavationUiState->itemMap[x + (y + 2) * 12] == 0 &&
+            sExcavationUiState->itemMap[x + (y + 3) * 12] == 0 &&
+            x + STONE_1x4_TILE_AMOUNT_RIGHT < 12 &&
+            y + STONE_1x4_TILE_AMOUNT_BOTTOM < 8 
+          ) {
+            DrawItemSprite(x, y, itemId);
+            // Dont want to use ITEM_TILE_DUG_UP, not sure if something unexpected will happen
+            OverwriteItemMapData(x, y, 6, itemId);
+            // Stops the looping so the stone isn't drawn multiple times lmao
+            x = 12;
+            y = 8;
+          }
+          break;
+        case ID_STONE_4x1: 
+          if (
+            sExcavationUiState->itemMap[x + y * 12]     == 0 &&
+            sExcavationUiState->itemMap[x + 1 + y * 12] == 0 &&
+            sExcavationUiState->itemMap[x + 2 + y * 12] == 0 &&
+            sExcavationUiState->itemMap[x + 3 + y * 12] == 0 &&
+            x + STONE_4x1_TILE_AMOUNT_RIGHT < 12 &&
+            y + STONE_4x1_TILE_AMOUNT_BOTTOM < 8 
+          ) {
+            DrawItemSprite(x, y, itemId);
+            OverwriteItemMapData(x, y, 6, itemId);
+            x = 12;
+            y = 8;
+          }
+          break;
+      }
+    } 
+  }
+
+}
+
 static void Excavation_CheckItemFound(void) {
   u8 full;
   u8 stop;
@@ -1784,6 +2045,12 @@ static void Excavation_CheckItemFound(void) {
   } else if (sExcavationUiState->state_item4 == full) {
     BeginNormalPaletteFade(0x00200000, 2, 16, 0, RGB_WHITE); 
     sExcavationUiState->state_item4 = stop;
+  }
+
+  for(i=0;i<96;i++) {
+    if(sExcavationUiState->itemMap[i] == 6 && sExcavationUiState->layerMap[i] == 6) {
+      sExcavationUiState->itemMap[i] = ITEM_TILE_DUG_UP;
+    }
   }
 
 }
@@ -1923,8 +2190,6 @@ static u8 Terrain_Pickaxe_OverwriteTiles(u16* ptr) {
     Terrain_UpdateLayerTileOnScreen(ptr,0,0);
     return 0;
   } else {
-    // Center hit
-    Terrain_UpdateLayerTileOnScreen(ptr,0,0);
     return 1;
   }
 }
