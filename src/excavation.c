@@ -1940,6 +1940,7 @@ static void DoDrawRandomItem(u8 itemStateId, u8 itemId) {
 static void DoDrawRandomStone(u8 itemId) {
   u8 x;
   u8 y;
+  u8 stoneIsPlaced = 0;
 
   for(y=0;y<8;y++) {
     for(x=0;x<12;x++) {
@@ -1951,14 +1952,16 @@ static void DoDrawRandomStone(u8 itemId) {
             sExcavationUiState->itemMap[x + (y + 2) * 12] == 0 &&
             sExcavationUiState->itemMap[x + (y + 3) * 12] == 0 &&
             x + STONE_1x4_TILE_AMOUNT_RIGHT < 12 &&
-            y + STONE_1x4_TILE_AMOUNT_BOTTOM < 8 
+            y + STONE_1x4_TILE_AMOUNT_BOTTOM < 8 &&
+            Random() > 50000 
           ) {
             DrawItemSprite(x, y, itemId);
             // Dont want to use ITEM_TILE_DUG_UP, not sure if something unexpected will happen
             OverwriteItemMapData(x, y, 6, itemId);
             // Stops the looping so the stone isn't drawn multiple times lmao
-            x = 12;
-            y = 8;
+            x = 11;
+            y = 7;
+            stoneIsPlaced = 1;
           }
           break;
         case ID_STONE_4x1: 
@@ -1968,16 +1971,21 @@ static void DoDrawRandomStone(u8 itemId) {
             sExcavationUiState->itemMap[x + 2 + y * 12] == 0 &&
             sExcavationUiState->itemMap[x + 3 + y * 12] == 0 &&
             x + STONE_4x1_TILE_AMOUNT_RIGHT < 12 &&
-            y + STONE_4x1_TILE_AMOUNT_BOTTOM < 8 
+            y + STONE_4x1_TILE_AMOUNT_BOTTOM < 8 &&
+            Random() > 60000 
           ) {
             DrawItemSprite(x, y, itemId);
             OverwriteItemMapData(x, y, 6, itemId);
-            x = 12;
-            y = 8;
+            x = 11;
+            y = 7;
+            stoneIsPlaced = 1;
           }
           break;
       }
-    } 
+    }
+    if (stoneIsPlaced == 0 && y == 7) {
+      y=0;
+    }
   }
 
 }
