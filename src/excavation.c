@@ -1064,7 +1064,9 @@ static void CleanItemMap(void) {
 }
 
 static void Excavation_LoadSpriteGraphics(void) {
+  u8 i;
   u8 itemId1, itemId2, itemId3, itemId4;
+  u16 rnd;
   LoadSpritePalette(sSpritePal_Cursor);
   LoadCompressedSpriteSheet(sSpriteSheet_Cursor);
 
@@ -1090,8 +1092,25 @@ static void Excavation_LoadSpriteGraphics(void) {
     DoDrawRandomItem(4, ITEMID_BLUE_SHARD);
     sExcavationUiState->Item4_TilesToDigUp = ExcavationUtil_GetTotalTileAmount(ITEMID_BLUE_SHARD);
   }
-  DoDrawRandomStone(ID_STONE_4x1);
-  DoDrawRandomStone(ID_STONE_1x4);
+  
+  // This stone generation is pretty ugly but why can't we also have a Random(), function which returns a u8 or any bit integer!?
+  for (i=0; i<2; i++) {
+    rnd = Random(); 
+  
+    if (rnd < 10922) {
+      DoDrawRandomStone(ID_STONE_1x4); 
+    } else if (rnd < 21844) {
+      DoDrawRandomStone(ID_STONE_4x1); 
+    } else if (rnd < 32766) {
+      DoDrawRandomStone(ID_STONE_2x4); 
+    } else if (rnd < 43688) {
+      DoDrawRandomStone(ID_STONE_4x2); 
+    } else if (rnd < 54610) {
+      DoDrawRandomStone(ID_STONE_2x2);
+    } else if (rnd < 65535) {
+      DoDrawRandomStone(ID_STONE_3x3);
+    }
+  }
 
   sExcavationUiState->cursorSpriteIndex = CreateSprite(&gSpriteCursor, 8, 40, 0);
   sExcavationUiState->cursorX = 0;
@@ -1583,7 +1602,7 @@ static void OverwriteItemMapData(u8 posX, u8 posY, u8 itemStateId, u8 itemId) {
       sExcavationUiState->itemMap[posX + posY * 12]           = itemStateId;
       sExcavationUiState->itemMap[posX + (posY + 1) * 12]     = itemStateId;
       sExcavationUiState->itemMap[posX + 1 + posY * 12]       = itemStateId;
-      sExcavationUiState->itemMap[posX + 1 + (posY + 3) * 12] = itemStateId;
+      sExcavationUiState->itemMap[posX + 1 + (posY + 1) * 12] = itemStateId;
       break;
      case ID_STONE_3x3:
       sExcavationUiState->itemMap[posX + posY * 12]           = itemStateId;
@@ -1953,7 +1972,7 @@ static void DoDrawRandomStone(u8 itemId) {
             sExcavationUiState->itemMap[x + (y + 3) * 12] == 0 &&
             x + STONE_1x4_TILE_AMOUNT_RIGHT < 12 &&
             y + STONE_1x4_TILE_AMOUNT_BOTTOM < 8 &&
-            Random() > 50000 
+            Random() > 60000 
           ) {
             DrawItemSprite(x, y, itemId);
             // Dont want to use ITEM_TILE_DUG_UP, not sure if something unexpected will happen
@@ -1981,6 +2000,88 @@ static void DoDrawRandomStone(u8 itemId) {
             stoneIsPlaced = 1;
           }
           break;
+        case ID_STONE_2x4: 
+          if (
+            sExcavationUiState->itemMap[x + y * 12]           == 0 &&
+            sExcavationUiState->itemMap[x + (y + 1) * 12]     == 0 &&
+            sExcavationUiState->itemMap[x + (y + 2) * 12]     == 0 &&
+            sExcavationUiState->itemMap[x + (y + 3) * 12]     == 0 &&
+            sExcavationUiState->itemMap[x + 1 + y * 12]       == 0 &&
+            sExcavationUiState->itemMap[x + 1 + (y + 1) * 12] == 0 &&
+            sExcavationUiState->itemMap[x + 1 + (y + 2) * 12] == 0 &&
+            sExcavationUiState->itemMap[x + 1 + (y + 3) * 12] == 0 &&
+            x + STONE_2x4_TILE_AMOUNT_RIGHT < 12 &&
+            y + STONE_2x4_TILE_AMOUNT_BOTTOM < 8 &&
+            Random() > 60000 
+          ) {
+            DrawItemSprite(x, y, itemId);
+            OverwriteItemMapData(x, y, 6, itemId);
+            x = 11;
+            y = 7;
+            stoneIsPlaced = 1;
+          }
+          break;
+        case ID_STONE_4x2: 
+          if (
+            sExcavationUiState->itemMap[x + y * 12]           == 0 &&
+            sExcavationUiState->itemMap[x + 1 + y * 12]       == 0 &&
+            sExcavationUiState->itemMap[x + 2 + y * 12]       == 0 &&
+            sExcavationUiState->itemMap[x + 3 + y * 12]       == 0 &&
+            sExcavationUiState->itemMap[x + (y + 1) * 12]     == 0 &&
+            sExcavationUiState->itemMap[x + 1 + (y + 1) * 12] == 0 &&
+            sExcavationUiState->itemMap[x + 2 + (y + 1) * 12] == 0 &&
+            sExcavationUiState->itemMap[x + 3 + (y + 1) * 12] == 0 &&
+            x + STONE_4x2_TILE_AMOUNT_RIGHT < 12 &&
+            y + STONE_4x2_TILE_AMOUNT_BOTTOM < 8 &&
+            Random() > 60000 
+          ) {
+            DrawItemSprite(x, y, itemId);
+            OverwriteItemMapData(x, y, 6, itemId);
+            x = 11;
+            y = 7;
+            stoneIsPlaced = 1;
+          }
+          break;
+        case ID_STONE_2x2: 
+          if (
+            sExcavationUiState->itemMap[x + y * 12]           == 0 &&
+            sExcavationUiState->itemMap[x + 1 + y * 12]       == 0 &&
+            sExcavationUiState->itemMap[x + (y + 1) * 12]     == 0 &&
+            sExcavationUiState->itemMap[x + 1 + (y + 1) * 12] == 0 &&
+            x + STONE_2x2_TILE_AMOUNT_RIGHT < 12 &&
+            y + STONE_2x2_TILE_AMOUNT_BOTTOM < 8 &&
+            Random() > 60000 
+          ) {
+            DrawItemSprite(x, y, itemId);
+            OverwriteItemMapData(x, y, 6, itemId);
+            x = 11;
+            y = 7;
+            stoneIsPlaced = 1;
+          }
+          break;
+        case ID_STONE_3x3: 
+          if (
+            sExcavationUiState->itemMap[x + y * 12]           == 0 &&
+            sExcavationUiState->itemMap[x + 1 + y * 12]       == 0 &&
+            sExcavationUiState->itemMap[x + (y + 1) * 12]     == 0 &&
+            sExcavationUiState->itemMap[x + 1 + (y + 1) * 12] == 0 &&
+            sExcavationUiState->itemMap[x + 2 + y * 12]       == 0 &&
+            sExcavationUiState->itemMap[x + 2 + (y + 1) * 12] == 0 &&
+            sExcavationUiState->itemMap[x + 2 + (y + 2) * 12] == 0 &&
+            sExcavationUiState->itemMap[x + 1 + (y + 2) * 12] == 0 &&
+            sExcavationUiState->itemMap[x + (y + 2) * 12]     == 0 &&
+            x + STONE_3x3_TILE_AMOUNT_RIGHT < 12 &&
+            y + STONE_3x3_TILE_AMOUNT_BOTTOM < 8 &&
+            Random() > 60000 
+          ) {
+            DrawItemSprite(x, y, itemId);
+            OverwriteItemMapData(x, y, 6, itemId);
+            x = 11;
+            y = 7;
+            stoneIsPlaced = 1;
+          }
+          break;
+
       }
     }
     if (stoneIsPlaced == 0 && y == 7) {
