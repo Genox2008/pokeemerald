@@ -1055,12 +1055,17 @@ static bool8 Excavation_LoadBgGraphics(void) {
   return FALSE;
 }
 
-static void CleanItemMap(void) {
+static void ClearItemMap(void) {
   u8 i;
 
   for (i=0; i < 96; i++) {
     sExcavationUiState->itemMap[i] = ITEM_TILE_NONE;
   }
+}
+
+// TODO: Make this Randomly generate the Id depending on the rarity of an item
+static void GetRandomItemId() {
+  
 }
 
 static void Excavation_LoadSpriteGraphics(void) {
@@ -1073,26 +1078,30 @@ static void Excavation_LoadSpriteGraphics(void) {
   LoadSpritePalette(sSpritePal_Buttons);
   LoadCompressedSpriteSheet(sSpriteSheet_Buttons);
  
-  CleanItemMap(); 
+  ClearItemMap(); 
   
-  // ITEMs
+  // ITEMS
   if (sExcavationUiState->state_item1 == SELECTED) {
-    DoDrawRandomItem(1, ITEMID_EVER_STONE);
-    sExcavationUiState->Item1_TilesToDigUp = ExcavationUtil_GetTotalTileAmount(ITEMID_EVER_STONE);
+    itemId1 = ITEMID_EVER_STONE;
+    DoDrawRandomItem(1, itemId1);
+    sExcavationUiState->Item1_TilesToDigUp = ExcavationUtil_GetTotalTileAmount(itemId1);
   } 
   if (sExcavationUiState->state_item2 == SELECTED) {
-    DoDrawRandomItem(2, ITEMID_DAMP_ROCK);
-    sExcavationUiState->Item2_TilesToDigUp = ExcavationUtil_GetTotalTileAmount(ITEMID_DAMP_ROCK);
+    itemId2 = ITEMID_DAMP_ROCK;
+    DoDrawRandomItem(2, itemId2);
+    sExcavationUiState->Item2_TilesToDigUp = ExcavationUtil_GetTotalTileAmount(itemId2);
   }
   if (sExcavationUiState->state_item3 == SELECTED) {
-    DoDrawRandomItem(3, ITEMID_RED_SHARD);
-    sExcavationUiState->Item3_TilesToDigUp = ExcavationUtil_GetTotalTileAmount(ITEMID_RED_SHARD);
+    itemId3 = ITEMID_RED_SHARD;
+    DoDrawRandomItem(3, itemId3);
+    sExcavationUiState->Item3_TilesToDigUp = ExcavationUtil_GetTotalTileAmount(itemId3);
   }
   if (sExcavationUiState->state_item4 == SELECTED) {
-    DoDrawRandomItem(4, ITEMID_BLUE_SHARD);
-    sExcavationUiState->Item4_TilesToDigUp = ExcavationUtil_GetTotalTileAmount(ITEMID_BLUE_SHARD);
+    itemId4 = ITEMID_BLUE_SHARD;
+    DoDrawRandomItem(4, itemId4);
+    sExcavationUiState->Item4_TilesToDigUp = ExcavationUtil_GetTotalTileAmount(itemId4);
   }
-  
+    
   // This stone generation is pretty ugly but why can't we also have a Random(), function which returns a u8 or any bit integer!?
   for (i=0; i<2; i++) {
     rnd = Random(); 
