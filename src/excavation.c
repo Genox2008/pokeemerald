@@ -54,7 +54,6 @@ static void Task_ExcavationFadeAndExitMenu(u8 taskId);
 
 
 struct ExcavationState {
-  // Callback which we will use to leave from this menu
   MainCallback leavingCallback;
   u8 loadState;
   bool8 mode;
@@ -91,7 +90,6 @@ struct ExcavationState {
   u8 state_stone2;
 };
 
-// We will allocate that on the heap later on but for now we will just have a NULL pointer.
 static EWRAM_DATA struct ExcavationState *sExcavationUiState = NULL;
 static EWRAM_DATA u8 *sBg2TilemapBuffer = NULL;
 static EWRAM_DATA u8 *sBg3TilemapBuffer = NULL;
@@ -109,12 +107,8 @@ static const struct BgTemplate sExcavationBgTemplates[] =
     // Ui gfx
     {
         .bg = 3,
-        // Use charblock 0 for BG3 tiles
         .charBaseIndex = 3,
-        // Use screenblock 31 for BG3 tilemap
-        // (It has become customary to put tilemaps in the final few screenblocks)
         .mapBaseIndex = 31,
-        // 0 is highest priority, etc. Make sure to change priority if I want to use windows
         .priority = 3
     },
 };
@@ -139,7 +133,7 @@ const u16 gCursorPal[] = INCBIN_U16("graphics/pokenav/region_map/cursor.gbapal")
 const u32 gButtonGfx[] = INCBIN_U32("graphics/excavation/buttons.4bpp.lz");
 const u16 gButtonPal[] = INCBIN_U16("graphics/excavation/buttons.gbapal");
 
-// Item Tags
+// Item Sprite Tags
 #define TAG_ITEM_HEARTSCALE 3
 #define TAG_ITEM_HARDSTONE  4
 #define TAG_ITEM_REVIVE     5
@@ -699,13 +693,6 @@ static const struct SpriteTemplate gSpriteItemEverStone = {
     .callback = SpriteCallbackDummy,
 };
 
-// For item generation
-/*static const u8 RarityTable_Common[] = {
-  ITEMID_BLUE_SHARD,
-  ITEMID_HEART_SCALE,
-  ITEMID_RED_SHARD,
-};*/
-
 static u8 ExcavationUtil_GetTotalTileAmount(u8 itemId) {
   switch(itemId) {
     case ITEMID_HEART_SCALE:
@@ -744,102 +731,115 @@ static u8 ExcavationUtil_GetTotalTileAmount(u8 itemId) {
   }
 }
 
+// It will create a random number between 0 and amount-1
+static u32 random(u32 amount) {
+  return (Random() % amount);
+}
+
 static void delay(unsigned int amount) {
-    u32 i;
-    for (i = 0; i < amount * 10; i++) {};
+  u32 i;
+  for (i = 0; i < amount * 10; i++) {};
 }
 
 static void UiShake(void) {
-    SetGpuReg(REG_OFFSET_BG3HOFS, 1);
-    SetGpuReg(REG_OFFSET_BG2HOFS, 1);
-    delay(1500);
-    SetGpuReg(REG_OFFSET_BG3VOFS, 1);
-    SetGpuReg(REG_OFFSET_BG2VOFS, 1);
-    delay(1500);
-    SetGpuReg(REG_OFFSET_BG3HOFS, -2);
-    SetGpuReg(REG_OFFSET_BG2HOFS, -2);
-    delay(1500);
-    SetGpuReg(REG_OFFSET_BG3VOFS, -1);
-    SetGpuReg(REG_OFFSET_BG2VOFS, -1);
-    delay(1500);
-    SetGpuReg(REG_OFFSET_BG3HOFS, 1);
-    SetGpuReg(REG_OFFSET_BG2HOFS, 1);
-    delay(1000);
-    SetGpuReg(REG_OFFSET_BG3VOFS, 1);
-    SetGpuReg(REG_OFFSET_BG2VOFS, 1);
-    delay(1500);
-    SetGpuReg(REG_OFFSET_BG3HOFS, -2);
-    SetGpuReg(REG_OFFSET_BG2HOFS, -2);
-    delay(1500);
-    SetGpuReg(REG_OFFSET_BG3VOFS, -1);
-    SetGpuReg(REG_OFFSET_BG2VOFS, -1);
-    delay(1500);
+  SetGpuReg(REG_OFFSET_BG3HOFS, 1);
+  SetGpuReg(REG_OFFSET_BG2HOFS, 1);
+  delay(1500);
+  SetGpuReg(REG_OFFSET_BG3VOFS, 1);
+  SetGpuReg(REG_OFFSET_BG2VOFS, 1);
+  delay(1500);
+  SetGpuReg(REG_OFFSET_BG3HOFS, -2);
+  SetGpuReg(REG_OFFSET_BG2HOFS, -2);
+  delay(1500);
+  SetGpuReg(REG_OFFSET_BG3VOFS, -1);
+  SetGpuReg(REG_OFFSET_BG2VOFS, -1);
+  delay(1500);
+  SetGpuReg(REG_OFFSET_BG3HOFS, 1);
+  SetGpuReg(REG_OFFSET_BG2HOFS, 1);
+  delay(1000);
+  SetGpuReg(REG_OFFSET_BG3VOFS, 1);
+  SetGpuReg(REG_OFFSET_BG2VOFS, 1);
+  delay(1500);
+  SetGpuReg(REG_OFFSET_BG3HOFS, -2);
+  SetGpuReg(REG_OFFSET_BG2HOFS, -2);
+  delay(1500);
+  SetGpuReg(REG_OFFSET_BG3VOFS, -1);
+  SetGpuReg(REG_OFFSET_BG2VOFS, -1);
+  delay(1500);
 
-    // Back to default offset
-    SetGpuReg(REG_OFFSET_BG3VOFS, 0);
-    SetGpuReg(REG_OFFSET_BG3HOFS, 0);
-    SetGpuReg(REG_OFFSET_BG2HOFS, 0);
-    SetGpuReg(REG_OFFSET_BG2VOFS, 0);
+  // Back to default offset
+  SetGpuReg(REG_OFFSET_BG3VOFS, 0);
+  SetGpuReg(REG_OFFSET_BG3HOFS, 0);
+  SetGpuReg(REG_OFFSET_BG2HOFS, 0);
+  SetGpuReg(REG_OFFSET_BG2VOFS, 0);
 }
 
 void Excavation_ItemUseCB(void) {
-    Excavation_Init(CB2_ReturnToFieldWithOpenMenu);
+  Excavation_Init(CB2_ReturnToFieldWithOpenMenu);
 }
 
 static void Excavation_Init(MainCallback callback) {
-    u8 rnd = Random();
-    // Allocation on the heap
-    sExcavationUiState = AllocZeroed(sizeof(struct ExcavationState));
+  u8 rnd = Random();
+  sExcavationUiState = AllocZeroed(sizeof(struct ExcavationState));
     
-    // If allocation fails, just return to overworld.
-    if (sExcavationUiState == NULL) {
-        SetMainCallback2(callback);
-        return;
-    }
+  if (sExcavationUiState == NULL) {
+      SetMainCallback2(callback);
+      return;
+  }
   
-    sExcavationUiState->leavingCallback = callback;
-    sExcavationUiState->loadState = 0;
-    sExcavationUiState->crackCount = 0;
-    sExcavationUiState->crackPos = 0;
+  sExcavationUiState->leavingCallback = callback;
+  sExcavationUiState->loadState = 0;
+  sExcavationUiState->crackCount = 0;
+  sExcavationUiState->crackPos = 0;
 
-    // Random generation of item-amount (1 item - 4 items)
-    sExcavationUiState->state_item1 = SELECTED;
-    sExcavationUiState->state_item4 = SELECTED;
+  // Always zone1 and zone4 have an item
+  // TODO: Will change that because the user can always assume there is an item in those zones, 100 percently
+  sExcavationUiState->state_item1 = SELECTED;
+  sExcavationUiState->state_item4 = SELECTED;
 
-    // Always two stones
-    sExcavationUiState->state_stone1 = SELECTED;
-    sExcavationUiState->state_stone2 = SELECTED;
+  // Always two stones
+  sExcavationUiState->state_stone1 = SELECTED;
+  sExcavationUiState->state_stone2 = SELECTED;
+  
+  // TODO: Change this randomness by using my function `random(u32 amount);`
+  if (rnd < 85) {
+    rnd = 0;
+  } else if (rnd < 185) {
+    rnd = 1;
+  } else {
+    rnd = 2;
+  }
 
-    if (rnd < 85) {
-      rnd = 0;
-    } else if (rnd < 185) {
-      rnd = 1;
-    } else {
-      rnd = 2;
-    }
-
-    switch(rnd) {
-      case 0:
-        sExcavationUiState->state_item3 = DESELECTED;
-        sExcavationUiState->state_item2 = DESELECTED;
-        break;
-      case 1:
-        sExcavationUiState->state_item3 = SELECTED;
-        sExcavationUiState->state_item2 = DESELECTED;
-        break;
-      case 2:
-        sExcavationUiState->state_item3 = SELECTED;
-        sExcavationUiState->state_item2 = SELECTED;
-        break;
-    }
-    SetMainCallback2(Excavation_SetupCB);
+  switch(rnd) {
+    case 0:
+      sExcavationUiState->state_item3 = DESELECTED;
+      sExcavationUiState->state_item2 = DESELECTED;
+      break;
+    case 1:
+      sExcavationUiState->state_item3 = SELECTED;
+      sExcavationUiState->state_item2 = DESELECTED;
+      break;
+    case 2:
+      sExcavationUiState->state_item3 = SELECTED;
+      sExcavationUiState->state_item2 = SELECTED;
+      break;
+  }
+  SetMainCallback2(Excavation_SetupCB);
 }
+
+enum {
+  STATE_CLEAR_SCREEN = 0,
+  STATE_RESET_DATA,
+  STATE_INIT_BGS,
+  STATE_LOAD_BGS,
+  STATE_LOAD_SPRITES,
+};
 
 static void Excavation_SetupCB(void) {
   u8 taskId;
   switch(gMain.state) {
     // Clear Screen
-    case 0:
+    case STATE_CLEAR_SCREEN:
       SetVBlankHBlankCallbacksToNull();
       ClearScheduledBgCopiesToVram();
       ScanlineEffect_Stop();
@@ -848,7 +848,7 @@ static void Excavation_SetupCB(void) {
       break;
     
     // Reset data
-    case 1:
+    case STATE_RESET_DATA:
       FreeAllSpritePalettes();
       ResetPaletteFade();
       ResetSpriteData();
@@ -857,7 +857,7 @@ static void Excavation_SetupCB(void) {
       break;
 
     // Initialize BGs 
-    case 2:
+    case STATE_INIT_BGS:
       // Try to run the BG init code
       if (Excavation_InitBgs() == TRUE) {
         // If we successfully init the BGs, lets gooooo
@@ -872,14 +872,14 @@ static void Excavation_SetupCB(void) {
       break;
   
     // Load BG(s)
-    case 3:
+    case STATE_LOAD_BGS:
       if (Excavation_LoadBgGraphics() == TRUE) {      
         gMain.state++;
       }
       break;
 
     // Load Sprite(s)
-    case 4: 
+    case STATE_LOAD_SPRITES: 
       Excavation_LoadSpriteGraphics();
       gMain.state++;
       break;
@@ -1063,9 +1063,66 @@ static void ClearItemMap(void) {
   }
 }
 
+#define RARITY_COMMON   0
+#define RARITY_UNCOMMON 1
+#define RARITY_RARE     2
+
+struct ItemRarity {
+  u8 itemId;
+  u8 rarity;
+};
+
+static const struct ItemRarity ItemRarityTable_Common[] = {
+  {ITEMID_HEART_SCALE, RARITY_COMMON},
+  {ITEMID_RED_SHARD, RARITY_COMMON},
+  {ITEMID_BLUE_SHARD, RARITY_COMMON},
+};
+
+static const struct ItemRarity ItemRarityTable_Uncommon[] = {
+  {ITEMID_IRON_BALL, RARITY_RARE},
+  {ITEMID_HARD_STONE, RARITY_RARE},
+  {ITEMID_REVIVE, RARITY_RARE},
+  {ITEMID_EVER_STONE, RARITY_RARE},
+};
+
+static const struct ItemRarity ItemRarityTable_Rare[] = {
+  {ITEMID_STAR_PIECE, RARITY_RARE},
+  {ITEMID_DAMP_ROCK, RARITY_RARE},
+  {ITEMID_REVIVE_MAX, RARITY_RARE},
+};
+
 // TODO: Make this Randomly generate the Id depending on the rarity of an item
-static void GetRandomItemId() {
+static u8 GetRandomItemId() {
+  u32 rarity;
+  u32 index;
+  u32 rnd = random(7);
+
   
+  if (rnd < 4) {
+    rarity = RARITY_COMMON;
+  } else if (rnd < 6) {
+    rarity = RARITY_UNCOMMON;
+  } else if (rnd == 6) {
+    rarity = RARITY_RARE;
+  }
+
+  switch (rarity) {
+    case RARITY_COMMON: 
+      index = random(3);
+      return ItemRarityTable_Common[index].itemId;
+      break;
+    case RARITY_UNCOMMON:
+      index = random(4);
+      return ItemRarityTable_Uncommon[index].itemId;
+      break;
+    case RARITY_RARE:
+      index = random(3);
+      return ItemRarityTable_Rare[index].itemId;
+      break;
+  }
+  
+  // Change this return once this function is finished
+  return 0;
 }
 
 static void Excavation_LoadSpriteGraphics(void) {
@@ -1082,22 +1139,22 @@ static void Excavation_LoadSpriteGraphics(void) {
   
   // ITEMS
   if (sExcavationUiState->state_item1 == SELECTED) {
-    itemId1 = ITEMID_EVER_STONE;
+    itemId1 = GetRandomItemId();
     DoDrawRandomItem(1, itemId1);
     sExcavationUiState->Item1_TilesToDigUp = ExcavationUtil_GetTotalTileAmount(itemId1);
   } 
   if (sExcavationUiState->state_item2 == SELECTED) {
-    itemId2 = ITEMID_DAMP_ROCK;
+    itemId2 = GetRandomItemId();
     DoDrawRandomItem(2, itemId2);
     sExcavationUiState->Item2_TilesToDigUp = ExcavationUtil_GetTotalTileAmount(itemId2);
   }
   if (sExcavationUiState->state_item3 == SELECTED) {
-    itemId3 = ITEMID_RED_SHARD;
+    itemId3 = GetRandomItemId();
     DoDrawRandomItem(3, itemId3);
     sExcavationUiState->Item3_TilesToDigUp = ExcavationUtil_GetTotalTileAmount(itemId3);
   }
   if (sExcavationUiState->state_item4 == SELECTED) {
-    itemId4 = ITEMID_BLUE_SHARD;
+    itemId4 = GetRandomItemId();
     DoDrawRandomItem(4, itemId4);
     sExcavationUiState->Item4_TilesToDigUp = ExcavationUtil_GetTotalTileAmount(itemId4);
   }
