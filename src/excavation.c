@@ -1,4 +1,14 @@
 // I have to credit grunt-lucas because I am stealing a bit of code from him ;). Check out his sample_ui branch as well!
+
+/*
+ *  Following Bugs need to be fixed:
+ *    - When digging up an item, the wrong item palette gets faded white
+ *    - When there are 2 or more items which have the same sprite and palette, the palette is only loaded once so the other item fades the wrong palette
+ *    - 
+ *
+ *
+ */
+
 #include "excavation.h"
 
 #include "gba/types.h"
@@ -152,6 +162,14 @@ const u16 gButtonPal[] = INCBIN_U16("graphics/excavation/buttons.gbapal");
 #define TAG_STONE_2X2       17
 #define TAG_STONE_3X3       18
 
+#define TAG_BLANK1          19
+#define TAG_BLANK2          20
+
+#define TAG_PAL_ITEM1       21
+#define TAG_PAL_ITEM2       22
+#define TAG_PAL_ITEM3       23
+#define TAG_PAL_ITEM4       24
+
 // Item sprite & palette data
 const u16 gStonePal[] = INCBIN_U16("graphics/excavation/stones/stones.gbapal");
 
@@ -191,6 +209,18 @@ const u16 gItemReviveMaxPal[] = INCBIN_U16("graphics/excavation/items/revive_max
 
 const u32 gItemEverStoneGfx[] = INCBIN_U32("graphics/excavation/items/ever_stone.4bpp.lz");
 const u16 gItemEverStonePal[] = INCBIN_U16("graphics/excavation/items/ever_stone.gbapal");
+
+static const struct SpritePalette sSpritePal_Blank1[] =
+{
+  {gCursorPal, TAG_BLANK1},
+  {NULL},
+};
+
+static const struct SpritePalette sSpritePal_Blank2[] =
+{
+  {gCursorPal, TAG_BLANK2},
+  {NULL},
+};
 
 static const struct CompressedSpriteSheet sSpriteSheet_Cursor[] =
 {
@@ -285,24 +315,12 @@ static const struct SpritePalette sSpritePal_Stone3x3[] =
 
 // Item SpriteSheets and SpritePalettes
 static const struct CompressedSpriteSheet sSpriteSheet_ItemHeartScale[] = {
-  {gItemHeartScaleGfx, 32*32/2, TAG_ITEM_HEARTSCALE},
-  {NULL},
-};
-
-static const struct SpritePalette sSpritePal_ItemHeartScale[] =
-{
-  {gItemHeartScalePal, TAG_ITEM_HEARTSCALE},
+  {gItemHeartScaleGfx, 64*64/2, TAG_ITEM_HEARTSCALE},
   {NULL},
 };
 
 static const struct CompressedSpriteSheet sSpriteSheet_ItemHardStone[] = {
-  {gItemHardStoneGfx, 32*32/2, TAG_ITEM_HARDSTONE},
-  {NULL},
-};
-
-static const struct SpritePalette sSpritePal_ItemHardStone[] =
-{
-  {gItemHardStonePal, TAG_ITEM_HARDSTONE},
+  {gItemHardStoneGfx, 64*64/2, TAG_ITEM_HARDSTONE},
   {NULL},
 };
 
@@ -311,31 +329,13 @@ static const struct CompressedSpriteSheet sSpriteSheet_ItemRevive[] = {
   {NULL},
 };
 
-static const struct SpritePalette sSpritePal_ItemRevive[] =
-{
-  {gItemRevivePal, TAG_ITEM_REVIVE},
-  {NULL},
-};
-
 static const struct CompressedSpriteSheet sSpriteSheet_ItemStarPiece[] = {
   {gItemStarPieceGfx, 64*64/2, TAG_ITEM_STAR_PIECE},
-  {NULL},
-};
-
-static const struct SpritePalette sSpritePal_ItemStarPiece[] =
-{
-  {gItemStarPiecePal, TAG_ITEM_STAR_PIECE},
   {NULL},
 };
  
 static const struct CompressedSpriteSheet sSpriteSheet_ItemDampRock[] = {
   {gItemDampRockGfx, 64*64/2, TAG_ITEM_DAMP_ROCK},
-  {NULL},
-};
-
-static const struct SpritePalette sSpritePal_ItemDampRock[] =
-{
-  {gItemDampRockPal, TAG_ITEM_DAMP_ROCK},
   {NULL},
 };
  
@@ -344,20 +344,8 @@ static const struct CompressedSpriteSheet sSpriteSheet_ItemRedShard[] = {
   {NULL},
 };
 
-static const struct SpritePalette sSpritePal_ItemRedShard[] =
-{
-  {gItemRedShardPal, TAG_ITEM_RED_SHARD},
-  {NULL},
-};
-
 static const struct CompressedSpriteSheet sSpriteSheet_ItemBlueShard[] = {
   {gItemBlueShardGfx, 64*64/2, TAG_ITEM_BLUE_SHARD},
-  {NULL},
-};
-
-static const struct SpritePalette sSpritePal_ItemBlueShard[] =
-{
-  {gItemBlueShardPal, TAG_ITEM_BLUE_SHARD},
   {NULL},
 };
 
@@ -366,31 +354,13 @@ static const struct CompressedSpriteSheet sSpriteSheet_ItemIronBall[] = {
   {NULL},
 };
 
-static const struct SpritePalette sSpritePal_ItemIronBall[] =
-{
-  {gItemIronBallPal, TAG_ITEM_IRON_BALL},
-  {NULL},
-};
-
 static const struct CompressedSpriteSheet sSpriteSheet_ItemReviveMax[] = {
   {gItemReviveMaxGfx, 64*64/2, TAG_ITEM_REVIVE_MAX},
   {NULL},
 };
 
-static const struct SpritePalette sSpritePal_ItemReviveMax[] =
-{
-  {gItemReviveMaxPal, TAG_ITEM_REVIVE_MAX},
-  {NULL},
-};
-
 static const struct CompressedSpriteSheet sSpriteSheet_ItemEverStone[] = {
   {gItemEverStoneGfx, 64*64/2, TAG_ITEM_EVER_STONE},
-  {NULL},
-};
-
-static const struct SpritePalette sSpritePal_ItemEverStone[] =
-{
-  {gItemEverStonePal, TAG_ITEM_EVER_STONE},
   {NULL},
 };
 
@@ -592,107 +562,6 @@ static const struct SpriteTemplate gSpriteStone3x3 = {
     .callback = SpriteCallbackDummy,
 };
 
-// Item SpriteTemplates
-static const struct SpriteTemplate gSpriteItemHeartScale = {
-    .tileTag = TAG_ITEM_HEARTSCALE,
-    .paletteTag = TAG_ITEM_HEARTSCALE,
-    .oam = &gOamItem32x32,
-    .anims = gDummySpriteAnimTable,
-    .images = NULL,
-    .affineAnims = gDummySpriteAffineAnimTable,
-    .callback = SpriteCallbackDummy,
-};
-
-static const struct SpriteTemplate gSpriteItemHardStone = {
-    .tileTag = TAG_ITEM_HARDSTONE,
-    .paletteTag = TAG_ITEM_HARDSTONE,
-    .oam = &gOamItem32x32,
-    .anims = gDummySpriteAnimTable,
-    .images = NULL,
-    .affineAnims = gDummySpriteAffineAnimTable,
-    .callback = SpriteCallbackDummy,
-};
-
-static const struct SpriteTemplate gSpriteItemRevive = {
-    .tileTag = TAG_ITEM_REVIVE,
-    .paletteTag = TAG_ITEM_REVIVE,
-    .oam = &gOamItem64x64,
-    .anims = gDummySpriteAnimTable,
-    .images = NULL,
-    .affineAnims = gDummySpriteAffineAnimTable,
-    .callback = SpriteCallbackDummy,
-};
-
-static const struct SpriteTemplate gSpriteItemStarPiece = {
-    .tileTag = TAG_ITEM_STAR_PIECE,
-    .paletteTag = TAG_ITEM_STAR_PIECE,
-    .oam = &gOamItem64x64,
-    .anims = gDummySpriteAnimTable,
-    .images = NULL,
-    .affineAnims = gDummySpriteAffineAnimTable,
-    .callback = SpriteCallbackDummy,
-};
-
-static const struct SpriteTemplate gSpriteItemDampRock = {
-    .tileTag = TAG_ITEM_DAMP_ROCK,
-    .paletteTag = TAG_ITEM_DAMP_ROCK,
-    .oam = &gOamItem64x64,
-    .anims = gDummySpriteAnimTable,
-    .images = NULL,
-    .affineAnims = gDummySpriteAffineAnimTable,
-    .callback = SpriteCallbackDummy,
-};
-
-static const struct SpriteTemplate gSpriteItemRedShard = {
-    .tileTag = TAG_ITEM_RED_SHARD,
-    .paletteTag = TAG_ITEM_RED_SHARD,
-    .oam = &gOamItem64x64,
-    .anims = gDummySpriteAnimTable,
-    .images = NULL,
-    .affineAnims = gDummySpriteAffineAnimTable,
-    .callback = SpriteCallbackDummy,
-};
-
-static const struct SpriteTemplate gSpriteItemBlueShard = {
-    .tileTag = TAG_ITEM_BLUE_SHARD,
-    .paletteTag = TAG_ITEM_BLUE_SHARD,
-    .oam = &gOamItem64x64,
-    .anims = gDummySpriteAnimTable,
-    .images = NULL,
-    .affineAnims = gDummySpriteAffineAnimTable,
-    .callback = SpriteCallbackDummy,
-};
-
-static const struct SpriteTemplate gSpriteItemIronBall = {
-    .tileTag = TAG_ITEM_IRON_BALL,
-    .paletteTag = TAG_ITEM_IRON_BALL,
-    .oam = &gOamItem64x64,
-    .anims = gDummySpriteAnimTable,
-    .images = NULL,
-    .affineAnims = gDummySpriteAffineAnimTable,
-    .callback = SpriteCallbackDummy,
-};
-
-static const struct SpriteTemplate gSpriteItemReviveMax = {
-    .tileTag = TAG_ITEM_REVIVE_MAX,
-    .paletteTag = TAG_ITEM_REVIVE_MAX,
-    .oam = &gOamItem64x64,
-    .anims = gDummySpriteAnimTable,
-    .images = NULL,
-    .affineAnims = gDummySpriteAffineAnimTable,
-    .callback = SpriteCallbackDummy,
-};
-
-static const struct SpriteTemplate gSpriteItemEverStone = {
-    .tileTag = TAG_ITEM_EVER_STONE,
-    .paletteTag = TAG_ITEM_EVER_STONE,
-    .oam = &gOamItem64x64,
-    .anims = gDummySpriteAnimTable,
-    .images = NULL,
-    .affineAnims = gDummySpriteAffineAnimTable,
-    .callback = SpriteCallbackDummy,
-};
-
 static u8 ExcavationUtil_GetTotalTileAmount(u8 itemId) {
   switch(itemId) {
     case ITEMID_HEART_SCALE:
@@ -833,6 +702,9 @@ enum {
   STATE_INIT_BGS,
   STATE_LOAD_BGS,
   STATE_LOAD_SPRITES,
+  STATE_WAIT_FADE,
+  STATE_FADE,
+  STATE_SET_CALLBACKS,
 };
 
 static void Excavation_SetupCB(void) {
@@ -885,17 +757,17 @@ static void Excavation_SetupCB(void) {
       break;
     
     // Check if fade in is done
-    case 5:
+    case STATE_WAIT_FADE:
       taskId = CreateTask(Task_ExcavationWaitFadeIn, 0);
       gMain.state++;
       break;
 
-    case 6:
+    case STATE_FADE:
       BeginNormalPaletteFade(PALETTES_ALL, 0, 16, 0, RGB_BLACK);
       gMain.state++;
       break;
 
-    case 7:
+    case STATE_SET_CALLBACKS:
       SetVBlankCallback(Excavation_VBlankCB);
       SetMainCallback2(Excavation_MainCB);
       break;
@@ -916,7 +788,6 @@ static bool8 Excavation_InitBgs(void)
     // BG registers may have scroll values left over from the previous screen. Reset all scroll values to 0.
     ResetAllBgsCoordinates();
 
-    // Allocate our tilemap buffer on the heap, and bail if allocation fail
     sBg2TilemapBuffer = AllocZeroed(TILEMAP_BUFFER_SIZE);
     sBg3TilemapBuffer = AllocZeroed(TILEMAP_BUFFER_SIZE);
     if (sBg3TilemapBuffer == NULL)
@@ -926,29 +797,13 @@ static bool8 Excavation_InitBgs(void)
         return FALSE;
     }
 
-    /*
-     * Clear all BG-related data buffers and mark DMAs as ready. Also resets the BG and mode bits of reg DISPCNT to 0.
-     * This will effectively turn off all BGs and activate Mode 0.
-     * LTODO explain the underlying sDmaBusyBitfield here
-     */
     ResetBgsAndClearDma3BusyFlags(0);
 
-    /*
-     * Use the BG templates defined at the top of the file to init various cached BG attributes. These attributes will
-     * be used by the various load methods to correctly setup VRAM per the user template. Some of the attributes can
-     * also be pushed into relevant video regs using the provided functions in `bg.h'
-     */
     InitBgsFromTemplates(0, sExcavationBgTemplates, NELEMS(sExcavationBgTemplates));
 
-    // Set the BG manager to use our newly allocated tilemap buffer for BG1's tilemap
     SetBgTilemapBuffer(2, sBg2TilemapBuffer);
     SetBgTilemapBuffer(3, sBg3TilemapBuffer);
 
-    /*
-     * Schedule to copy the tilemap buffer contents (remember we zeroed it out earlier) into VRAM on the next VBlank.
-     * Right now, BG1 will just use Tile 0 for every tile. We will change this once we load in our true tilemap
-     * values from sSampleUiTilemap.
-     */
     ScheduleBgCopyTilemapToVram(2);
     ScheduleBgCopyTilemapToVram(3);
   
@@ -971,44 +826,18 @@ static void Task_Excavation_WaitFadeAndBail(u8 taskId)
 
 static void Excavation_MainCB(void)
 {
-    // Iterate through the Tasks list and run any active task callbacks
-    Excavation_CheckItemFound();
+    Excavation_CheckItemFound(); // TODO: Turn this function into a Task
     RunTasks();
-    // For all active sprites, call their callbacks and update their animation state
     AnimateSprites();
-    /*
-     * After all sprite state is updated, we need to sort their information into the OAM buffer which will be copied
-     * into actual OAM during VBlank. This makes sure sprites are drawn at the correct positions and in the correct
-     * order (recall sprite draw order determines which sprites appear on top of each other).
-     */
     BuildOamBuffer();
-    /*
-     * This one is a little confusing because there are actually two layers of scheduling. Regular game code can call
-     * `ScheduleBgCopyTilemapToVram(u8 bgId)' which will simply mark the tilemap for `bgId' as "ready to be copied".
-     * Then, calling `DoScheduledBgTilemapCopiesToVram' here does not actually perform the copy. Rather it simply adds a
-     * DMA transfer request to the DMA manager for this buffer copy. Only during VBlank when DMA transfers are processed
-     * does the copy into VRAM actually occur.
-     */
     DoScheduledBgTilemapCopiesToVram();
-    // If a palette fade is active, tick the udpate
     UpdatePaletteFade();
 }
 
 static void Excavation_VBlankCB(void)
 {
-    /*
-     * Handle direct CPU copies here during the VBlank period. All of these transfers affect what is displayed on
-     * screen, so we wait until VBlank to make the copies from the backbuffers.
-     */
-
-    // Transfer OAM buffer into VRAM OAM area
     LoadOam();
-    /*
-     * Sprite animation code may have updated frame image for sprites, so copy all these updated frames into the correct
-     * VRAM location.
-     */
     ProcessSpriteCopyRequests();
-    // Transfer the processed palette buffer into VRAM palette area
     TransferPlttBuffer();
 }
 
@@ -1091,7 +920,6 @@ static const struct ItemRarity ItemRarityTable_Rare[] = {
   {ITEMID_REVIVE_MAX, RARITY_RARE},
 };
 
-// TODO: Make this Randomly generate the Id depending on the rarity of an item
 static u8 GetRandomItemId() {
   u32 rarity;
   u32 index;
@@ -1121,7 +949,7 @@ static u8 GetRandomItemId() {
       break;
   }
   
-  // Change this return once this function is finished
+  // This won't ever happen.
   return 0;
 }
 
@@ -1147,11 +975,15 @@ static void Excavation_LoadSpriteGraphics(void) {
     itemId2 = GetRandomItemId();
     DoDrawRandomItem(2, itemId2);
     sExcavationUiState->Item2_TilesToDigUp = ExcavationUtil_GetTotalTileAmount(itemId2);
+  } else {
+    LoadSpritePalette(sSpritePal_Blank1);
   }
   if (sExcavationUiState->state_item3 == SELECTED) {
     itemId3 = GetRandomItemId();
     DoDrawRandomItem(3, itemId3);
     sExcavationUiState->Item3_TilesToDigUp = ExcavationUtil_GetTotalTileAmount(itemId3);
+  } else {
+    LoadSpritePalette(sSpritePal_Blank2);
   }
   if (sExcavationUiState->state_item4 == SELECTED) {
     itemId4 = GetRandomItemId();
@@ -1159,7 +991,7 @@ static void Excavation_LoadSpriteGraphics(void) {
     sExcavationUiState->Item4_TilesToDigUp = ExcavationUtil_GetTotalTileAmount(itemId4);
   }
     
-  // This stone generation is pretty ugly but why can't we also have a Random(), function which returns a u8 or any bit integer!?
+  // TODO: Change this randomness by using my new `random(u32 amount);` function!
   for (i=0; i<2; i++) {
     rnd = Random(); 
   
@@ -1511,6 +1343,55 @@ static void Terrain_DrawLayerTileToScreen(u8 x, u8 y, u8 layer, u16* ptr) {
   }
 }
 
+static const u16* GetCorrectPalette(u32 TileTag) {
+  switch (TileTag) {
+    case TAG_ITEM_REVIVE: 
+      return gItemRevivePal;
+      break;
+    case TAG_ITEM_DAMP_ROCK:
+      return gItemDampRockPal;
+      break;
+    case TAG_ITEM_HARDSTONE:
+      return gItemHardStonePal;
+      break;
+    case TAG_ITEM_RED_SHARD:
+      return gItemRedShardPal;
+      break;
+    case TAG_ITEM_IRON_BALL:
+      return gItemIronBallPal;
+      break;
+    case TAG_ITEM_BLUE_SHARD:
+      return gItemBlueShardPal;
+      break;
+    case TAG_ITEM_EVER_STONE:
+      return gItemEverStonePal;
+      break;
+    case TAG_ITEM_HEARTSCALE:
+      return gItemHeartScalePal;
+      break;
+    case TAG_ITEM_REVIVE_MAX:
+      return gItemReviveMaxPal;
+      break;
+    case TAG_ITEM_STAR_PIECE:
+      return gItemStarPiecePal;
+      break;
+  }
+}
+
+static struct SpriteTemplate CreatePaletteAndReturnTemplate(u32 TileTag, u32 PalTag) {
+  struct SpritePalette TempPalette;
+  struct SpriteTemplate TempSpriteTemplate = gDummySpriteTemplate;
+  
+  TempPalette.tag = PalTag;
+  TempPalette.data = GetCorrectPalette(TileTag);
+  LoadSpritePalette(&TempPalette);
+
+  TempSpriteTemplate.tileTag = TileTag;
+  TempSpriteTemplate.paletteTag = PalTag;
+  TempSpriteTemplate.oam = &gOamItem64x64;
+  return TempSpriteTemplate;
+}
+
 //#define ITEMID_HEART_SCALE  0
 //#define ITEMID_HARD_STONE   1
 //#define ITEMID_REVIVE       2
@@ -1540,7 +1421,8 @@ static void Terrain_DrawLayerTileToScreen(u8 x, u8 y, u8 layer, u16* ptr) {
 #define POS_OFFS_64X64 32
 
 // TODO: Make every item have a palette, even if two items have the same palette
-static void DrawItemSprite(u8 x, u8 y, u8 itemId) {
+static void DrawItemSprite(u8 x, u8 y, u8 itemId, u32 itemNumPalTag) {
+  struct SpriteTemplate gSpriteTemplate;
   u8 posX = x * 16;
   u8 posY = y * 16 + 32;
   //ExcavationItem_LoadPalette(gTestItemPal, tag);
@@ -1578,54 +1460,54 @@ static void DrawItemSprite(u8 x, u8 y, u8 itemId) {
       CreateSprite(&gSpriteStone3x3, posX+POS_OFFS_64X64, posY+POS_OFFS_64X64, 3);
       break;
     case ITEMID_HEART_SCALE:
-      LoadSpritePalette(sSpritePal_ItemHeartScale);
+      gSpriteTemplate = CreatePaletteAndReturnTemplate(TAG_ITEM_HEARTSCALE, itemNumPalTag);
       LoadCompressedSpriteSheet(sSpriteSheet_ItemHeartScale);
-      CreateSprite(&gSpriteItemHeartScale, posX+POS_OFFS_32X32, posY+POS_OFFS_32X32, 3);
+      CreateSprite(&gSpriteTemplate, posX+POS_OFFS_64X64, posY+POS_OFFS_64X64, 3);
       break;
     case ITEMID_HARD_STONE: 
-      LoadSpritePalette(sSpritePal_ItemHardStone);
+      gSpriteTemplate = CreatePaletteAndReturnTemplate(TAG_ITEM_HARDSTONE, itemNumPalTag);
       LoadCompressedSpriteSheet(sSpriteSheet_ItemHardStone);
-      CreateSprite(&gSpriteItemHardStone, posX+POS_OFFS_32X32, posY+POS_OFFS_32X32, 3);
+      CreateSprite(&gSpriteTemplate, posX+POS_OFFS_64X64, posY+POS_OFFS_64X64, 3);
       break;
     case ITEMID_REVIVE:
-      LoadSpritePalette(sSpritePal_ItemRevive);
+      gSpriteTemplate = CreatePaletteAndReturnTemplate(TAG_ITEM_REVIVE, itemNumPalTag);
       LoadCompressedSpriteSheet(sSpriteSheet_ItemRevive);
-      CreateSprite(&gSpriteItemRevive, posX+POS_OFFS_64X64, posY+POS_OFFS_64X64, 3);
+      CreateSprite(&gSpriteTemplate, posX+POS_OFFS_64X64, posY+POS_OFFS_64X64, 3);
       break;
     case ITEMID_STAR_PIECE:
-      LoadSpritePalette(sSpritePal_ItemStarPiece);
+      gSpriteTemplate = CreatePaletteAndReturnTemplate(TAG_ITEM_STAR_PIECE, itemNumPalTag);
       LoadCompressedSpriteSheet(sSpriteSheet_ItemStarPiece);
-      CreateSprite(&gSpriteItemStarPiece, posX+POS_OFFS_64X64, posY+POS_OFFS_64X64, 3);
+      CreateSprite(&gSpriteTemplate, posX+POS_OFFS_64X64, posY+POS_OFFS_64X64, 3);
       break;
     case ITEMID_DAMP_ROCK:
-      LoadSpritePalette(sSpritePal_ItemDampRock);
+      gSpriteTemplate = CreatePaletteAndReturnTemplate(TAG_ITEM_DAMP_ROCK, itemNumPalTag);
       LoadCompressedSpriteSheet(sSpriteSheet_ItemDampRock);
-      CreateSprite(&gSpriteItemDampRock, posX+POS_OFFS_64X64, posY+POS_OFFS_64X64, 3);
+      CreateSprite(&gSpriteTemplate, posX+POS_OFFS_64X64, posY+POS_OFFS_64X64, 3);
       break;
     case ITEMID_RED_SHARD:
-      LoadSpritePalette(sSpritePal_ItemRedShard);
+      gSpriteTemplate = CreatePaletteAndReturnTemplate(TAG_ITEM_RED_SHARD, itemNumPalTag);
       LoadCompressedSpriteSheet(sSpriteSheet_ItemRedShard);
-      CreateSprite(&gSpriteItemRedShard, posX+POS_OFFS_64X64, posY+POS_OFFS_64X64, 3);
+      CreateSprite(&gSpriteTemplate, posX+POS_OFFS_64X64, posY+POS_OFFS_64X64, 3);
       break;
     case ITEMID_BLUE_SHARD:
-      LoadSpritePalette(sSpritePal_ItemBlueShard);
+      gSpriteTemplate = CreatePaletteAndReturnTemplate(TAG_ITEM_BLUE_SHARD, itemNumPalTag);
       LoadCompressedSpriteSheet(sSpriteSheet_ItemBlueShard);
-      CreateSprite(&gSpriteItemBlueShard, posX+POS_OFFS_64X64, posY+POS_OFFS_64X64, 3);
+      CreateSprite(&gSpriteTemplate, posX+POS_OFFS_64X64, posY+POS_OFFS_64X64, 3);
       break;
     case ITEMID_IRON_BALL:
-      LoadSpritePalette(sSpritePal_ItemIronBall);
+      gSpriteTemplate = CreatePaletteAndReturnTemplate(TAG_ITEM_IRON_BALL, itemNumPalTag);
       LoadCompressedSpriteSheet(sSpriteSheet_ItemIronBall);
-      CreateSprite(&gSpriteItemIronBall, posX+POS_OFFS_64X64, posY+POS_OFFS_64X64, 3);
+      CreateSprite(&gSpriteTemplate, posX+POS_OFFS_64X64, posY+POS_OFFS_64X64, 3);
       break;
     case ITEMID_REVIVE_MAX:
-      LoadSpritePalette(sSpritePal_ItemReviveMax);
+      gSpriteTemplate = CreatePaletteAndReturnTemplate(TAG_ITEM_REVIVE_MAX, itemNumPalTag);
       LoadCompressedSpriteSheet(sSpriteSheet_ItemReviveMax);
-      CreateSprite(&gSpriteItemReviveMax, posX+POS_OFFS_64X64, posY+POS_OFFS_64X64, 3);
+      CreateSprite(&gSpriteTemplate, posX+POS_OFFS_64X64, posY+POS_OFFS_64X64, 3);
       break;
     case ITEMID_EVER_STONE:
-      LoadSpritePalette(sSpritePal_ItemEverStone);
+      gSpriteTemplate = CreatePaletteAndReturnTemplate(TAG_ITEM_EVER_STONE, itemNumPalTag);
       LoadCompressedSpriteSheet(sSpriteSheet_ItemEverStone);
-      CreateSprite(&gSpriteItemEverStone, posX+POS_OFFS_64X64, posY+POS_OFFS_64X64, 3);
+      CreateSprite(&gSpriteTemplate, posX+POS_OFFS_64X64, posY+POS_OFFS_64X64, 3);
       break; 
   }
 }
@@ -1944,7 +1826,7 @@ static void DoDrawRandomItem(u8 itemStateId, u8 itemId) {
             if (Random() > 49151) {
               canItemBePlaced = CheckIfItemCanBePlaced(itemId, x, y, 5, 3);
               if (canItemBePlaced == 1) {
-                DrawItemSprite(x,y,itemId);
+                DrawItemSprite(x,y,itemId, TAG_PAL_ITEM1);
                 OverwriteItemMapData(x, y, itemStateId, itemId); // For the collection logic, overwrite the itemmap data
                 isItemPlaced = 1;
                 break;
@@ -1964,7 +1846,7 @@ static void DoDrawRandomItem(u8 itemStateId, u8 itemId) {
             if (Random() > 49151) {
               canItemBePlaced = CheckIfItemCanBePlaced(itemId, x, y, 5, 7);
               if (canItemBePlaced == 1) {
-                DrawItemSprite(x,y,itemId);
+                DrawItemSprite(x,y,itemId, TAG_PAL_ITEM2);
                 OverwriteItemMapData(x, y, itemStateId, itemId); // For the collection logic, overwrite the itemmap data
                 isItemPlaced = 1;
                 break;
@@ -1984,7 +1866,7 @@ static void DoDrawRandomItem(u8 itemStateId, u8 itemId) {
             if (Random() > 49151) {
               canItemBePlaced = CheckIfItemCanBePlaced(itemId, x, y, 11, 3);
               if (canItemBePlaced == 1) {
-                DrawItemSprite(x,y,itemId);
+                DrawItemSprite(x,y,itemId, TAG_PAL_ITEM3);
                 OverwriteItemMapData(x, y, itemStateId, itemId); // For the collection logic, overwrite the itemmap data
                 isItemPlaced = 1;
                 break;
@@ -2005,7 +1887,7 @@ static void DoDrawRandomItem(u8 itemStateId, u8 itemId) {
           if (Random() > 49151) {
             canItemBePlaced = CheckIfItemCanBePlaced(itemId, x, y, 11, 7);
             if (canItemBePlaced == 1) {
-              DrawItemSprite(x,y,itemId);
+              DrawItemSprite(x,y,itemId, TAG_PAL_ITEM4);
               OverwriteItemMapData(x, y, itemStateId, itemId); // For the collection logic, overwrite the itemmap data
               isItemPlaced = 1;
               break;
@@ -2020,6 +1902,8 @@ static void DoDrawRandomItem(u8 itemStateId, u8 itemId) {
     }
   }
 }
+
+#define TAG_DUMMY 0
 
 // TODO: Fill this function with the rest of the stones
 static void DoDrawRandomStone(u8 itemId) {
@@ -2040,7 +1924,7 @@ static void DoDrawRandomStone(u8 itemId) {
             y + STONE_1x4_TILE_AMOUNT_BOTTOM < 8 &&
             Random() > 60000 
           ) {
-            DrawItemSprite(x, y, itemId);
+            DrawItemSprite(x, y, itemId, TAG_DUMMY);
             // Dont want to use ITEM_TILE_DUG_UP, not sure if something unexpected will happen
             OverwriteItemMapData(x, y, 6, itemId);
             // Stops the looping so the stone isn't drawn multiple times lmao
@@ -2059,7 +1943,7 @@ static void DoDrawRandomStone(u8 itemId) {
             y + STONE_4x1_TILE_AMOUNT_BOTTOM < 8 &&
             Random() > 60000 
           ) {
-            DrawItemSprite(x, y, itemId);
+            DrawItemSprite(x, y, itemId, TAG_DUMMY);
             OverwriteItemMapData(x, y, 6, itemId);
             x = 11;
             y = 7;
@@ -2080,7 +1964,7 @@ static void DoDrawRandomStone(u8 itemId) {
             y + STONE_2x4_TILE_AMOUNT_BOTTOM < 8 &&
             Random() > 60000 
           ) {
-            DrawItemSprite(x, y, itemId);
+            DrawItemSprite(x, y, itemId, TAG_DUMMY);
             OverwriteItemMapData(x, y, 6, itemId);
             x = 11;
             y = 7;
@@ -2101,7 +1985,7 @@ static void DoDrawRandomStone(u8 itemId) {
             y + STONE_4x2_TILE_AMOUNT_BOTTOM < 8 &&
             Random() > 60000 
           ) {
-            DrawItemSprite(x, y, itemId);
+            DrawItemSprite(x, y, itemId, TAG_DUMMY);
             OverwriteItemMapData(x, y, 6, itemId);
             x = 11;
             y = 7;
@@ -2118,7 +2002,7 @@ static void DoDrawRandomStone(u8 itemId) {
             y + STONE_2x2_TILE_AMOUNT_BOTTOM < 8 &&
             Random() > 60000 
           ) {
-            DrawItemSprite(x, y, itemId);
+            DrawItemSprite(x, y, itemId, TAG_DUMMY);
             OverwriteItemMapData(x, y, 6, itemId);
             x = 11;
             y = 7;
@@ -2140,7 +2024,7 @@ static void DoDrawRandomStone(u8 itemId) {
             y + STONE_3x3_TILE_AMOUNT_BOTTOM < 8 &&
             Random() > 60000 
           ) {
-            DrawItemSprite(x, y, itemId);
+            DrawItemSprite(x, y, itemId, TAG_DUMMY);
             OverwriteItemMapData(x, y, 6, itemId);
             x = 11;
             y = 7;
