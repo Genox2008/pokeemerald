@@ -1605,15 +1605,6 @@ u8 LoadSpritePalette(const struct SpritePalette *palette)
     }
 }
 
-u8 ExcavationItem_LoadPalette(const u16* data, u16 tag) {
-  u8 index = IndexOfSpritePaletteTag(TAG_NONE);
-
-  sSpritePaletteTags[index] = tag;
-  DoLoadSpritePalette(data, PLTT_ID(index));
-  return index;
-}
-
-
 void LoadSpritePalettes(const struct SpritePalette *palettes)
 {
     u8 i;

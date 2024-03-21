@@ -1,14 +1,4 @@
 // I have to credit grunt-lucas because I am stealing a bit of code from him ;). Check out his sample_ui branch as well!
-
-/*
- *  Following Bugs need to be fixed:
- *    - When digging up an item, the wrong item palette gets faded white
- *    - When there are 2 or more items which have the same sprite and palette, the palette is only loaded once so the other item fades the wrong palette
- *    - 
- *
- *
- */
-
 #include "excavation.h"
 
 #include "gba/types.h"
