@@ -31,6 +31,7 @@
 #include "pokedex.h"
 #include "gpu_regs.h"
 #include "random.h"
+#include "field_message_box.h"
 
 static void Excavation_Init(MainCallback callback);
 static void Excavation_SetupCB(void);
@@ -133,6 +134,12 @@ const u16 gCursorPal[] = INCBIN_U16("graphics/pokenav/region_map/cursor.gbapal")
 const u32 gButtonGfx[] = INCBIN_U32("graphics/excavation/buttons.4bpp.lz");
 const u16 gButtonPal[] = INCBIN_U16("graphics/excavation/buttons.gbapal");
 
+const u32 gHitEffectHammerGfx[] = INCBIN_U32("graphics/excavation/hit_effect_hammer.4bpp.lz");
+const u32 gHitEffectPickaxeGfx[] = INCBIN_U32("graphics/excavation/hit_effect_pickaxe.4bpp.lz");
+const u32 gHitHammerGfx[] = INCBIN_U32("graphics/excavation/hit_hammer.4bpp.lz");
+const u32 gHitPickaxeGfx[] = INCBIN_U32("graphics/excavation/hit_pickaxe.4bpp.lz");
+const u16 gHitEffectPal[] = INCBIN_U16("graphics/excavation/hit_effects.gbapal");
+
 // Item Sprite Tags
 #define TAG_ITEM_HEARTSCALE 3
 #define TAG_ITEM_HARDSTONE  4
@@ -159,6 +166,12 @@ const u16 gButtonPal[] = INCBIN_U16("graphics/excavation/buttons.gbapal");
 #define TAG_PAL_ITEM2       22
 #define TAG_PAL_ITEM3       23
 #define TAG_PAL_ITEM4       24
+
+#define TAG_PAL_HIT_EFFECTS     25
+#define TAG_HIT_EFFECT_HAMMER   26
+#define TAG_HIT_EFFECT_PICKAXE  27
+#define TAG_HIT_HAMMER          28
+#define TAG_HIT_PICKAXE         29
 
 // Item sprite & palette data
 const u16 gStonePal[] = INCBIN_U16("graphics/excavation/stones/stones.gbapal");
@@ -233,6 +246,36 @@ static const struct CompressedSpriteSheet sSpriteSheet_Buttons[] =
 static const struct SpritePalette sSpritePal_Buttons[] = 
 {
   {gButtonPal, TAG_BUTTONS},
+  {NULL},
+};
+
+static const struct CompressedSpriteSheet sSpriteSheet_HitEffectHammer[] = 
+{
+  {gHitEffectHammerGfx, 64*64/2 , TAG_HIT_EFFECT_HAMMER},
+  {NULL},
+};
+
+static const struct CompressedSpriteSheet sSpriteSheet_HitEffectPickaxe[] = 
+{
+  {gHitEffectPickaxeGfx, 64*64/2 , TAG_HIT_EFFECT_PICKAXE},
+  {NULL},
+};
+
+static const struct CompressedSpriteSheet sSpriteSheet_HitHammer[] = 
+{
+  {gHitHammerGfx, 32*64/2 , TAG_HIT_HAMMER},
+  {NULL},
+};
+
+static const struct CompressedSpriteSheet sSpriteSheet_HitPickaxe[] = 
+{
+  {gHitPickaxeGfx, 32*64/2 , TAG_HIT_PICKAXE},
+  {NULL},
+};
+
+static const struct SpritePalette sSpritePal_HitEffect[] = 
+{
+  {gHitEffectPal, TAG_PAL_HIT_EFFECTS},
   {NULL},
 };
 
@@ -382,7 +425,35 @@ static const struct OamData gOamButton = {
     .paletteNum = 0,
 };
 
-#define DEBUG_ITEM_GEN
+static const struct OamData gOamHitEffect = {
+    .y = 0,
+    .affineMode = 0,
+    .objMode = 0,
+    .bpp = 0,
+    .shape = 0,
+    .x = 0,
+    .matrixNum = 0,
+    .size = 3,
+    .tileNum = 0,
+    .priority = 0,
+    .paletteNum = 0,
+};
+
+static const struct OamData gOamHitTools = {
+    .y = 0,
+    .affineMode = 0,
+    .objMode = 0,
+    .bpp = 0,
+    .shape = 0,
+    .x = 0,
+    .matrixNum = 0,
+    .size = 2,
+    .tileNum = 0,
+    .priority = 0,
+    .paletteNum = 0,
+};
+
+//#define DEBUG_ITEM_GEN
 
 static const struct OamData gOamItem32x32 = {
     .y = 0,
@@ -460,6 +531,37 @@ static const union AnimCmd *const gButtonBlueAnim[] = {
     gAnimCmdButton_BlueNotPressed,
 };
 
+static const union AnimCmd gAnimCmd_EffectHammerHit[] = {
+    ANIMCMD_FRAME(0, 30),
+    ANIMCMD_JUMP(0),
+};
+
+static const union AnimCmd gAnimCmd_EffectHammerNotHit[] = {
+    ANIMCMD_FRAME(16, 30),
+    ANIMCMD_JUMP(0),
+};
+
+static const union AnimCmd gAnimCmd_EffectPickaxeHit[] = {
+    ANIMCMD_FRAME(0, 30),
+    ANIMCMD_JUMP(0),
+};
+
+static const union AnimCmd gAnimCmd_EffectPickaxeNotHit[] = {
+    ANIMCMD_FRAME(16, 30),
+    ANIMCMD_JUMP(0),
+};
+
+static const union AnimCmd *const gHitHammerAnim[] = {
+  gAnimCmd_EffectHammerHit,
+  gAnimCmd_EffectHammerNotHit,
+};
+
+static const union AnimCmd *const gHitPickaxeAnim[] = {
+  gAnimCmd_EffectPickaxeHit,
+  gAnimCmd_EffectPickaxeNotHit,
+};
+
+
 static const struct SpriteTemplate gSpriteCursor = {
     .tileTag = TAG_CURSOR,
     .paletteTag = TAG_CURSOR,
@@ -489,6 +591,46 @@ static const struct SpriteTemplate gSpriteButtonBlue = {
     .images = NULL,
     .affineAnims = gDummySpriteAffineAnimTable,
     .callback = SpriteCallbackDummy,
+};
+
+static const struct SpriteTemplate gSpriteHitEffectHammer = {
+    .tileTag = TAG_HIT_EFFECT_HAMMER,
+    .paletteTag = TAG_PAL_HIT_EFFECTS,
+    .oam = &gOamHitEffect,
+    .anims = gDummySpriteAnimTable,
+    .images = NULL,
+    .affineAnims = gDummySpriteAffineAnimTable,
+    .callback = SpriteCallbackDummy,
+};
+
+static const struct SpriteTemplate gSpriteHitEffectPickaxe = {
+    .tileTag = TAG_HIT_EFFECT_PICKAXE,
+    .paletteTag = TAG_PAL_HIT_EFFECTS,
+    .oam = &gOamHitEffect,
+    .anims = gDummySpriteAnimTable,
+    .images = NULL,
+    .affineAnims = gDummySpriteAffineAnimTable,
+    .callback = SpriteCallbackDummy,
+};
+
+static const struct SpriteTemplate gSpriteHitHammer = {
+    .tileTag = TAG_HIT_HAMMER,
+    .paletteTag = TAG_PAL_HIT_EFFECTS,
+    .oam = &gOamHitTools,
+    .anims = gHitHammerAnim,
+    .images = NULL,
+    .affineAnims = gDummySpriteAffineAnimTable,
+    .callback = SpriteCallbackDummy,
+};
+
+static const struct SpriteTemplate gSpriteHitPickaxe = {
+  .tileTag = TAG_HIT_PICKAXE,
+  .paletteTag = TAG_PAL_HIT_EFFECTS,
+  .oam = &gOamHitTools,
+  .anims = gHitPickaxeAnim,
+  .images = NULL,
+  .affineAnims = gDummySpriteAffineAnimTable,
+  .callback = SpriteCallbackDummy,
 };
 
 // Stone SpriteTemplates
@@ -601,36 +743,73 @@ static void delay(unsigned int amount) {
 }
 
 static void UiShake(void) {
+  u32 i;
+  u32 i2;
+
+  if (sExcavationUiState->mode == 1) {
+    i = CreateSprite(&gSpriteHitEffectHammer, (sExcavationUiState->cursorX*16)+8, (sExcavationUiState->cursorY*16)+8, 0);
+    i2 = CreateSprite(&gSpriteHitHammer, (sExcavationUiState->cursorX*16)+24, sExcavationUiState->cursorY*16, 0);
+  } else {
+    i = CreateSprite(&gSpriteHitEffectPickaxe, (sExcavationUiState->cursorX*16)+8, (sExcavationUiState->cursorY*16)+8, 0);
+    i2 = CreateSprite(&gSpriteHitPickaxe, (sExcavationUiState->cursorX*16)+24, sExcavationUiState->cursorY*16, 0);
+  }
+  gSprites[sExcavationUiState->cursorSpriteIndex].invisible = 1;
   SetGpuReg(REG_OFFSET_BG3HOFS, 1);
   SetGpuReg(REG_OFFSET_BG2HOFS, 1);
-  delay(1500);
+  delay(3000);
+  BuildOamBuffer();
   SetGpuReg(REG_OFFSET_BG3VOFS, 1);
-  SetGpuReg(REG_OFFSET_BG2VOFS, 1);
-  delay(1500);
-  SetGpuReg(REG_OFFSET_BG3HOFS, -2);
-  SetGpuReg(REG_OFFSET_BG2HOFS, -2);
-  delay(1500);
+  SetGpuReg(REG_OFFSET_BG2VOFS, 1); 
+  gSprites[i].invisible = 1;
+  gSprites[i2].invisible = 1;
+  BuildOamBuffer();
+  delay(3000);
+  SetGpuReg(REG_OFFSET_BG3HOFS, -1);
+  SetGpuReg(REG_OFFSET_BG2HOFS, -1);
+  gSprites[i].invisible = 0; 
+  gSprites[i2].invisible = 0; 
+  BuildOamBuffer();
+  delay(3000);
   SetGpuReg(REG_OFFSET_BG3VOFS, -1);
-  SetGpuReg(REG_OFFSET_BG2VOFS, -1);
-  delay(1500);
+  SetGpuReg(REG_OFFSET_BG2VOFS, -1); 
+  gSprites[i].invisible = 1;
+  BuildOamBuffer();
+  delay(3000);
   SetGpuReg(REG_OFFSET_BG3HOFS, 1);
   SetGpuReg(REG_OFFSET_BG2HOFS, 1);
-  delay(1000);
+  gSprites[i].invisible = 0;
+  StartSpriteAnim(&gSprites[i2], 1);
+  gSprites[i2].x += 7;
+  AnimateSprites();
+  BuildOamBuffer();
+  delay(3000);
   SetGpuReg(REG_OFFSET_BG3VOFS, 1);
   SetGpuReg(REG_OFFSET_BG2VOFS, 1);
-  delay(1500);
-  SetGpuReg(REG_OFFSET_BG3HOFS, -2);
-  SetGpuReg(REG_OFFSET_BG2HOFS, -2);
-  delay(1500);
+  gSprites[i].invisible = 1; 
+  BuildOamBuffer();
+  delay(3000);
+  SetGpuReg(REG_OFFSET_BG3HOFS, -1);
+  SetGpuReg(REG_OFFSET_BG2HOFS, -1);
+  gSprites[i].invisible = 0;
+  gSprites[i2].invisible = 1;
+  BuildOamBuffer();
+  delay(3000);
   SetGpuReg(REG_OFFSET_BG3VOFS, -1);
   SetGpuReg(REG_OFFSET_BG2VOFS, -1);
-  delay(1500);
+  gSprites[i].invisible = 1;
+  gSprites[i2].invisible = 0;
+  BuildOamBuffer();
+  delay(3000);
 
   // Back to default offset
   SetGpuReg(REG_OFFSET_BG3VOFS, 0);
   SetGpuReg(REG_OFFSET_BG3HOFS, 0);
   SetGpuReg(REG_OFFSET_BG2HOFS, 0);
   SetGpuReg(REG_OFFSET_BG2VOFS, 0);
+  gSprites[sExcavationUiState->cursorSpriteIndex].invisible = 0;
+  DestroySprite(&gSprites[i]); 
+  delay(8000);
+  DestroySprite(&gSprites[i2]);
 }
 
 void Excavation_ItemUseCB(void) {
@@ -815,20 +994,26 @@ static void Task_Excavation_WaitFadeAndBail(u8 taskId)
 }
 
 static void Excavation_MainCB(void)
-{
-    Excavation_CheckItemFound(); // TODO: Turn this function into a Task
-    RunTasks();
-    AnimateSprites();
-    BuildOamBuffer();
-    DoScheduledBgTilemapCopiesToVram();
-    UpdatePaletteFade();
+{ 
+  RunTasks();
+  AnimateSprites();
+  BuildOamBuffer();
+  DoScheduledBgTilemapCopiesToVram();
 }
 
 static void Excavation_VBlankCB(void)
 {
-    LoadOam();
-    ProcessSpriteCopyRequests();
-    TransferPlttBuffer();
+  // I discovered that the VBlankCB is actually ran every VBlank. There's no function that can halt it just because of a huge loop or smth
+  // However I discovered that the MainCB can be halted! And that's actually the case. UiShake() delays with huge loops to make the shake 
+  // effect visible! Because of this, other tasks cannot run (or other functions) in the same time as UiShake is ran. This makes the fade/flash
+  // effect on the items which got dug up, delay by a few `ms`! Because Vblank cannot be halted, we just do the checking, each vblank + there's no lag
+  // because of this!
+  Excavation_CheckItemFound();
+  UpdatePaletteFade();
+
+  LoadOam();
+  ProcessSpriteCopyRequests();
+  TransferPlttBuffer();
 }
 
 static void Excavation_FadeAndBail(void)
@@ -951,8 +1136,8 @@ static void Excavation_LoadSpriteGraphics(void) {
   LoadCompressedSpriteSheet(sSpriteSheet_Cursor);
 
   LoadSpritePalette(sSpritePal_Buttons);
-  LoadCompressedSpriteSheet(sSpriteSheet_Buttons);
- 
+  LoadCompressedSpriteSheet(sSpriteSheet_Buttons);  
+
   ClearItemMap(); 
   
   // ITEMS
@@ -1006,6 +1191,11 @@ static void Excavation_LoadSpriteGraphics(void) {
   sExcavationUiState->bRedSpriteIndex = CreateSprite(&gSpriteButtonRed, 217,78,0);
   sExcavationUiState->bBlueSpriteIndex = CreateSprite(&gSpriteButtonBlue, 217,138,1);
   sExcavationUiState->mode = 0;
+  LoadSpritePalette(sSpritePal_HitEffect);
+  LoadCompressedSpriteSheet(sSpriteSheet_HitEffectHammer);
+  LoadCompressedSpriteSheet(sSpriteSheet_HitEffectPickaxe);
+  LoadCompressedSpriteSheet(sSpriteSheet_HitHammer);
+  LoadCompressedSpriteSheet(sSpriteSheet_HitPickaxe);
 }
 
 static void Task_ExcavationWaitFadeIn(u8 taskId)
@@ -1026,11 +1216,16 @@ static void Task_ExcavationMainInput(u8 taskId) {
     gTasks[taskId].func = Task_ExcavationFadeAndExitMenu;
   } 
   
+  // Because the UiShake function does manual delays with for loops, we have to imediatly call the update functions for sprites and the schedule 
+  // functions for bgs. Otherwise we would notice the changes very late
   else if (gMain.newKeys & A_BUTTON /*&& sExcavationUiState->crackPos < 8 */)  {
-    Excavation_UpdateCracks();    
-    UiShake();
     Excavation_UpdateTerrain();
+    Excavation_UpdateCracks(); 
     ScheduleBgCopyTilemapToVram(2);
+    DoScheduledBgTilemapCopiesToVram();
+    BuildOamBuffer();
+    UiShake();
+    //delay(8000);
   }
 
   else if (gMain.newAndRepeatedKeys & DPAD_LEFT && CURSOR_SPRITE.x > 8) {
@@ -1068,11 +1263,11 @@ static void OverwriteTileDataInTilemapBuffer(u8 tile, u8 x, u8 y, u16* tilemapBu
 
 // DO NOT TOUCH ANY OF THE CRACK UPDATE FUNCTIONS!!!!! GENERATION IS TOO COMPLICATED TO GET FIXED! (most likely will forget everything lmao (thats why)! )!
 // 
-// Each function represent one crack, but why are there two offset vars?????
+// Each function represent one frame of a crack, but why are there two offset vars?????
 // Well there's `ofs` for telling how much to the left the next crack goes, (cracks are splite up by seven of these 32x32 `sprites`) (Cracks start at the end, so 23 is the first tile.);
 // 
 // `ofs2` tells how far the tile should move to the right side. Thats because the cracks dont really line up each other. 
-// So you cant put one 32x32 `sprite` (calling them sprites) right next to another 32x32 `sprite`. To align the next `sprite` so it looks right, we have to offset the next `sprite` by 8 pixels. 
+// So you cant put one 32x32 `sprite` (calling them sprites) right next to another 32x32 `sprite`. To align the next `sprite` so it looks right, we have to offset the next `sprite` by 8 pixels or 1 tile. 
 // 
 // You are still confused? Im sorry I cant help you, after one week, I will also have problems understanding that again.
 //
@@ -1382,9 +1577,6 @@ static struct SpriteTemplate CreatePaletteAndReturnTemplate(u32 TileTag, u32 Pal
   return TempSpriteTemplate;
 }
 
-//#define ITEMID_HEART_SCALE  0
-//#define ITEMID_HARD_STONE   1
-//#define ITEMID_REVIVE       2
 
 // These offset values are important because I dont want the sprites to be placed somewhere regarding the center and not the top left corner
 //
