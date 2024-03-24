@@ -543,3 +543,9 @@ gSpecials::
 	def_special TrySkyBattle
 	def_special VsSeekerResetObjectMovementAfterChargeComplete
 	def_special VsSeekerFreezeObjectsAfterChargeComplete
+  def_special GetHpIV
+	def_special GetAtkIV
+	def_special GetDefIV
+	def_special GetSpAtkIV
+	def_special GetSpDefIV
+	def_special GetSpeedIV
