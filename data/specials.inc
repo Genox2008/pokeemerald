@@ -549,3 +549,4 @@ gSpecials::
 	def_special GetSpAtkIV
 	def_special GetSpDefIV
 	def_special GetSpeedIV
+  def_special SetObjectMovementType

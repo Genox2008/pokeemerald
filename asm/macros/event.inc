@@ -2043,3 +2043,9 @@
 	callnative CreateTrainerPartyForPlayer
 	trainerbattle_no_intro \trainer2, NULL
 	.endm
+
+  .macro setobjectnewmovementtype localId:req, movementType:req
+  setvar VAR_0x8005, \localId
+  setvar VAR_0x8006, \movementType
+  special SetObjectMovementType
+  .endm
