@@ -568,11 +568,11 @@ static void SetShopItemsForSale(const u16 *items)
     u8 badgeCount = GetNumberOfBadges();
 
     if (items == NULL)
-        gMartInfo.itemList = sShopInventories[badgeCount];
+        sMartInfo.itemList = sShopInventories[badgeCount];
     else
-        gMartInfo.itemList = items;
+        sMartInfo.itemList = items;
 
-    gMartInfo.itemCount = 0;
+    sMartInfo.itemCount = 0;
     // Read items until ITEM_NONE / DECOR_NONE is reached
     while (sMartInfo.itemList[i])
     {
