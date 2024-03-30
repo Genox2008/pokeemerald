@@ -1,5 +1,5 @@
 // I have to credit grunt-lucas because I am stealing a bit of code from him ;). Check out his sample_ui branch as well!
-#include "ui_template.h"
+#include "heat_options.h"
 
 #include "gba/types.h"
 #include "gba/defines.h"
@@ -31,33 +31,33 @@
 #include "pokedex.h"
 #include "gpu_regs.h"
 
-static void TemplateUi_Init(MainCallback callback);
-static void TemplateUi_SetupCB(void);
-static bool8 TemplateUi_InitBgs(void);
-static void Task_TemplateUi_WaitFadeAndBail(u8 taskId);
-static void TemplateUi_MainCB(void);
-static void TemplateUi_VBlankCB(void);
-static void TemplateUi_FadeAndBail(void);
-static bool8 TemplateUi_LoadBgGraphics(void);
-// static void TemplateUi_LoadSpriteGraphics(void);
-static void TemplateUi_FreeResources(void);
-static void Task_TemplateUiWaitFadeIn(u8 taskId);
-static void Task_TemplateUiMainInput(u8 taskId);
-static void Task_TemplateUiFadeAndExitMenu(u8 taskId);
+static void OptionsUi_Init(MainCallback callback);
+static void OptionsUi_SetupCB(void);
+static bool8 OptionsUi_InitBgs(void);
+static void Task_OptionsUi_WaitFadeAndBail(u8 taskId);
+static void OptionsUi_MainCB(void);
+static void OptionsUi_VBlankCB(void);
+static void OptionsUi_FadeAndBail(void);
+static bool8 OptionsUi_LoadBgGraphics(void);
+// static void OptionsUi_LoadSpriteGraphics(void);
+static void OptionsUi_FreeResources(void);
+static void Task_OptionsUiWaitFadeIn(u8 taskId);
+static void Task_OptionsUiMainInput(u8 taskId);
+static void Task_OptionsUiFadeAndExitMenu(u8 taskId);
 
 
 
-struct TemplateUiState {
+struct OptionsUiState {
     // Callback which we will use to leave from this menu
     MainCallback leavingCallback;
     u8 loadState;
 };
 
 // We will allocate that on the heap later on but for now we will just have a NULL pointer.
-static EWRAM_DATA struct TemplateUiState *sTemplateUiState = NULL;
+static EWRAM_DATA struct OptionsUiState *sOptionsUiState = NULL;
 static EWRAM_DATA u8 *sBg3TilemapBuffer = NULL;
 
-static const struct BgTemplate sTemplateUiBgTemplates[] =
+static const struct BgTemplate sOptionsUiBgTemplate[] =
 {
     {
         .bg = 3,
@@ -71,32 +71,32 @@ static const struct BgTemplate sTemplateUiBgTemplates[] =
     },
 };
 
-static const u32 sTemplateUiTiles[] = INCBIN_U32("graphics/title_screen/rayquaza.4bpp.lz");
-static const u32 sTemplateUiTilemap[] = INCBIN_U32("graphics/title_screen/rayquaza.bin.lz");
-static const u16 sTemplateUiPalette[] = INCBIN_U16("graphics/bag/menu_male.gbapal");
+static const u32 sOptionsUiTiles[] = INCBIN_U32("graphics/heat_options/bg.4bpp.lz");
+static const u32 sOptionsUiTilemap[] = INCBIN_U32("graphics/heat_options/bg.bin.lz");
+static const u16 sOptionsUiPalette[] = INCBIN_U16("graphics/heat_options/bg.gbapal");
 
-void TemplateUi_ItemUseCB(void) {
-    TemplateUi_Init(CB2_ReturnToFieldWithOpenMenu);
+void OptionsUi_ItemUseCB(void) {
+    OptionsUi_Init(CB2_ReturnToFieldWithOpenMenu);
 }
 
-static void TemplateUi_Init(MainCallback callback) {
+static void OptionsUi_Init(MainCallback callback) {
     // Allocation on the heap
-    sTemplateUiState = AllocZeroed(sizeof(struct TemplateUiState));
+    sOptionsUiState = AllocZeroed(sizeof(struct OptionsUiState));
     
     // If allocation fails, just return to overworld.
-    if (sTemplateUiState == NULL) {
+    if (sOptionsUiState == NULL) {
         SetMainCallback2(callback);
         return;
     }
   
-    sTemplateUiState->leavingCallback = callback;
-    sTemplateUiState->loadState = 0;
+    sOptionsUiState->leavingCallback = callback;
+    sOptionsUiState->loadState = 0;
 
-    SetMainCallback2(TemplateUi_SetupCB);
+    SetMainCallback2(OptionsUi_SetupCB);
 }
 
 // TODO: Finish switch statement 
-static void TemplateUi_SetupCB(void) {
+static void OptionsUi_SetupCB(void) {
   u8 taskId;
   switch(gMain.state) {
     // Clear Screen
@@ -127,12 +127,12 @@ static void TemplateUi_SetupCB(void) {
     // Initialize BGs 
     case 2:
       // Try to run the BG init code
-      if (TemplateUi_InitBgs() == TRUE) {
+      if (OptionsUi_InitBgs() == TRUE) {
         // If we successfully init the BGs, lets gooooo
-        sTemplateUiState->loadState = 0;
+        sOptionsUiState->loadState = 0;
       } else {
         // If something went wrong, Fade and Bail
-        TemplateUi_FadeAndBail();
+        OptionsUi_FadeAndBail();
         return;
       }
       
@@ -141,7 +141,7 @@ static void TemplateUi_SetupCB(void) {
   
     // Load BG(s)
     case 3:
-      if (TemplateUi_LoadBgGraphics() == TRUE) {      
+      if (OptionsUi_LoadBgGraphics() == TRUE) {      
         gMain.state++;
       }
       break;
@@ -153,7 +153,7 @@ static void TemplateUi_SetupCB(void) {
     
     // Check if fade in is done
     case 5:
-      taskId = CreateTask(Task_TemplateUiWaitFadeIn, 0);
+      taskId = CreateTask(Task_OptionsUiWaitFadeIn, 0);
       gMain.state++;
       break;
 
@@ -163,14 +163,14 @@ static void TemplateUi_SetupCB(void) {
       break;
 
     case 7:
-      SetVBlankCallback(TemplateUi_VBlankCB);
-      SetMainCallback2(TemplateUi_MainCB);
+      SetVBlankCallback(OptionsUi_VBlankCB);
+      SetMainCallback2(OptionsUi_MainCB);
       break;
   }
 }
 
 // TODO: Create VARs and FUNCTIONs 
-static bool8 TemplateUi_InitBgs(void)
+static bool8 OptionsUi_InitBgs(void)
 {
     /*
      * 1 screenblock is 2 KiB, so that should be a good size for our tilemap buffer. We don't need more than one
@@ -199,11 +199,11 @@ static bool8 TemplateUi_InitBgs(void)
     ResetBgsAndClearDma3BusyFlags(0);
 
     /*
-     * Use the BG templates defined at the top of the file to init various cached BG attributes. These attributes will
-     * be used by the various load methods to correctly setup VRAM per the user template. Some of the attributes can
+     * Use the BG Optionss defined at the top of the file to init various cached BG attributes. These attributes will
+     * be used by the various load methods to correctly setup VRAM per the user Options. Some of the attributes can
      * also be pushed into relevant video regs using the provided functions in `bg.h'
      */
-    InitBgsFromTemplates(0, sTemplateUiBgTemplates, NELEMS(sTemplateUiBgTemplates));
+    InitBgsFromTemplates(0, sOptionsUiBgTemplate, NELEMS(sOptionsUiBgTemplate));
 
     // Set the BG manager to use our newly allocated tilemap buffer for BG1's tilemap
     SetBgTilemapBuffer(3, sBg3TilemapBuffer);
@@ -220,18 +220,18 @@ static bool8 TemplateUi_InitBgs(void)
     return TRUE;
 }
 
-static void Task_TemplateUi_WaitFadeAndBail(u8 taskId)
+static void Task_OptionsUi_WaitFadeAndBail(u8 taskId)
 {
     // Wait until the screen fades to black before we start doing cleanup
     if (!gPaletteFade.active)
     {
-        SetMainCallback2(sTemplateUiState->leavingCallback);
-        TemplateUi_FreeResources();
+        SetMainCallback2(sOptionsUiState->leavingCallback);
+        OptionsUi_FreeResources();
         DestroyTask(taskId);
     }
 }
 
-static void TemplateUi_MainCB(void)
+static void OptionsUi_MainCB(void)
 {
     // Iterate through the Tasks list and run any active task callbacks
     RunTasks();
@@ -255,7 +255,7 @@ static void TemplateUi_MainCB(void)
     UpdatePaletteFade();
 }
 
-static void TemplateUi_VBlankCB(void)
+static void OptionsUi_VBlankCB(void)
 {
     /*
      * Handle direct CPU copies here during the VBlank period. All of these transfers affect what is displayed on
@@ -273,78 +273,77 @@ static void TemplateUi_VBlankCB(void)
     TransferPlttBuffer();
 }
 
-static void TemplateUi_FadeAndBail(void)
+static void OptionsUi_FadeAndBail(void)
 {
     BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);
-    CreateTask(Task_TemplateUi_WaitFadeAndBail, 0);
+    CreateTask(Task_OptionsUi_WaitFadeAndBail, 0);
 
     /*
      * Set callbacks to ours while we wait for the fade to finish, then our above task will cleanup and swap the
      * callbacks back to the one we saved earlier (which should re-load the overworld)
      */
-    SetVBlankCallback(TemplateUi_VBlankCB);
-    SetMainCallback2(TemplateUi_MainCB);
+    SetVBlankCallback(OptionsUi_VBlankCB);
+    SetMainCallback2(OptionsUi_MainCB);
 }
 
 // TODO:
 // * Create tiles
 // * Create palette
-static bool8 TemplateUi_LoadBgGraphics(void) {
-  switch (sTemplateUiState->loadState) {
+static bool8 OptionsUi_LoadBgGraphics(void) {
+  switch (sOptionsUiState->loadState) {
     case 0:
       ResetTempTileDataBuffers();
-      DecompressAndCopyTileDataToVram(3, sTemplateUiTiles, 0, 0, 0);
-      sTemplateUiState->loadState++;
+      DecompressAndCopyTileDataToVram(3, sOptionsUiTiles, 0, 0, 0);
+      sOptionsUiState->loadState++;
       break;
     case 1:
       if (FreeTempTileDataBuffersIfPossible() != TRUE) { 
-        LZDecompressWram(sTemplateUiTilemap, sBg3TilemapBuffer);
-        sTemplateUiState->loadState++;
+        LZDecompressWram(sOptionsUiTilemap, sBg3TilemapBuffer);
+        sOptionsUiState->loadState++;
       }
       break;
     case 2:
-      LoadPalette(sTemplateUiPalette, BG_PLTT_ID(7), PLTT_SIZE_4BPP);
-      sTemplateUiState->loadState++;
+      LoadPalette(sOptionsUiPalette, BG_PLTT_ID(7), PLTT_SIZE_4BPP);
+      sOptionsUiState->loadState++;
     default: 
-      sTemplateUiState->loadState = 0;
+      sOptionsUiState->loadState = 0;
       return TRUE;
   } 
   return FALSE;
 }
 
-//static void TemplateUi_LoadSpriteGraphics(void) {
+//static void OptionsUi_LoadSpriteGraphics(void) {
   // todo
 //}
 
-static void Task_TemplateUiWaitFadeIn(u8 taskId)
+static void Task_OptionsUiWaitFadeIn(u8 taskId)
 {
     if (!gPaletteFade.active) {
-        gTasks[taskId].func = Task_TemplateUiMainInput;
+        gTasks[taskId].func = Task_OptionsUiMainInput;
     }
 }
 
-static void Task_TemplateUiMainInput(u8 taskId) {
+static void Task_OptionsUiMainInput(u8 taskId) {
   if (JOY_NEW(B_BUTTON)) {
-    PlaySE(SE_PC_OFF);
     BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);
-    gTasks[taskId].func = Task_TemplateUiFadeAndExitMenu;
+    gTasks[taskId].func = Task_OptionsUiFadeAndExitMenu;
   }
 }
 
-static void Task_TemplateUiFadeAndExitMenu(u8 taskId) {
+static void Task_OptionsUiFadeAndExitMenu(u8 taskId) {
   if (!gPaletteFade.active) {
-    SetMainCallback2(sTemplateUiState->leavingCallback);
-    TemplateUi_FreeResources();
+    SetMainCallback2(sOptionsUiState->leavingCallback);
+    OptionsUi_FreeResources();
     DestroyTask(taskId);
   }
 }
 
-static void TemplateUi_FreeResources(void)
+static void OptionsUi_FreeResources(void)
 {
     // Free our data struct and our BG1 tilemap buffer
-    if (sTemplateUiState != NULL)
+    if (sOptionsUiState != NULL)
     {
-        Free(sTemplateUiState);
+        Free(sOptionsUiState);
     }
     if (sBg3TilemapBuffer != NULL)
     {

@@ -728,6 +728,8 @@ static bool8 StartMenuSaveCallback(void)
     return FALSE;
 }
 
+#include "heat_options.h"
+
 static bool8 StartMenuOptionCallback(void)
 {
     if (!gPaletteFade.active)
@@ -735,7 +737,7 @@ static bool8 StartMenuOptionCallback(void)
         PlayRainStoppingSoundEffect();
         RemoveExtraStartMenuWindows();
         CleanupOverworldWindowsAndTilemaps();
-        SetMainCallback2(CB2_InitOptionMenu); // Display option menu
+        SetMainCallback2(OptionsUi_ItemUseCB); // Display option menu
         gMain.savedCallback = CB2_ReturnToFieldWithOpenMenu;
 
         return TRUE;

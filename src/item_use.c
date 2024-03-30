@@ -1127,10 +1127,10 @@ void ItemUseOutOfBattle_CannotUse(u8 taskId)
     DisplayDadsAdviceCannotUseItemMessage(taskId, gTasks[taskId].tUsingRegisteredKeyItem);
 }
 
-#include "ui_template.h"
+#include "heat_options.h"
 
 void ItemUseOutOfBattle_DebugUi(u8 taskId) {
-    gBagMenu->newScreenCallback = TemplateUi_ItemUseCB;
+    gBagMenu->newScreenCallback = OptionsUi_ItemUseCB;
     Task_FadeAndCloseBagMenu(taskId);
 }
 
