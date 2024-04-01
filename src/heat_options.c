@@ -52,6 +52,7 @@ static void Task_TemplateUiFadeAndExitMenu(u8 taskId);
 enum {
   WIN_PAGE_TITLE,
   WIN_DESC,
+  WIN_DESC_BOX,
   WIN_OPTION_LIST,
   WIN_OPTION_EDIT,
 };
@@ -69,6 +70,11 @@ enum {
   OPTION_GENERAL_L_BUTTON,
 };
 
+enum {
+  OPTION_BATTLE_SCENE,
+  OPTION_BATTLE_STYLE,
+};
+
 static const u8 sText_Option_TextSpeed[] = _("Text speed");
 static const u8 sText_Option_Frame[]     = _("Frame");
 static const u8 sText_Option_Autorun[]   = _("Autorun");
@@ -84,6 +90,14 @@ static const struct ListMenuItem sOptionsMenu_General_Options[] =
   [OPTION_GENERAL_L_BUTTON] =    {sText_Option_L_BUTTON, OPTION_GENERAL_L_BUTTON},
 };
 
+static const u8 sText_Option_BattleScene[] = _("Battle Scene");
+static const u8 sText_Option_BattleStyle[] = _("Battle Style");
+
+static const struct ListMenuItem sOptionsMenu_Battle_Options[] =
+{
+  [OPTION_BATTLE_SCENE] = {sText_Option_BattleScene, OPTION_BATTLE_SCENE},
+  [OPTION_BATTLE_STYLE] = {sText_Option_BattleStyle, OPTION_BATTLE_STYLE},
+};
 
 struct TemplateUiState {
     // Callback which we will use to leave from this menu
@@ -91,11 +105,16 @@ struct TemplateUiState {
     u8 loadState;
     u32 pageMode;
     u32 menuTaskId;
+    u32 menuTaskId2;
     u32 generalOption;
+    u32 battleOption;
 
     u32 optionTextSpeed;
     u32 optionFrameType;
     u32 optionAutoRun;
+
+    u32 optionBattleScene;
+    u32 optionBattleStyle;
 };
 
 // We will allocate that on the heap later on but for now we will just have a NULL pointer.
@@ -117,7 +136,7 @@ static const struct WindowTemplate sOptionsMenuWinTemplates[] =
         .bg = 1,
         .tilemapLeft = 1,
         .tilemapTop = 17,
-        .width = 27,
+        .width = 28,
         .height = 2,
         .paletteNum = 15,
         .baseBlock = 1 + (8*2)
@@ -129,16 +148,16 @@ static const struct WindowTemplate sOptionsMenuWinTemplates[] =
       .width = 10,
       .height = 10,
       .paletteNum = 15,
-      .baseBlock = (1 + (8*2)) + (27*2)
+      .baseBlock = (1 + (8*2)) + (28*2)
     },
     [WIN_OPTION_EDIT] = {
       .bg = 1,
-      .tilemapLeft = 15,
+      .tilemapLeft = 16,
       .tilemapTop = 6,
       .width = 10,
       .height = 10,
       .paletteNum = 15,
-      .baseBlock = ((1 + (8*2)) + (27*2)) + 100
+      .baseBlock = ((1 + (8*2)) + (28*2)) + 100
     },
     DUMMY_WIN_TEMPLATE
 };
@@ -151,9 +170,9 @@ static const struct BgTemplate sTemplateUiBgTemplates[] =
         .charBaseIndex = 1,
         // Use screenblock 31 for BG3 tilemap
         // (It has become customary to put tilemaps in the final few screenblocks)
-        .mapBaseIndex = 30,
+        .mapBaseIndex = 29,
         // 0 is highest priority, etc. Make sure to change priority if I want to use windows
-        .priority = 0
+        .priority = 1
     },
     {
         .bg = 3,
@@ -163,7 +182,7 @@ static const struct BgTemplate sTemplateUiBgTemplates[] =
         // (It has become customary to put tilemaps in the final few screenblocks)
         .mapBaseIndex = 31,
         // 0 is highest priority, etc. Make sure to change priority if I want to use windows
-        .priority = 1
+        .priority = 3
     }, 
 };
 
@@ -211,10 +230,14 @@ static void TemplateUi_Init(MainCallback callback) {
     sTemplateUiState->loadState = 0;
     sTemplateUiState->pageMode = PAGE_GENERAL;
     sTemplateUiState->generalOption = OPTION_GENERAL_TEXT_SPEED;
+    sTemplateUiState->battleOption = OPTION_BATTLE_SCENE;
 
     sTemplateUiState->optionTextSpeed = gSaveBlock2Ptr->optionsTextSpeed;
     sTemplateUiState->optionFrameType = gSaveBlock2Ptr->optionsWindowFrameType;
     sTemplateUiState->optionAutoRun = gSaveBlock2Ptr->autoRun;
+
+    sTemplateUiState->optionBattleScene = gSaveBlock2Ptr->optionsBattleSceneOff;
+    sTemplateUiState->optionBattleStyle = gSaveBlock2Ptr->optionsBattleStyle;
 
     SetMainCallback2(TemplateUi_SetupCB);
 }
@@ -277,10 +300,11 @@ static void TemplateUi_SetupCB(void) {
     
     // Load Window(s) 
     case 5:
-      LoadMessageBoxAndBorderGfx();
       OptionsUi_InitWindows();
       OptionsUi_PrintTitle();
       OptionUi_PrintSetOptions();
+      LoadUserWindowBorderGfx(WIN_DESC, 720, 14 * 16);
+      DrawTextBorderOuter(WIN_DESC, 720, 14);
       gMain.state++;
       break;
     // Check if fade in is done
@@ -347,9 +371,7 @@ static bool8 TemplateUi_InitBgs(void)
      */
     ScheduleBgCopyTilemapToVram(3);
 
-    HideBg(0);
     ShowBg(1);
-    HideBg(2);
     ShowBg(3);
 
     return TRUE;
@@ -503,13 +525,18 @@ static const u8 sText_DescTextFrame[] = _("Switches frame style.");
 static const u8 sText_DescTextAutorun[] = _("Run without holding {B_BUTTON} .");
 static const u8 sText_DescTextRButton[] = _("Customizes what the {R_BUTTON} Button does.");
 static const u8 sText_DescTextLButton[] = _("Customizes what the {L_BUTTON} Button does.");
+static const u8 sText_DescTextBattleScene[] = _("Turns animations in battle on and off.");
+static const u8 sText_DescTextBattleStyle[] = _("Sets Switch or Set battle style");
 
 static const u8 sText_TextSpeed_Slow[] = _("Slow");
 static const u8 sText_TextSpeed_Mid[] = _("Mid");
 static const u8 sText_TextSpeed_Fast[] = _("Fast");
 
-static const u8 sText_AutoRun_On[] = _("On");
-static const u8 sText_AutoRun_Off[] = _("Off");
+static const u8 sText_On[] = _("On");
+static const u8 sText_Off[] = _("Off");
+
+static const u8 sText_Set[] = _("Set");
+static const u8 sText_Shift[] = _("Shift");
 
 static void OptionsUi_PrintTitle(void) {
   FillWindowPixelBuffer(WIN_PAGE_TITLE, PIXEL_FILL(TEXT_COLOR_TRANSPARENT));
@@ -622,13 +649,35 @@ static const u8* GetFrameTextFromValue(u32 v) {
   }  
 }
 
-static const u8* GetAutorunTextFromValue(u32 v) {
+static const u8* GetOnOffTextFromValue(u32 v) {
   switch (v) {
     case 0:
-      return sText_AutoRun_Off;
+      return sText_Off;
       break;
     case 1:
-      return sText_AutoRun_On;
+      return sText_On;
+      break;
+  }
+}
+
+static const u8* GetOnOffTextFromValueReversed(u32 v) {
+  switch (v) {
+    case 1:
+      return sText_Off;
+      break;
+    case 0:
+      return sText_On;
+      break;
+  }
+}
+
+static const u8* GetShiftSetFromvalue(u32 v) {
+  switch (v) {
+    case 0:
+      return sText_Shift;
+      break;
+    case 1:
+      return sText_Set;
       break;
   }
 }
@@ -639,8 +688,16 @@ static void OptionUi_PrintSetOptions(void) {
   
   AddTextPrinterParameterized4(WIN_OPTION_EDIT, FONT_NORMAL, 0, 0, 0, 0, sOptionsUiWindowFontColors[FONT_RED], TEXT_SKIP_DRAW, GetTextSpeedTextFromValue(sTemplateUiState->optionTextSpeed));
   AddTextPrinterParameterized4(WIN_OPTION_EDIT, FONT_NORMAL, 0, 16, 0, 0, sOptionsUiWindowFontColors[FONT_RED], TEXT_SKIP_DRAW, GetFrameTextFromValue(frametype));
-  AddTextPrinterParameterized4(WIN_OPTION_EDIT, FONT_NORMAL, 0, 32, 0, 0, sOptionsUiWindowFontColors[FONT_RED], TEXT_SKIP_DRAW, GetAutorunTextFromValue(sTemplateUiState->optionAutoRun));
+  AddTextPrinterParameterized4(WIN_OPTION_EDIT, FONT_NORMAL, 0, 32, 0, 0, sOptionsUiWindowFontColors[FONT_RED], TEXT_SKIP_DRAW, GetOnOffTextFromValue(sTemplateUiState->optionAutoRun));
 
+  CopyWindowToVram(WIN_OPTION_EDIT, COPYWIN_FULL);
+}
+
+static void OptionUi_PrintBattleSetOptions(void) {
+  FillWindowPixelBuffer(WIN_OPTION_EDIT, PIXEL_FILL(TEXT_COLOR_TRANSPARENT));
+  AddTextPrinterParameterized4(WIN_OPTION_EDIT, FONT_NORMAL, 0, 0, 0, 0, sOptionsUiWindowFontColors[FONT_RED], TEXT_SKIP_DRAW, GetOnOffTextFromValueReversed(sTemplateUiState->optionBattleScene));
+AddTextPrinterParameterized4(WIN_OPTION_EDIT, FONT_NORMAL, 0, 16, 0, 0, sOptionsUiWindowFontColors[FONT_RED], TEXT_SKIP_DRAW, GetShiftSetFromvalue(sTemplateUiState->optionBattleStyle));
+  
   CopyWindowToVram(WIN_OPTION_EDIT, COPYWIN_FULL);
 }
 
@@ -661,27 +718,89 @@ enum {
 };
 
 static void SwitchPage(u32 direction) {
+  struct ListMenuTemplate sOptionsListMenu; 
+
   switch(direction) {
     case RIGHT:
       if(sTemplateUiState->pageMode == PAGE_GENERAL) {
+        PlaySE(SE_SELECT);
+        
         sTemplateUiState->pageMode = PAGE_BATTLE;
+        sTemplateUiState->generalOption = OPTION_GENERAL_TEXT_SPEED;
+        sOptionsListMenu.items = sOptionsMenu_Battle_Options;
+        sOptionsListMenu.moveCursorFunc = OptionsMenu_MoveCursorCallback;
+        sOptionsListMenu.itemPrintFunc = OptionsMenu_ItemPrintCallback;
+        sOptionsListMenu.totalItems = ARRAY_COUNT(sOptionsMenu_Battle_Options);
+        sOptionsListMenu.maxShowed = 5;
+        sOptionsListMenu.windowId = WIN_OPTION_LIST;
+        sOptionsListMenu.header_X = 0;
+        sOptionsListMenu.item_X = 8;
+        sOptionsListMenu.cursor_X = 0;
+        sOptionsListMenu.upText_Y = 0;
+        sOptionsListMenu.cursorPal = 2;
+        sOptionsListMenu.fillValue = 0;
+        sOptionsListMenu.cursorShadowPal = 3;
+        sOptionsListMenu.lettersSpacing = 0;
+        sOptionsListMenu.itemVerticalPadding = 0;
+        sOptionsListMenu.scrollMultiple = LIST_NO_MULTIPLE_SCROLL;
+        sOptionsListMenu.fontId = FONT_NORMAL;
+        sOptionsListMenu.cursorKind = CURSOR_BLACK_ARROW;
+        
         FillWindowPixelBuffer(WIN_PAGE_TITLE, PIXEL_FILL(TEXT_COLOR_TRANSPARENT));
+        FillWindowPixelBuffer(WIN_OPTION_EDIT, PIXEL_FILL(TEXT_COLOR_TRANSPARENT));
+        FillWindowPixelBuffer(WIN_OPTION_LIST, PIXEL_FILL(TEXT_COLOR_TRANSPARENT));
+        FillWindowPixelBuffer(WIN_DESC, PIXEL_FILL(TEXT_COLOR_TRANSPARENT));
+        AddTextPrinterParameterized4(WIN_DESC, FONT_NORMAL, 0, 0, 0, 0, sOptionsUiWindowFontColors[FONT_BLACK], TEXT_SKIP_DRAW, sText_DescTextBattleScene);
+        sTemplateUiState->menuTaskId = ListMenuInit(&sOptionsListMenu, 0, 0);
         AddTextPrinterParameterized4(WIN_PAGE_TITLE, FONT_NORMAL, 0, 0, 0, 0, sOptionsUiWindowFontColors[FONT_BLACK], TEXT_SKIP_DRAW, sText_TitlePageBattle);
+        OptionUi_PrintBattleSetOptions();
         CopyWindowToVram(WIN_PAGE_TITLE, COPYWIN_GFX);
+        CopyWindowToVram(WIN_OPTION_EDIT, COPYWIN_GFX);
+        CopyWindowToVram(WIN_DESC, COPYWIN_GFX);
       }       
       break;
     case LEFT:
       if(sTemplateUiState->pageMode == PAGE_BATTLE) {
-        sTemplateUiState->pageMode = PAGE_GENERAL;
+        PlaySE(SE_SELECT);
+
+        sTemplateUiState->pageMode = PAGE_GENERAL; 
+        sTemplateUiState->battleOption = OPTION_BATTLE_SCENE;
+        sOptionsListMenu.items = sOptionsMenu_General_Options;
+        sOptionsListMenu.moveCursorFunc = OptionsMenu_MoveCursorCallback;
+        sOptionsListMenu.itemPrintFunc = OptionsMenu_ItemPrintCallback;
+        sOptionsListMenu.totalItems = ARRAY_COUNT(sOptionsMenu_General_Options);
+        sOptionsListMenu.maxShowed = 5;
+        sOptionsListMenu.windowId = WIN_OPTION_LIST;
+        sOptionsListMenu.header_X = 0;
+        sOptionsListMenu.item_X = 8;
+        sOptionsListMenu.cursor_X = 0;
+        sOptionsListMenu.upText_Y = 0;
+        sOptionsListMenu.cursorPal = 2;
+        sOptionsListMenu.fillValue = 0;
+        sOptionsListMenu.cursorShadowPal = 3;
+        sOptionsListMenu.lettersSpacing = 0;
+        sOptionsListMenu.itemVerticalPadding = 0;
+        sOptionsListMenu.scrollMultiple = LIST_NO_MULTIPLE_SCROLL;
+        sOptionsListMenu.fontId = FONT_NORMAL;
+        sOptionsListMenu.cursorKind = CURSOR_BLACK_ARROW;
+
         FillWindowPixelBuffer(WIN_PAGE_TITLE, PIXEL_FILL(TEXT_COLOR_TRANSPARENT));
+        FillWindowPixelBuffer(WIN_OPTION_EDIT, PIXEL_FILL(TEXT_COLOR_TRANSPARENT));
+        FillWindowPixelBuffer(WIN_OPTION_LIST, PIXEL_FILL(TEXT_COLOR_TRANSPARENT));
+        FillWindowPixelBuffer(WIN_DESC, PIXEL_FILL(TEXT_COLOR_TRANSPARENT));
+        AddTextPrinterParameterized4(WIN_DESC, FONT_NORMAL, 0, 0, 0, 0, sOptionsUiWindowFontColors[FONT_BLACK], TEXT_SKIP_DRAW, sText_DescTextSpeed);
+        sTemplateUiState->menuTaskId = ListMenuInit(&sOptionsListMenu, 0, 0);
         AddTextPrinterParameterized4(WIN_PAGE_TITLE, FONT_NORMAL, 0, 0, 0, 0, sOptionsUiWindowFontColors[FONT_BLACK], TEXT_SKIP_DRAW, sText_TitlePageGeneral);
+        OptionUi_PrintSetOptions();
         CopyWindowToVram(WIN_PAGE_TITLE, COPYWIN_GFX);
+        CopyWindowToVram(WIN_OPTION_EDIT, COPYWIN_GFX);
+        CopyWindowToVram(WIN_DESC, COPYWIN_GFX);
       }
       break;
-  } 
+  }
 }
 
-static void OptionsUi_UpdateOptionDesc(void) {
+static void OptionsUi_General_UpdateOptionDesc(void) {
   FillWindowPixelBuffer(WIN_DESC, PIXEL_FILL(TEXT_COLOR_TRANSPARENT));
   switch(sTemplateUiState->generalOption) {
     case OPTION_GENERAL_TEXT_SPEED: 
@@ -704,7 +823,21 @@ static void OptionsUi_UpdateOptionDesc(void) {
   CopyWindowToVram(WIN_DESC, COPYWIN_GFX);
 }
 
-static void OptionsUi_UpdateOptionPressedRight(void) {
+static void OptionsUi_Battle_UpdateOptionDesc(void) {
+  FillWindowPixelBuffer(WIN_DESC, PIXEL_FILL(TEXT_COLOR_TRANSPARENT));
+  switch(sTemplateUiState->battleOption) {
+    case OPTION_BATTLE_SCENE: 
+      AddTextPrinterParameterized4(WIN_DESC, FONT_NORMAL, 0, 0, 0, 0, sOptionsUiWindowFontColors[FONT_BLACK], TEXT_SKIP_DRAW, sText_DescTextBattleScene);
+      break;
+    case OPTION_BATTLE_STYLE:
+      AddTextPrinterParameterized4(WIN_DESC, FONT_NORMAL, 0, 0, 0, 0, sOptionsUiWindowFontColors[FONT_BLACK], TEXT_SKIP_DRAW, sText_DescTextBattleStyle);
+      break; 
+  }
+
+  CopyWindowToVram(WIN_DESC, COPYWIN_GFX);
+}
+
+static void OptionsUi_General_UpdateOptionPressedRight(void) {
   FillWindowPixelBuffer(WIN_OPTION_EDIT, PIXEL_FILL(TEXT_COLOR_TRANSPARENT));
   if (sTemplateUiState->generalOption == OPTION_GENERAL_TEXT_SPEED) {
     switch (sTemplateUiState->optionTextSpeed) {
@@ -724,6 +857,8 @@ static void OptionsUi_UpdateOptionPressedRight(void) {
         sTemplateUiState->optionFrameType++;
         break;
     }
+    gSaveBlock2Ptr->optionsWindowFrameType = sTemplateUiState->optionFrameType;
+    LoadUserWindowBorderGfx(WIN_DESC, 720, 14 * 16);
   } else if (sTemplateUiState->generalOption == OPTION_GENERAL_AUTORUN) {
     switch (sTemplateUiState->optionAutoRun) {
       case 0:
@@ -737,13 +872,11 @@ static void OptionsUi_UpdateOptionPressedRight(void) {
 
   AddTextPrinterParameterized4(WIN_OPTION_EDIT, FONT_NORMAL, 0, 0, 0, 0, sOptionsUiWindowFontColors[FONT_RED], TEXT_SKIP_DRAW, GetTextSpeedTextFromValue(sTemplateUiState->optionTextSpeed));
     AddTextPrinterParameterized4(WIN_OPTION_EDIT, FONT_NORMAL, 0, 16, 0, 0, sOptionsUiWindowFontColors[FONT_RED], TEXT_SKIP_DRAW, GetFrameTextFromValue(sTemplateUiState->optionFrameType));
-
-  AddTextPrinterParameterized4(WIN_OPTION_EDIT, FONT_NORMAL, 0, 32, 0, 0, sOptionsUiWindowFontColors[FONT_RED], TEXT_SKIP_DRAW, GetAutorunTextFromValue(sTemplateUiState->optionAutoRun));
-
+  AddTextPrinterParameterized4(WIN_OPTION_EDIT, FONT_NORMAL, 0, 32, 0, 0, sOptionsUiWindowFontColors[FONT_RED], TEXT_SKIP_DRAW, GetOnOffTextFromValue(sTemplateUiState->optionAutoRun));
   CopyWindowToVram(WIN_OPTION_EDIT, COPYWIN_FULL);
 }
 
-static void OptionsUi_UpdateOptionPressedLeft(void) {
+static void OptionsUi_General_UpdateOptionPressedLeft(void) {
   FillWindowPixelBuffer(WIN_OPTION_EDIT, PIXEL_FILL(TEXT_COLOR_TRANSPARENT));
   if (sTemplateUiState->generalOption == OPTION_GENERAL_TEXT_SPEED) {
     switch (sTemplateUiState->optionTextSpeed) {
@@ -763,6 +896,8 @@ static void OptionsUi_UpdateOptionPressedLeft(void) {
         sTemplateUiState->optionFrameType--;
         break;
     }
+    gSaveBlock2Ptr->optionsWindowFrameType = sTemplateUiState->optionFrameType;
+    LoadUserWindowBorderGfx(WIN_DESC, 720, 14 * 16);
   } else if (sTemplateUiState->generalOption == OPTION_GENERAL_AUTORUN) {
     switch (sTemplateUiState->optionAutoRun) {
       case 0:
@@ -774,11 +909,63 @@ static void OptionsUi_UpdateOptionPressedLeft(void) {
     }
   }
 
-
   AddTextPrinterParameterized4(WIN_OPTION_EDIT, FONT_NORMAL, 0, 0, 0, 0, sOptionsUiWindowFontColors[FONT_RED], TEXT_SKIP_DRAW, GetTextSpeedTextFromValue(sTemplateUiState->optionTextSpeed));
   AddTextPrinterParameterized4(WIN_OPTION_EDIT, FONT_NORMAL, 0, 16, 0, 0, sOptionsUiWindowFontColors[FONT_RED], TEXT_SKIP_DRAW, GetFrameTextFromValue(sTemplateUiState->optionFrameType));
-  AddTextPrinterParameterized4(WIN_OPTION_EDIT, FONT_NORMAL, 0, 32, 0, 0, sOptionsUiWindowFontColors[FONT_RED], TEXT_SKIP_DRAW, GetAutorunTextFromValue(sTemplateUiState->optionAutoRun));
+  AddTextPrinterParameterized4(WIN_OPTION_EDIT, FONT_NORMAL, 0, 32, 0, 0, sOptionsUiWindowFontColors[FONT_RED], TEXT_SKIP_DRAW, GetOnOffTextFromValue(sTemplateUiState->optionAutoRun));
+  CopyWindowToVram(WIN_OPTION_EDIT, COPYWIN_FULL);
+}
 
+static void OptionsUi_Battle_UpdateOptionPressedRight(void) {
+  FillWindowPixelBuffer(WIN_OPTION_EDIT, PIXEL_FILL(TEXT_COLOR_TRANSPARENT));
+  if (sTemplateUiState->battleOption == OPTION_BATTLE_SCENE) {
+    switch (sTemplateUiState->optionBattleScene) {
+      case 0:
+        sTemplateUiState->optionBattleScene = 1;
+        break;
+      default:
+        sTemplateUiState->optionBattleScene--;
+        break;
+    }
+  } else {
+   switch (sTemplateUiState->optionBattleStyle) {
+    case 0:
+      sTemplateUiState->optionBattleStyle = 1;
+      break;
+    default:
+      sTemplateUiState->optionBattleStyle--;
+      break;
+    }
+  }
+  AddTextPrinterParameterized4(WIN_OPTION_EDIT, FONT_NORMAL, 0, 0, 0, 0, sOptionsUiWindowFontColors[FONT_RED], TEXT_SKIP_DRAW, GetOnOffTextFromValueReversed(sTemplateUiState->optionBattleScene));
+  AddTextPrinterParameterized4(WIN_OPTION_EDIT, FONT_NORMAL, 0, 16, 0, 0, sOptionsUiWindowFontColors[FONT_RED], TEXT_SKIP_DRAW, GetShiftSetFromvalue(sTemplateUiState->optionBattleStyle));
+  CopyWindowToVram(WIN_OPTION_EDIT, COPYWIN_FULL);
+}
+
+static void OptionsUi_Battle_UpdateOptionPressedLeft(void) {
+  FillWindowPixelBuffer(WIN_OPTION_EDIT, PIXEL_FILL(TEXT_COLOR_TRANSPARENT));
+
+  if (sTemplateUiState->battleOption == OPTION_BATTLE_SCENE) {
+    switch (sTemplateUiState->optionBattleScene) {
+      case 1:
+        sTemplateUiState->optionBattleScene = 0;
+        break;
+      default:
+        sTemplateUiState->optionBattleScene++;
+        break;
+    }
+  } else {
+   switch (sTemplateUiState->optionBattleStyle) {
+    case 1:
+      sTemplateUiState->optionBattleStyle = 0;
+      break;
+    default:
+      sTemplateUiState->optionBattleStyle++;
+      break;
+    }
+  }
+
+  AddTextPrinterParameterized4(WIN_OPTION_EDIT, FONT_NORMAL, 0, 0, 0, 0, sOptionsUiWindowFontColors[FONT_RED], TEXT_SKIP_DRAW, GetOnOffTextFromValueReversed(sTemplateUiState->optionBattleScene));
+  AddTextPrinterParameterized4(WIN_OPTION_EDIT, FONT_NORMAL, 0, 16, 0, 0, sOptionsUiWindowFontColors[FONT_RED], TEXT_SKIP_DRAW, GetShiftSetFromvalue(sTemplateUiState->optionBattleStyle));
 
   CopyWindowToVram(WIN_OPTION_EDIT, COPYWIN_FULL);
 }
@@ -787,29 +974,41 @@ static void Task_TemplateUiMainInput(u8 taskId) {
   u32 input = ListMenu_ProcessInput(sTemplateUiState->menuTaskId);
 
   if (input == LIST_CANCEL) {
+    PlaySE(SE_SAVE);
     BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);
     gSaveBlock2Ptr->optionsTextSpeed = sTemplateUiState->optionTextSpeed;
     gSaveBlock2Ptr->optionsWindowFrameType = sTemplateUiState->optionFrameType;
     gSaveBlock2Ptr->autoRun = sTemplateUiState->optionAutoRun;
+    gSaveBlock2Ptr->optionsBattleSceneOff = sTemplateUiState->optionBattleScene;
+    gSaveBlock2Ptr->optionsBattleStyle = sTemplateUiState->optionBattleStyle;
 
     gTasks[taskId].func = Task_TemplateUiFadeAndExitMenu;
   } else if (gMain.newKeys & R_BUTTON) {
     SwitchPage(RIGHT);
   } else if (gMain.newKeys & L_BUTTON) {
     SwitchPage(LEFT);
-  } else if (gMain.newKeys & DPAD_UP && sTemplateUiState->generalOption != OPTION_GENERAL_TEXT_SPEED) {
+  } else if (gMain.newKeys & DPAD_UP && sTemplateUiState->generalOption != OPTION_GENERAL_TEXT_SPEED && sTemplateUiState->pageMode == PAGE_GENERAL) {
     sTemplateUiState->generalOption--;
-    OptionsUi_UpdateOptionDesc();
-  } else if (gMain.newKeys & DPAD_DOWN && sTemplateUiState->generalOption != OPTION_GENERAL_L_BUTTON) {
+    OptionsUi_General_UpdateOptionDesc();
+  } else if (gMain.newKeys & DPAD_DOWN && sTemplateUiState->generalOption != OPTION_GENERAL_L_BUTTON && sTemplateUiState->pageMode == PAGE_GENERAL) {
     sTemplateUiState->generalOption++;
-    OptionsUi_UpdateOptionDesc();
-  } else if (gMain.newKeys & DPAD_RIGHT) {
-    OptionsUi_UpdateOptionPressedRight();
-  } else if (gMain.newKeys & DPAD_LEFT) {
-    OptionsUi_UpdateOptionPressedLeft();
+    OptionsUi_General_UpdateOptionDesc();
+  } else if (gMain.newKeys & DPAD_RIGHT && sTemplateUiState->pageMode == PAGE_GENERAL) {
+    OptionsUi_General_UpdateOptionPressedRight();
+  } else if (gMain.newKeys & DPAD_LEFT && sTemplateUiState->pageMode == PAGE_GENERAL) {
+    OptionsUi_General_UpdateOptionPressedLeft();
   }
-
-  
+  else if (gMain.newKeys & DPAD_UP && sTemplateUiState->battleOption != OPTION_BATTLE_SCENE && sTemplateUiState->pageMode == PAGE_BATTLE) {
+    sTemplateUiState->battleOption = OPTION_BATTLE_SCENE;
+    OptionsUi_Battle_UpdateOptionDesc();
+  } else if (gMain.newKeys & DPAD_DOWN && sTemplateUiState->battleOption != OPTION_BATTLE_STYLE && sTemplateUiState->pageMode == PAGE_BATTLE) {
+    sTemplateUiState->battleOption = OPTION_BATTLE_STYLE;
+    OptionsUi_Battle_UpdateOptionDesc();
+  } else if (gMain.newKeys & DPAD_RIGHT && sTemplateUiState->pageMode == PAGE_BATTLE) {
+    OptionsUi_Battle_UpdateOptionPressedRight();
+  } else if (gMain.newKeys & DPAD_LEFT && sTemplateUiState->pageMode == PAGE_BATTLE) {
+    OptionsUi_Battle_UpdateOptionPressedLeft();
+  } 
 }
 
 static void Task_TemplateUiFadeAndExitMenu(u8 taskId) {
