@@ -10,6 +10,7 @@
 #include "field_effect.h"
 #include "gpu_regs.h"
 #include "graphics.h"
+#include "heat_options.h"
 #include "international_string_util.h"
 #include "link.h"
 #include "main.h"
@@ -1068,8 +1069,10 @@ static void Task_HandleMainMenuAPressed(u8 taskId)
                 DestroyTask(taskId);
                 break;
             case ACTION_OPTION:
+                gPlttBufferUnfaded[0] = RGB_BLACK;
+                gPlttBufferFaded[0] = RGB_BLACK;
                 gMain.savedCallback = CB2_ReinitMainMenu;
-                SetMainCallback2(CB2_InitOptionMenu);
+                SetMainCallback2(CB_EnterOptionsUI);
                 DestroyTask(taskId);
                 break;
             case ACTION_MYSTERY_GIFT:
