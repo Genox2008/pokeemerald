@@ -71,7 +71,7 @@
 
 struct CableClubPlayer
 {
-    u8 playerId;
+u8 playerId;
     u8 isLocalPlayer;
     u8 movementMode;
     u8 facing;
