@@ -55,14 +55,26 @@
 #include "rtc.h"
 
 // --CALLBACKS--
-static void HeatStartMenu_SetupCB(void);
+
 
 // --TASKS--
 static void Task_HeatStartMenu_HandleMainInput(u8 taskId);
 
+static void HeatStartMenu_LoadSprites(void);
 static void HeatStartMenu_LoadBgGfx(void);
 static void HeatStartMenu_ShowTimeWindow(void);
 
+enum {
+  MENU_POKETCH,
+  MENU_POKEDEX,
+  MENU_PARTY,
+  MENU_BAG,
+  MENU_TRAINER_CARD,
+  MENU_SAVE,
+  MENU_OPTIONS,
+};
+
+// --EWRAM--
 struct HeatStartMenu {
   MainCallback savedCallback;
   u32 loadState;
@@ -71,9 +83,119 @@ struct HeatStartMenu {
 
 static EWRAM_DATA struct HeatStartMenu *sHeatStartMenu = NULL;
 
+// --BG-GFX--
 static const u32 sStartMenuTiles[] = INCBIN_U32("graphics/heat_start_menu/bg.4bpp.lz");
 static const u32 sStartMenuTilemap[] = INCBIN_U32("graphics/heat_start_menu/bg.bin.lz");
 static const u16 sStartMenuPalette[] = INCBIN_U16("graphics/heat_start_menu/bg.gbapal");
+
+//--SPRITE-GFX--
+
+#define TAG_ICON_GFX 1234
+#define TAG_ICON_PAL 0x4654
+
+static const u32 sIconGfx[] = INCBIN_U32("graphics/heat_start_menu/icons.4bpp.lz");
+static const u16 sIconPal[] = INCBIN_U16("graphics/heat_start_menu/icons.gbapal");
+
+static const struct SpritePalette sSpritePal_Icon[] =
+{
+  {sIconPal, TAG_ICON_PAL},
+  {NULL},
+};
+
+static const struct CompressedSpriteSheet sSpriteSheet_Icon[] = 
+{
+  {sIconGfx, 32*448/2 , TAG_ICON_GFX},
+  {NULL},
+};
+
+static const struct OamData gOamIcon = {
+    .y = 0,
+    .affineMode = ST_OAM_AFFINE_NORMAL,
+    .objMode = 0,
+    .bpp = ST_OAM_4BPP,
+    .shape = SPRITE_SHAPE(32x32),
+    .x = 0,
+    .matrixNum = 0,
+    .size = SPRITE_SIZE(32x32),
+    .tileNum = 0,
+    .priority = 0,
+    .paletteNum = 0,
+};
+
+static const union AnimCmd gAnimCmdPoketch_NotSelected[] = {
+    ANIMCMD_FRAME(112, 0),
+    ANIMCMD_JUMP(0),
+};
+
+static const union AnimCmd gAnimCmdPoketch_Selected[] = {
+    ANIMCMD_FRAME(0, 0),
+    ANIMCMD_JUMP(0),
+};
+
+static const union AnimCmd *const gIconPoketchAnim[] = {
+    gAnimCmdPoketch_NotSelected,
+    gAnimCmdPoketch_Selected,
+};
+
+static const union AnimCmd gAnimCmdPokedex_NotSelected[] = {
+    ANIMCMD_FRAME(128, 0),
+    ANIMCMD_JUMP(0),
+};
+
+static const union AnimCmd gAnimCmdPokedex_Selected[] = {
+    ANIMCMD_FRAME(16, 0),
+    ANIMCMD_JUMP(0),
+};
+
+static const union AnimCmd *const gIconPokedexAnim[] = {
+    gAnimCmdPokedex_NotSelected,
+    gAnimCmdPokedex_Selected,
+};
+
+static const union AnimCmd gAnimCmdParty_NotSelected[] = {
+    ANIMCMD_FRAME(144, 0),
+    ANIMCMD_JUMP(0),
+};
+
+static const union AnimCmd gAnimCmdParty_Selected[] = {
+    ANIMCMD_FRAME(32, 0),
+    ANIMCMD_JUMP(0),
+};
+
+static const union AnimCmd *const gIconPartyAnim[] = {
+    gAnimCmdParty_NotSelected,
+    gAnimCmdParty_Selected,
+};
+
+static const struct SpriteTemplate gSpriteIconPoketch = {
+    .tileTag = TAG_ICON_GFX,
+    .paletteTag = TAG_ICON_PAL,
+    .oam = &gOamIcon,
+    .anims = gIconPoketchAnim,
+    .images = NULL,
+    .affineAnims = gDummySpriteAffineAnimTable,
+    .callback = SpriteCallbackDummy,
+};
+
+static const struct SpriteTemplate gSpriteIconPokedex = {
+    .tileTag = TAG_ICON_GFX,
+    .paletteTag = TAG_ICON_PAL,
+    .oam = &gOamIcon,
+    .anims = gIconPokedexAnim,
+    .images = NULL,
+    .affineAnims = gDummySpriteAffineAnimTable,
+    .callback = SpriteCallbackDummy,
+};
+
+static const struct SpriteTemplate gSpriteIconParty = {
+    .tileTag = TAG_ICON_GFX,
+    .paletteTag = TAG_ICON_PAL,
+    .oam = &gOamIcon,
+    .anims = gIconPartyAnim,
+    .images = NULL,
+    .affineAnims = gDummySpriteAffineAnimTable,
+    .callback = SpriteCallbackDummy,
+};
 
 static const struct WindowTemplate sWindowTemplate_StartClock = {
     .bg = 0, 
@@ -84,6 +206,8 @@ static const struct WindowTemplate sWindowTemplate_StartClock = {
     .paletteNum = 15,
     .baseBlock = 0x30
 };
+
+
 
 // If you want to shorten the dates to Sat., Sun., etc., change this to 70
 #define CLOCK_WINDOW_WIDTH 100
@@ -126,9 +250,20 @@ void HeatStartMenu_Init(void) {
   sHeatStartMenu->savedCallback = CB2_ReturnToFieldWithOpenMenu;
   sHeatStartMenu->loadState = 0;
   sHeatStartMenu->sStartClockWindowId = 0;
+  HeatStartMenu_LoadSprites();
   HeatStartMenu_LoadBgGfx();
   HeatStartMenu_ShowTimeWindow();
   taskId = CreateTask(Task_HeatStartMenu_HandleMainInput, 0);
+}
+
+static void HeatStartMenu_LoadSprites(void) {
+  LoadSpritePalette(sSpritePal_Icon);
+  LoadCompressedSpriteSheet(sSpriteSheet_Icon);
+
+  CreateSprite(&gSpriteIconPoketch, 224, 15, 0);
+  CreateSprite(&gSpriteIconPokedex, 223, 36, 0);
+  CreateSprite(&gSpriteIconParty, 224, 58, 0);
+
 }
 
 static void HeatStartMenu_LoadBgGfx(void) {
