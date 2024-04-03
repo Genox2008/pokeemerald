@@ -55,14 +55,22 @@
 #include "rtc.h"
 
 // --CALLBACKS--
-
+static void SpriteCB_IconPoketch(struct Sprite* sprite);
+static void SpriteCB_IconPokedex(struct Sprite* sprite);
+static void SpriteCB_IconParty(struct Sprite* sprite);
+static void SpriteCB_IconBag(struct Sprite* sprite);
+static void SpriteCB_IconTrainerCard(struct Sprite* sprite);
+static void SpriteCB_IconSave(struct Sprite* sprite);
+static void SpriteCB_IconOptions(struct Sprite* sprite);
 
 // --TASKS--
 static void Task_HeatStartMenu_HandleMainInput(u8 taskId);
 
 static void HeatStartMenu_LoadSprites(void);
+static void HeatStartMenu_CreateSprites(void);
 static void HeatStartMenu_LoadBgGfx(void);
 static void HeatStartMenu_ShowTimeWindow(void);
+static void HeatStartMenu_UpdateMenuName(void);
 
 enum {
   MENU_POKETCH,
@@ -74,11 +82,20 @@ enum {
   MENU_OPTIONS,
 };
 
+enum FLAG_VALUES {
+  FLAG_VALUE_NOT_SET,
+  FLAG_VALUE_SET,
+  FLAG_VALUE_DESTROY,
+};
+
 // --EWRAM--
 struct HeatStartMenu {
   MainCallback savedCallback;
   u32 loadState;
   u8 sStartClockWindowId;
+  u32 sMenuNameWindowId;
+  u32 menuSelected;
+  u32 flag; // some u32 holding values for controlling the sprite anims an lifetime
 };
 
 static EWRAM_DATA struct HeatStartMenu *sHeatStartMenu = NULL;
@@ -110,7 +127,7 @@ static const struct CompressedSpriteSheet sSpriteSheet_Icon[] =
 
 static const struct OamData gOamIcon = {
     .y = 0,
-    .affineMode = ST_OAM_AFFINE_NORMAL,
+    .affineMode = ST_OAM_AFFINE_DOUBLE,
     .objMode = 0,
     .bpp = ST_OAM_4BPP,
     .shape = SPRITE_SHAPE(32x32),
@@ -167,14 +184,93 @@ static const union AnimCmd *const gIconPartyAnim[] = {
     gAnimCmdParty_Selected,
 };
 
+static const union AnimCmd gAnimCmdBag_NotSelected[] = {
+    ANIMCMD_FRAME(160, 0),
+    ANIMCMD_JUMP(0),
+};
+
+static const union AnimCmd gAnimCmdBag_Selected[] = {
+    ANIMCMD_FRAME(48, 0),
+    ANIMCMD_JUMP(0),
+};
+
+static const union AnimCmd *const gIconBagAnim[] = {
+    gAnimCmdBag_NotSelected,
+    gAnimCmdBag_Selected,
+};
+
+static const union AnimCmd gAnimCmdTrainerCard_NotSelected[] = {
+    ANIMCMD_FRAME(176, 0),
+    ANIMCMD_JUMP(0),
+};
+
+static const union AnimCmd gAnimCmdTrainerCard_Selected[] = {
+    ANIMCMD_FRAME(64, 0),
+    ANIMCMD_JUMP(0),
+};
+
+static const union AnimCmd *const gIconTrainerCardAnim[] = {
+    gAnimCmdTrainerCard_NotSelected,
+    gAnimCmdTrainerCard_Selected,
+};
+
+static const union AnimCmd gAnimCmdSave_NotSelected[] = {
+    ANIMCMD_FRAME(192, 0),
+    ANIMCMD_JUMP(0),
+};
+
+static const union AnimCmd gAnimCmdSave_Selected[] = {
+    ANIMCMD_FRAME(80, 0),
+    ANIMCMD_JUMP(0),
+};
+
+static const union AnimCmd *const gIconSaveAnim[] = {
+    gAnimCmdSave_NotSelected,
+    gAnimCmdSave_Selected,
+};
+
+static const union AnimCmd gAnimCmdOptions_NotSelected[] = {
+    ANIMCMD_FRAME(208, 0),
+    ANIMCMD_JUMP(0),
+};
+
+static const union AnimCmd gAnimCmdOptions_Selected[] = {
+    ANIMCMD_FRAME(96, 0),
+    ANIMCMD_JUMP(0),
+};
+
+static const union AnimCmd *const gIconOptionsAnim[] = {
+    gAnimCmdOptions_NotSelected,
+    gAnimCmdOptions_Selected,
+};
+
+static const union AffineAnimCmd sAffineAnimIcon_NoAnim[] =
+{
+  AFFINEANIMCMD_FRAME(0,0, 0, 60),
+  AFFINEANIMCMD_JUMP(0),
+};
+
+static const union AffineAnimCmd sAffineAnimIcon_Anim[] =
+{
+  AFFINEANIMCMD_FRAME(3, 3, 0, 20),
+  AFFINEANIMCMD_FRAME(0, 0, 0, 20),
+  AFFINEANIMCMD_JUMP(1),
+};
+
+static const union AffineAnimCmd *const sAffineAnimsIcon[] =
+{   
+    sAffineAnimIcon_NoAnim,
+    sAffineAnimIcon_Anim,
+};
+
 static const struct SpriteTemplate gSpriteIconPoketch = {
     .tileTag = TAG_ICON_GFX,
     .paletteTag = TAG_ICON_PAL,
     .oam = &gOamIcon,
     .anims = gIconPoketchAnim,
     .images = NULL,
-    .affineAnims = gDummySpriteAffineAnimTable,
-    .callback = SpriteCallbackDummy,
+    .affineAnims = sAffineAnimsIcon,
+    .callback = SpriteCB_IconPoketch,
 };
 
 static const struct SpriteTemplate gSpriteIconPokedex = {
@@ -183,8 +279,8 @@ static const struct SpriteTemplate gSpriteIconPokedex = {
     .oam = &gOamIcon,
     .anims = gIconPokedexAnim,
     .images = NULL,
-    .affineAnims = gDummySpriteAffineAnimTable,
-    .callback = SpriteCallbackDummy,
+    .affineAnims = sAffineAnimsIcon,
+    .callback = SpriteCB_IconPokedex,
 };
 
 static const struct SpriteTemplate gSpriteIconParty = {
@@ -193,20 +289,175 @@ static const struct SpriteTemplate gSpriteIconParty = {
     .oam = &gOamIcon,
     .anims = gIconPartyAnim,
     .images = NULL,
-    .affineAnims = gDummySpriteAffineAnimTable,
-    .callback = SpriteCallbackDummy,
+    .affineAnims = sAffineAnimsIcon,
+    .callback = SpriteCB_IconParty,
 };
+
+static const struct SpriteTemplate gSpriteIconBag = {
+    .tileTag = TAG_ICON_GFX,
+    .paletteTag = TAG_ICON_PAL,
+    .oam = &gOamIcon,
+    .anims = gIconBagAnim,
+    .images = NULL,
+    .affineAnims = sAffineAnimsIcon,
+    .callback = SpriteCB_IconBag,
+};
+
+static const struct SpriteTemplate gSpriteIconTrainerCard = {
+    .tileTag = TAG_ICON_GFX,
+    .paletteTag = TAG_ICON_PAL,
+    .oam = &gOamIcon,
+    .anims = gIconTrainerCardAnim,
+    .images = NULL,
+    .affineAnims = sAffineAnimsIcon,
+    .callback = SpriteCB_IconTrainerCard,
+};
+
+static const struct SpriteTemplate gSpriteIconSave = {
+    .tileTag = TAG_ICON_GFX,
+    .paletteTag = TAG_ICON_PAL,
+    .oam = &gOamIcon,
+    .anims = gIconSaveAnim,
+    .images = NULL,
+    .affineAnims = sAffineAnimsIcon,
+    .callback = SpriteCB_IconSave,
+};
+
+static const struct SpriteTemplate gSpriteIconOptions = {
+    .tileTag = TAG_ICON_GFX,
+    .paletteTag = TAG_ICON_PAL,
+    .oam = &gOamIcon,
+    .anims = gIconOptionsAnim,
+    .images = NULL,
+    .affineAnims = sAffineAnimsIcon,
+    .callback = SpriteCB_IconOptions,
+};
+
+static void SpriteCB_IconPoketch(struct Sprite* sprite) {
+  if (sHeatStartMenu->menuSelected == MENU_POKETCH && sHeatStartMenu->flag == FLAG_VALUE_NOT_SET) {
+    sHeatStartMenu->flag = FLAG_VALUE_SET;
+    StartSpriteAnim(sprite, 1);
+    StartSpriteAffineAnim(sprite, 1);
+  } else if (sHeatStartMenu->menuSelected != MENU_POKETCH) {
+    StartSpriteAnim(sprite, 0);
+    StartSpriteAffineAnim(sprite, 0);
+  }
+
+  if (sHeatStartMenu->flag == FLAG_VALUE_DESTROY) {
+    DestroySprite(sprite);
+  }
+}
+
+static void SpriteCB_IconPokedex(struct Sprite* sprite) {
+  if (sHeatStartMenu->menuSelected == MENU_POKEDEX && sHeatStartMenu->flag == FLAG_VALUE_NOT_SET) {
+    sHeatStartMenu->flag = FLAG_VALUE_SET;
+    StartSpriteAnim(sprite, 1);
+    StartSpriteAffineAnim(sprite, 1);
+  } else if (sHeatStartMenu->menuSelected != MENU_POKEDEX) {
+    StartSpriteAnim(sprite, 0);
+    StartSpriteAffineAnim(sprite, 0);
+  }
+
+  if (sHeatStartMenu->flag == FLAG_VALUE_DESTROY) {
+    DestroySprite(sprite);
+  }
+}
+
+static void SpriteCB_IconParty(struct Sprite* sprite) {
+  if (sHeatStartMenu->menuSelected == MENU_PARTY && sHeatStartMenu->flag == FLAG_VALUE_NOT_SET) {
+    sHeatStartMenu->flag = FLAG_VALUE_SET;
+    StartSpriteAnim(sprite, 1);
+    StartSpriteAffineAnim(sprite, 1);
+  } else if (sHeatStartMenu->menuSelected != MENU_PARTY) {
+    StartSpriteAnim(sprite, 0);
+    StartSpriteAffineAnim(sprite, 0);
+  }
+
+  if (sHeatStartMenu->flag == FLAG_VALUE_DESTROY) {
+    DestroySprite(sprite);
+  }
+}
+
+static void SpriteCB_IconBag(struct Sprite* sprite) {
+  if (sHeatStartMenu->menuSelected == MENU_BAG && sHeatStartMenu->flag == FLAG_VALUE_NOT_SET) {
+    sHeatStartMenu->flag = FLAG_VALUE_SET;
+    StartSpriteAnim(sprite, 1);
+    StartSpriteAffineAnim(sprite, 1);
+  } else if (sHeatStartMenu->menuSelected != MENU_BAG) {
+    StartSpriteAnim(sprite, 0);
+    StartSpriteAffineAnim(sprite, 0);
+  } 
+
+  if (sHeatStartMenu->flag == FLAG_VALUE_DESTROY) {
+    DestroySprite(sprite);
+  }
+}
+
+static void SpriteCB_IconTrainerCard(struct Sprite* sprite) {
+  if (sHeatStartMenu->menuSelected == MENU_TRAINER_CARD && sHeatStartMenu->flag == FLAG_VALUE_NOT_SET) {
+    sHeatStartMenu->flag = FLAG_VALUE_SET;
+    StartSpriteAnim(sprite, 1);
+    StartSpriteAffineAnim(sprite, 1);
+  } else if (sHeatStartMenu->menuSelected != MENU_TRAINER_CARD) {
+    StartSpriteAnim(sprite, 0);
+    StartSpriteAffineAnim(sprite, 0);
+  } 
+
+  if (sHeatStartMenu->flag == FLAG_VALUE_DESTROY) {
+    DestroySprite(sprite);
+  }
+}
+
+static void SpriteCB_IconSave(struct Sprite* sprite) {
+  if (sHeatStartMenu->menuSelected == MENU_SAVE && sHeatStartMenu->flag == FLAG_VALUE_NOT_SET) {
+    sHeatStartMenu->flag = FLAG_VALUE_SET;
+    StartSpriteAnim(sprite, 1);
+    StartSpriteAffineAnim(sprite, 1);
+  } else if (sHeatStartMenu->menuSelected != MENU_SAVE) {
+    StartSpriteAnim(sprite, 0);
+    StartSpriteAffineAnim(sprite, 0);
+  } 
+
+  if (sHeatStartMenu->flag == FLAG_VALUE_DESTROY) {
+    DestroySprite(sprite);
+  }
+}
+
+static void SpriteCB_IconOptions(struct Sprite* sprite) {
+  if (sHeatStartMenu->menuSelected == MENU_OPTIONS && sHeatStartMenu->flag == FLAG_VALUE_NOT_SET) {
+    sHeatStartMenu->flag = FLAG_VALUE_SET;
+    StartSpriteAnim(sprite, 1);
+    StartSpriteAffineAnim(sprite, 1);
+  } else if (sHeatStartMenu->menuSelected != MENU_OPTIONS) {
+    StartSpriteAnim(sprite, 0);
+    StartSpriteAffineAnim(sprite, 0);
+  } 
+
+  if (sHeatStartMenu->flag == FLAG_VALUE_DESTROY) {
+    DestroySprite(sprite);
+  }
+}
+
 
 static const struct WindowTemplate sWindowTemplate_StartClock = {
-    .bg = 0, 
-    .tilemapLeft = 1, 
-    .tilemapTop = 17, 
-    .width = 13, // If you want to shorten the dates to Sat., Sun., etc., change this to 9
-    .height = 2, 
-    .paletteNum = 15,
-    .baseBlock = 0x30
+  .bg = 0, 
+  .tilemapLeft = 1, 
+  .tilemapTop = 17, 
+  .width = 13, // If you want to shorten the dates to Sat., Sun., etc., change this to 9
+  .height = 2, 
+  .paletteNum = 15,
+  .baseBlock = 0x30
 };
 
+static const struct WindowTemplate sWindowTemplate_MenuName = {
+  .bg = 0, 
+  .tilemapLeft = 16, 
+  .tilemapTop = 17, 
+  .width = 7, 
+  .height = 2, 
+  .paletteNum = 15,
+  .baseBlock = 0x30 + (13*2)
+};
 
 
 // If you want to shorten the dates to Sat., Sun., etc., change this to 70
@@ -239,9 +490,13 @@ void HeatStartMenu_Init(void) {
   }
 
   LockPlayerFieldControls();
-
-  sHeatStartMenu = AllocZeroed(sizeof(struct HeatStartMenu));
   
+  if (sHeatStartMenu == NULL) {
+    sHeatStartMenu = AllocZeroed(sizeof(struct HeatStartMenu));
+    sHeatStartMenu->menuSelected = MENU_POKETCH;
+    HeatStartMenu_LoadSprites();
+  }
+
   if (sHeatStartMenu == NULL) {
     SetMainCallback2(CB2_ReturnToFieldWithOpenMenu);
     return;
@@ -250,20 +505,28 @@ void HeatStartMenu_Init(void) {
   sHeatStartMenu->savedCallback = CB2_ReturnToFieldWithOpenMenu;
   sHeatStartMenu->loadState = 0;
   sHeatStartMenu->sStartClockWindowId = 0;
-  HeatStartMenu_LoadSprites();
+  sHeatStartMenu->flag = 0;
+  HeatStartMenu_CreateSprites();
   HeatStartMenu_LoadBgGfx();
   HeatStartMenu_ShowTimeWindow();
+  sHeatStartMenu->sMenuNameWindowId = AddWindow(&sWindowTemplate_MenuName);
+  HeatStartMenu_UpdateMenuName();
   taskId = CreateTask(Task_HeatStartMenu_HandleMainInput, 0);
 }
 
 static void HeatStartMenu_LoadSprites(void) {
   LoadSpritePalette(sSpritePal_Icon);
   LoadCompressedSpriteSheet(sSpriteSheet_Icon);
+}
 
+static void HeatStartMenu_CreateSprites(void) {
   CreateSprite(&gSpriteIconPoketch, 224, 15, 0);
   CreateSprite(&gSpriteIconPokedex, 223, 36, 0);
   CreateSprite(&gSpriteIconParty, 224, 58, 0);
-
+  CreateSprite(&gSpriteIconBag, 224, 82, 0);
+  CreateSprite(&gSpriteIconTrainerCard, 224, 107, 0);
+  CreateSprite(&gSpriteIconSave, 224, 128, 0);
+  CreateSprite(&gSpriteIconOptions, 224, 148, 0);
 }
 
 static void HeatStartMenu_LoadBgGfx(void) {
@@ -321,6 +584,45 @@ static void HeatStartMenu_ShowTimeWindow(void)
     CopyWindowToVram(sHeatStartMenu->sStartClockWindowId, COPYWIN_GFX);
 }
 
+static const u8 gText_Poketch[] = _("  Poketch");
+static const u8 gText_Pokedex[] = _("  Pokedex");
+static const u8 gText_Party[]   = _("    Party ");
+static const u8 gText_Bag[]     = _("      Bag  ");
+static const u8 gText_Trainer[] = _("   Trainer");
+static const u8 gText_Save[]    = _("     Save  ");
+static const u8 gText_Options[] = _("   Options");
+
+static void HeatStartMenu_UpdateMenuName(void) {
+  
+  FillWindowPixelBuffer(sHeatStartMenu->sMenuNameWindowId, PIXEL_FILL(TEXT_COLOR_WHITE));
+  PutWindowTilemap(sHeatStartMenu->sMenuNameWindowId);
+
+  switch(sHeatStartMenu->menuSelected) {
+    case MENU_POKETCH:
+      AddTextPrinterParameterized(sHeatStartMenu->sMenuNameWindowId, 1, gText_Poketch, 1, 0, 0xFF, NULL);
+      break;
+    case MENU_POKEDEX:
+      AddTextPrinterParameterized(sHeatStartMenu->sMenuNameWindowId, 1, gText_Pokedex, 1, 0, 0xFF, NULL);
+      break;
+    case MENU_PARTY:
+      AddTextPrinterParameterized(sHeatStartMenu->sMenuNameWindowId, 1, gText_Party, 1, 0, 0xFF, NULL);
+      break;
+    case MENU_BAG:
+      AddTextPrinterParameterized(sHeatStartMenu->sMenuNameWindowId, 1, gText_Bag, 1, 0, 0xFF, NULL);
+      break;
+    case MENU_TRAINER_CARD:
+      AddTextPrinterParameterized(sHeatStartMenu->sMenuNameWindowId, 1, gText_Trainer, 1, 0, 0xFF, NULL);
+      break;
+    case MENU_SAVE:
+      AddTextPrinterParameterized(sHeatStartMenu->sMenuNameWindowId, 1, gText_Save, 1, 0, 0xFF, NULL);
+      break;
+    case MENU_OPTIONS:
+      AddTextPrinterParameterized(sHeatStartMenu->sMenuNameWindowId, 1, gText_Options, 1, 0, 0xFF, NULL);
+      break;
+  }
+  CopyWindowToVram(sHeatStartMenu->sMenuNameWindowId, COPYWIN_GFX);
+}
+
 static void HeatStartMenu_ExitAndClearTilemap(void) {
   u32 i;
   u8 *buf = GetBgTilemapBuffer(0);
@@ -342,8 +644,32 @@ static void HeatStartMenu_ExitAndClearTilemap(void) {
 static void Task_HeatStartMenu_HandleMainInput(u8 taskId) {
   if (JOY_NEW(B_BUTTON)) {
     PlaySE(SE_SELECT);
+    sHeatStartMenu->flag = FLAG_VALUE_DESTROY;
     HeatStartMenu_ExitAndClearTilemap();  
     DestroyTask(taskId);
+  } else if (gMain.newKeys & DPAD_DOWN) {
+    switch (sHeatStartMenu->menuSelected) {
+      case MENU_OPTIONS:
+        break;
+      default:
+        sHeatStartMenu->flag = 0;
+        sHeatStartMenu->menuSelected++;
+        PlaySE(SE_SELECT);
+        HeatStartMenu_UpdateMenuName();
+        break;
+    }
+  } else if (gMain.newKeys & DPAD_UP) {
+    switch (sHeatStartMenu->menuSelected) {
+      case MENU_POKETCH:
+        break;
+      default:
+        sHeatStartMenu->flag = 0;
+        sHeatStartMenu->menuSelected--;
+        PlaySE(SE_SELECT);
+        HeatStartMenu_UpdateMenuName();
+        break;
+    }
   }
+
 }
 
