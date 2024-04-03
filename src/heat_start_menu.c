@@ -96,6 +96,14 @@ struct HeatStartMenu {
   u32 sMenuNameWindowId;
   u32 menuSelected;
   u32 flag; // some u32 holding values for controlling the sprite anims an lifetime
+  
+  u32 spriteIdPoketch;
+  u32 spriteIdPokedex;
+  u32 spriteIdParty;
+  u32 spriteIdBag;
+  u32 spriteIdTrainerCard;
+  u32 spriteIdSave;
+  u32 spriteIdOptions;
 };
 
 static EWRAM_DATA struct HeatStartMenu *sHeatStartMenu = NULL;
@@ -106,7 +114,6 @@ static const u32 sStartMenuTilemap[] = INCBIN_U32("graphics/heat_start_menu/bg.b
 static const u16 sStartMenuPalette[] = INCBIN_U16("graphics/heat_start_menu/bg.gbapal");
 
 //--SPRITE-GFX--
-
 #define TAG_ICON_GFX 1234
 #define TAG_ICON_PAL 0x4654
 
@@ -252,9 +259,23 @@ static const union AffineAnimCmd sAffineAnimIcon_NoAnim[] =
 
 static const union AffineAnimCmd sAffineAnimIcon_Anim[] =
 {
-  AFFINEANIMCMD_FRAME(3, 3, 0, 20),
-  AFFINEANIMCMD_FRAME(0, 0, 0, 20),
-  AFFINEANIMCMD_JUMP(1),
+  AFFINEANIMCMD_FRAME(20, 20, 0, 5),    // Scale big
+  AFFINEANIMCMD_FRAME(-10, -10, 0, 10), // Scale smol
+  AFFINEANIMCMD_FRAME(0, 0, 1, 4),      // Begin rotating
+
+  AFFINEANIMCMD_FRAME(0, 0, -1, 4),     // Loop starts from here ; Rotate/Tilt left 
+  AFFINEANIMCMD_FRAME(0, 0, 0, 2),
+  AFFINEANIMCMD_FRAME(0, 0, -1, 4),
+  AFFINEANIMCMD_FRAME(0, 0, 0, 2),
+  AFFINEANIMCMD_FRAME(0, 0, -1, 4),
+
+  AFFINEANIMCMD_FRAME(0, 0, 1, 4),      // Rotate/Tilt Right
+  AFFINEANIMCMD_FRAME(0, 0, 0, 2),
+  AFFINEANIMCMD_FRAME(0, 0, 1, 4),
+  AFFINEANIMCMD_FRAME(0, 0, 0, 2),
+  AFFINEANIMCMD_FRAME(0, 0, 1, 4),
+
+  AFFINEANIMCMD_JUMP(3),
 };
 
 static const union AffineAnimCmd *const sAffineAnimsIcon[] =
@@ -343,9 +364,9 @@ static void SpriteCB_IconPoketch(struct Sprite* sprite) {
     StartSpriteAffineAnim(sprite, 0);
   }
 
-  if (sHeatStartMenu->flag == FLAG_VALUE_DESTROY) {
+  /*if (sHeatStartMenu->flag == FLAG_VALUE_DESTROY) {
     DestroySprite(sprite);
-  }
+  }*/
 }
 
 static void SpriteCB_IconPokedex(struct Sprite* sprite) {
@@ -358,9 +379,9 @@ static void SpriteCB_IconPokedex(struct Sprite* sprite) {
     StartSpriteAffineAnim(sprite, 0);
   }
 
-  if (sHeatStartMenu->flag == FLAG_VALUE_DESTROY) {
+  /*if (sHeatStartMenu->flag == FLAG_VALUE_DESTROY) {
     DestroySprite(sprite);
-  }
+  }*/
 }
 
 static void SpriteCB_IconParty(struct Sprite* sprite) {
@@ -373,9 +394,9 @@ static void SpriteCB_IconParty(struct Sprite* sprite) {
     StartSpriteAffineAnim(sprite, 0);
   }
 
-  if (sHeatStartMenu->flag == FLAG_VALUE_DESTROY) {
+  /*if (sHeatStartMenu->flag == FLAG_VALUE_DESTROY) {
     DestroySprite(sprite);
-  }
+  }*/
 }
 
 static void SpriteCB_IconBag(struct Sprite* sprite) {
@@ -388,9 +409,9 @@ static void SpriteCB_IconBag(struct Sprite* sprite) {
     StartSpriteAffineAnim(sprite, 0);
   } 
 
-  if (sHeatStartMenu->flag == FLAG_VALUE_DESTROY) {
+  /*if (sHeatStartMenu->flag == FLAG_VALUE_DESTROY) {
     DestroySprite(sprite);
-  }
+  }*/
 }
 
 static void SpriteCB_IconTrainerCard(struct Sprite* sprite) {
@@ -403,9 +424,9 @@ static void SpriteCB_IconTrainerCard(struct Sprite* sprite) {
     StartSpriteAffineAnim(sprite, 0);
   } 
 
-  if (sHeatStartMenu->flag == FLAG_VALUE_DESTROY) {
+  /*if (sHeatStartMenu->flag == FLAG_VALUE_DESTROY) {
     DestroySprite(sprite);
-  }
+  }*/
 }
 
 static void SpriteCB_IconSave(struct Sprite* sprite) {
@@ -418,9 +439,9 @@ static void SpriteCB_IconSave(struct Sprite* sprite) {
     StartSpriteAffineAnim(sprite, 0);
   } 
 
-  if (sHeatStartMenu->flag == FLAG_VALUE_DESTROY) {
+  /*if (sHeatStartMenu->flag == FLAG_VALUE_DESTROY) {
     DestroySprite(sprite);
-  }
+  }*/
 }
 
 static void SpriteCB_IconOptions(struct Sprite* sprite) {
@@ -433,9 +454,9 @@ static void SpriteCB_IconOptions(struct Sprite* sprite) {
     StartSpriteAffineAnim(sprite, 0);
   } 
 
-  if (sHeatStartMenu->flag == FLAG_VALUE_DESTROY) {
+  /*if (sHeatStartMenu->flag == FLAG_VALUE_DESTROY) {
     DestroySprite(sprite);
-  }
+  }*/
 }
 
 
@@ -520,13 +541,13 @@ static void HeatStartMenu_LoadSprites(void) {
 }
 
 static void HeatStartMenu_CreateSprites(void) {
-  CreateSprite(&gSpriteIconPoketch, 224, 15, 0);
-  CreateSprite(&gSpriteIconPokedex, 223, 36, 0);
-  CreateSprite(&gSpriteIconParty, 224, 58, 0);
-  CreateSprite(&gSpriteIconBag, 224, 82, 0);
-  CreateSprite(&gSpriteIconTrainerCard, 224, 107, 0);
-  CreateSprite(&gSpriteIconSave, 224, 128, 0);
-  CreateSprite(&gSpriteIconOptions, 224, 148, 0);
+  sHeatStartMenu->spriteIdPoketch = CreateSprite(&gSpriteIconPoketch, 224, 15, 0);
+  sHeatStartMenu->spriteIdPokedex = CreateSprite(&gSpriteIconPokedex, 223, 36, 0);
+  sHeatStartMenu->spriteIdParty   = CreateSprite(&gSpriteIconParty, 224, 58, 0);
+  sHeatStartMenu->spriteIdBag     = CreateSprite(&gSpriteIconBag, 224, 82, 0);
+  sHeatStartMenu->spriteIdTrainerCard = CreateSprite(&gSpriteIconTrainerCard, 224, 107, 0);
+  sHeatStartMenu->spriteIdSave    = CreateSprite(&gSpriteIconSave, 224, 128, 0);
+  sHeatStartMenu->spriteIdOptions = CreateSprite(&gSpriteIconOptions, 224, 148, 0);
 }
 
 static void HeatStartMenu_LoadBgGfx(void) {
@@ -628,15 +649,27 @@ static void HeatStartMenu_ExitAndClearTilemap(void) {
   u8 *buf = GetBgTilemapBuffer(0);
   
   RemoveWindow(sHeatStartMenu->sStartClockWindowId);
+  RemoveWindow(sHeatStartMenu->sMenuNameWindowId);
 
   for(i=0; i<2048; i++) {
     buf[i] = 0;
   }
   ScheduleBgCopyTilemapToVram(0);
+  
+  DestroySprite(&gSprites[sHeatStartMenu->spriteIdPoketch]);
+  DestroySprite(&gSprites[sHeatStartMenu->spriteIdPokedex]);
+  DestroySprite(&gSprites[sHeatStartMenu->spriteIdParty]);
+  DestroySprite(&gSprites[sHeatStartMenu->spriteIdBag]);
+  DestroySprite(&gSprites[sHeatStartMenu->spriteIdTrainerCard]);
+  DestroySprite(&gSprites[sHeatStartMenu->spriteIdSave]);
+  DestroySprite(&gSprites[sHeatStartMenu->spriteIdOptions]);
 
   if (sHeatStartMenu != NULL) {
     Free(sHeatStartMenu);
   }
+  
+  FreeSpriteTilesByTag(TAG_ICON_GFX);
+
   ScriptUnfreezeObjectEvents();  
   UnlockPlayerFieldControls();
 }
@@ -644,7 +677,7 @@ static void HeatStartMenu_ExitAndClearTilemap(void) {
 static void Task_HeatStartMenu_HandleMainInput(u8 taskId) {
   if (JOY_NEW(B_BUTTON)) {
     PlaySE(SE_SELECT);
-    sHeatStartMenu->flag = FLAG_VALUE_DESTROY;
+    //sHeatStartMenu->flag = FLAG_VALUE_DESTROY;
     HeatStartMenu_ExitAndClearTilemap();  
     DestroyTask(taskId);
   } else if (gMain.newKeys & DPAD_DOWN) {
