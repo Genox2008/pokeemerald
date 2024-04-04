@@ -254,7 +254,7 @@ static const union AnimCmd *const gIconOptionsAnim[] = {
 static const union AffineAnimCmd sAffineAnimIcon_NoAnim[] =
 {
   AFFINEANIMCMD_FRAME(0,0, 0, 60),
-  AFFINEANIMCMD_JUMP(0),
+  AFFINEANIMCMD_END,
 };
 
 static const union AffineAnimCmd sAffineAnimIcon_Anim[] =
@@ -503,7 +503,6 @@ const u8 *const gDayNameStringsTable[7] = {
 };
 
 void HeatStartMenu_Init(void) {
-  u8 taskId;
   if (!IsOverworldLinkActive()) {
     FreezeObjectEvents();
     PlayerFreeze();
@@ -515,7 +514,6 @@ void HeatStartMenu_Init(void) {
   if (sHeatStartMenu == NULL) {
     sHeatStartMenu = AllocZeroed(sizeof(struct HeatStartMenu));
     sHeatStartMenu->menuSelected = MENU_POKETCH;
-    HeatStartMenu_LoadSprites();
   }
 
   if (sHeatStartMenu == NULL) {
@@ -527,12 +525,13 @@ void HeatStartMenu_Init(void) {
   sHeatStartMenu->loadState = 0;
   sHeatStartMenu->sStartClockWindowId = 0;
   sHeatStartMenu->flag = 0;
+  HeatStartMenu_LoadSprites();
   HeatStartMenu_CreateSprites();
   HeatStartMenu_LoadBgGfx();
   HeatStartMenu_ShowTimeWindow();
   sHeatStartMenu->sMenuNameWindowId = AddWindow(&sWindowTemplate_MenuName);
   HeatStartMenu_UpdateMenuName();
-  taskId = CreateTask(Task_HeatStartMenu_HandleMainInput, 0);
+  CreateTask(Task_HeatStartMenu_HandleMainInput, 0);
 }
 
 static void HeatStartMenu_LoadSprites(void) {
@@ -656,6 +655,13 @@ static void HeatStartMenu_ExitAndClearTilemap(void) {
   }
   ScheduleBgCopyTilemapToVram(0);
   
+  FreeSpriteOamMatrix(&gSprites[sHeatStartMenu->spriteIdPoketch]);
+  FreeSpriteOamMatrix(&gSprites[sHeatStartMenu->spriteIdPokedex]);
+  FreeSpriteOamMatrix(&gSprites[sHeatStartMenu->spriteIdParty]);
+  FreeSpriteOamMatrix(&gSprites[sHeatStartMenu->spriteIdBag]);
+  FreeSpriteOamMatrix(&gSprites[sHeatStartMenu->spriteIdTrainerCard]);
+  FreeSpriteOamMatrix(&gSprites[sHeatStartMenu->spriteIdSave]);
+  FreeSpriteOamMatrix(&gSprites[sHeatStartMenu->spriteIdOptions]);
   DestroySprite(&gSprites[sHeatStartMenu->spriteIdPoketch]);
   DestroySprite(&gSprites[sHeatStartMenu->spriteIdPokedex]);
   DestroySprite(&gSprites[sHeatStartMenu->spriteIdParty]);
@@ -665,10 +671,10 @@ static void HeatStartMenu_ExitAndClearTilemap(void) {
   DestroySprite(&gSprites[sHeatStartMenu->spriteIdOptions]);
 
   if (sHeatStartMenu != NULL) {
+    FreeSpriteTilesByTag(TAG_ICON_GFX);  
     Free(sHeatStartMenu);
+    sHeatStartMenu = NULL;
   }
-  
-  FreeSpriteTilesByTag(TAG_ICON_GFX);
 
   ScriptUnfreezeObjectEvents();  
   UnlockPlayerFieldControls();
