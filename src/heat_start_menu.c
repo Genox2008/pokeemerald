@@ -66,6 +66,7 @@ static void SpriteCB_IconOptions(struct Sprite* sprite);
 // --TASKS--
 static void Task_HeatStartMenu_HandleMainInput(u8 taskId);
 
+// --OTHER-FUNCTIONS-
 static void HeatStartMenu_LoadSprites(void);
 static void HeatStartMenu_CreateSprites(void);
 static void HeatStartMenu_LoadBgGfx(void);
@@ -85,7 +86,6 @@ enum {
 enum FLAG_VALUES {
   FLAG_VALUE_NOT_SET,
   FLAG_VALUE_SET,
-  FLAG_VALUE_DESTROY,
 };
 
 // --EWRAM--
@@ -363,10 +363,6 @@ static void SpriteCB_IconPoketch(struct Sprite* sprite) {
     StartSpriteAnim(sprite, 0);
     StartSpriteAffineAnim(sprite, 0);
   }
-
-  /*if (sHeatStartMenu->flag == FLAG_VALUE_DESTROY) {
-    DestroySprite(sprite);
-  }*/
 }
 
 static void SpriteCB_IconPokedex(struct Sprite* sprite) {
@@ -378,10 +374,6 @@ static void SpriteCB_IconPokedex(struct Sprite* sprite) {
     StartSpriteAnim(sprite, 0);
     StartSpriteAffineAnim(sprite, 0);
   }
-
-  /*if (sHeatStartMenu->flag == FLAG_VALUE_DESTROY) {
-    DestroySprite(sprite);
-  }*/
 }
 
 static void SpriteCB_IconParty(struct Sprite* sprite) {
@@ -393,10 +385,6 @@ static void SpriteCB_IconParty(struct Sprite* sprite) {
     StartSpriteAnim(sprite, 0);
     StartSpriteAffineAnim(sprite, 0);
   }
-
-  /*if (sHeatStartMenu->flag == FLAG_VALUE_DESTROY) {
-    DestroySprite(sprite);
-  }*/
 }
 
 static void SpriteCB_IconBag(struct Sprite* sprite) {
@@ -408,10 +396,6 @@ static void SpriteCB_IconBag(struct Sprite* sprite) {
     StartSpriteAnim(sprite, 0);
     StartSpriteAffineAnim(sprite, 0);
   } 
-
-  /*if (sHeatStartMenu->flag == FLAG_VALUE_DESTROY) {
-    DestroySprite(sprite);
-  }*/
 }
 
 static void SpriteCB_IconTrainerCard(struct Sprite* sprite) {
@@ -423,10 +407,6 @@ static void SpriteCB_IconTrainerCard(struct Sprite* sprite) {
     StartSpriteAnim(sprite, 0);
     StartSpriteAffineAnim(sprite, 0);
   } 
-
-  /*if (sHeatStartMenu->flag == FLAG_VALUE_DESTROY) {
-    DestroySprite(sprite);
-  }*/
 }
 
 static void SpriteCB_IconSave(struct Sprite* sprite) {
@@ -438,10 +418,6 @@ static void SpriteCB_IconSave(struct Sprite* sprite) {
     StartSpriteAnim(sprite, 0);
     StartSpriteAffineAnim(sprite, 0);
   } 
-
-  /*if (sHeatStartMenu->flag == FLAG_VALUE_DESTROY) {
-    DestroySprite(sprite);
-  }*/
 }
 
 static void SpriteCB_IconOptions(struct Sprite* sprite) {
@@ -453,12 +429,7 @@ static void SpriteCB_IconOptions(struct Sprite* sprite) {
     StartSpriteAnim(sprite, 0);
     StartSpriteAffineAnim(sprite, 0);
   } 
-
-  /*if (sHeatStartMenu->flag == FLAG_VALUE_DESTROY) {
-    DestroySprite(sprite);
-  }*/
 }
-
 
 static const struct WindowTemplate sWindowTemplate_StartClock = {
   .bg = 0, 
@@ -480,17 +451,16 @@ static const struct WindowTemplate sWindowTemplate_MenuName = {
   .baseBlock = 0x30 + (13*2)
 };
 
-
 // If you want to shorten the dates to Sat., Sun., etc., change this to 70
 #define CLOCK_WINDOW_WIDTH 100
 
-const u8 gText_Saturday[] = _("Saturday,");
-const u8 gText_Sunday[] = _("Sunday,");
-const u8 gText_Monday[] = _("Monday,");
-const u8 gText_Tuesday[] = _("Tuesday,");
-const u8 gText_Wednesday[] = _("Wednesday,");
-const u8 gText_Thursday[] = _("Thursday,");
-const u8 gText_Friday[] = _("Friday,");
+const u8 gText_Saturday[] = _("Sat.");
+const u8 gText_Sunday[] = _("Sun.");
+const u8 gText_Monday[] = _("Mon.");
+const u8 gText_Tuesday[] = _("Tue.");
+const u8 gText_Wednesday[] = _("Wed.");
+const u8 gText_Thursday[] = _("Thu.");
+const u8 gText_Friday[] = _("Fri.");
 
 const u8 *const gDayNameStringsTable[7] = {
     gText_Saturday,
@@ -680,8 +650,29 @@ static void HeatStartMenu_ExitAndClearTilemap(void) {
   UnlockPlayerFieldControls();
 }
 
+#include "heat_options.h" 
+static void HeatStartMenu_OpenMenu(void) {
+  switch (sHeatStartMenu->menuSelected) {
+    case MENU_OPTIONS:
+      if (!gPaletteFade.active) {
+        PlayRainStoppingSoundEffect();
+        HeatStartMenu_ExitAndClearTilemap();
+        CleanupOverworldWindowsAndTilemaps();
+        SetMainCallback2(CB_EnterOptionsUI); // Display option menu
+        gMain.savedCallback = CB2_ReturnToFieldWithOpenMenu;
+        sHeatStartMenu->loadState = 2;
+      }
+      break;
+  }
+}
+
 static void Task_HeatStartMenu_HandleMainInput(u8 taskId) {
-  if (JOY_NEW(B_BUTTON)) {
+  if (JOY_NEW(A_BUTTON)) {
+    if (sHeatStartMenu->loadState == 0) {
+      FadeScreen(FADE_TO_BLACK, 0);
+      sHeatStartMenu->loadState = 1;
+    }
+  } else if (JOY_NEW(B_BUTTON)) {
     PlaySE(SE_SELECT);
     //sHeatStartMenu->flag = FLAG_VALUE_DESTROY;
     HeatStartMenu_ExitAndClearTilemap();  
@@ -708,6 +699,10 @@ static void Task_HeatStartMenu_HandleMainInput(u8 taskId) {
         HeatStartMenu_UpdateMenuName();
         break;
     }
+  } if (sHeatStartMenu->loadState == 1) {
+    HeatStartMenu_OpenMenu();
+  } else if (sHeatStartMenu->loadState == 2) {
+    DestroyTask(taskId);
   }
 
 }
