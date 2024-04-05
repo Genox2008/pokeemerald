@@ -706,21 +706,17 @@ static void CreateStartMenuTask(TaskFunc followupFunc)
     SetTaskFuncWithFollowupFunc(taskId, StartMenuTask, followupFunc);
 }
 
+#include "heat_start_menu.h"
 static bool8 FieldCB_ReturnToFieldStartMenu(void)
 {
-    struct SpritePalette palSheet;
-    palSheet.data = sStartMenuIconsPal;
-    palSheet.tag = spritePaletteTagId;
-
-    if (InitStartMenuStep() == FALSE)
-    {
-        return FALSE;
-    }
-
-    // Fix Palette bugs when returning to the start menu from overworld callbacks
-    sIsStartMenuIconPaletteLoaded = FALSE;
-    gStartMenuIconPaletteNum = LoadSpritePalette(&palSheet);
+    // Old start menu
+    //
+    //if (InitStartMenuStep() == FALSE)
+    //{
+    //    return FALSE;
+    //}
     
+    HeatStartMenu_Init();
     ReturnToFieldOpenStartMenu();
     return TRUE;
 }
@@ -1052,7 +1048,8 @@ static bool8 StartMenuBattlePyramidBagCallback(void)
 
 static bool8 SaveStartCallback(void)
 {
-    DeleteAllStartMenuIcons();
+    // Old start menu
+    //eleteAllStartMenuIcons();
     gShouldStartMenuIconsBePrinted = TRUE;
     InitSave();
     gMenuCallback = SaveCallback;

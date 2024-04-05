@@ -650,20 +650,50 @@ static void HeatStartMenu_ExitAndClearTilemap(void) {
   UnlockPlayerFieldControls();
 }
 
+static void DoCleanUpAndChangeCallback(MainCallback callback) {
+  if (!gPaletteFade.active) {
+    PlayRainStoppingSoundEffect();
+    HeatStartMenu_ExitAndClearTilemap();
+    CleanupOverworldWindowsAndTilemaps();
+    SetMainCallback2(callback);
+    gMain.savedCallback = CB2_ReturnToFieldWithOpenMenu;
+    sHeatStartMenu->loadState = 2;
+  }
+}
+
 #include "heat_options.h" 
 static void HeatStartMenu_OpenMenu(void) {
   switch (sHeatStartMenu->menuSelected) {
+    case MENU_POKETCH:
+      break;
+    case MENU_POKEDEX:
+      DoCleanUpAndChangeCallback(CB2_OpenPokedex);
+      break;
+    case MENU_PARTY: 
+      DoCleanUpAndChangeCallback(CB2_PartyMenuFromStartMenu);
+      break;
+    case MENU_BAG: 
+      DoCleanUpAndChangeCallback(CB2_BagMenuFromStartMenu);
+      break;
+    case MENU_TRAINER_CARD:
+      if (IsOverworldLinkActive() || InUnionRoom())
+        ShowPlayerTrainerCard(CB2_ReturnToFieldWithOpenMenu); // Display trainer card
+      else if (FlagGet(FLAG_SYS_FRONTIER_PASS))
+        ShowFrontierPass(CB2_ReturnToFieldWithOpenMenu); // Display frontier pass
+      else
+        ShowPlayerTrainerCard(CB2_ReturnToFieldWithOpenMenu); // Display trainer card
+      break;
+    case MENU_SAVE:
+      SaveMapView();
+      break;
     case MENU_OPTIONS:
-      if (!gPaletteFade.active) {
-        PlayRainStoppingSoundEffect();
-        HeatStartMenu_ExitAndClearTilemap();
-        CleanupOverworldWindowsAndTilemaps();
-        SetMainCallback2(CB_EnterOptionsUI); // Display option menu
-        gMain.savedCallback = CB2_ReturnToFieldWithOpenMenu;
-        sHeatStartMenu->loadState = 2;
-      }
+      DoCleanUpAndChangeCallback(CB_EnterOptionsUI);
       break;
   }
+}
+
+void GoToHandleInput(void) {
+  CreateTask(Task_HeatStartMenu_HandleMainInput, 80);
 }
 
 static void Task_HeatStartMenu_HandleMainInput(u8 taskId) {
@@ -703,6 +733,7 @@ static void Task_HeatStartMenu_HandleMainInput(u8 taskId) {
     HeatStartMenu_OpenMenu();
   } else if (sHeatStartMenu->loadState == 2) {
     DestroyTask(taskId);
+    sHeatStartMenu->loadState == 0;
   }
 
 }

@@ -434,12 +434,15 @@ static void Task_ExitNonDoor(u8 taskId)
     }
 }
 
+#include "heat_start_menu.h"
 static void Task_WaitForFadeShowStartMenu(u8 taskId)
 {
     if (WaitForWeatherFadeIn() == TRUE)
     {
         DestroyTask(taskId);
-        CreateTask(Task_ShowStartMenu, 80);
+        // Old start menu
+        //CreateTask(Task_ShowStartMenu, 80);
+        GoToHandleInput();
     }
 }
 
