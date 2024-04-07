@@ -442,7 +442,7 @@ static void Task_WaitForFadeShowStartMenu(u8 taskId)
         DestroyTask(taskId);
         // Old start menu
         //CreateTask(Task_ShowStartMenu, 80);
-        GoToHandleInput();
+        //GoToHandleInput();
     }
 }
 
