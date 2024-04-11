@@ -1,5 +1,4 @@
 #include "heat_start_menu.h"
-
 #include "global.h"
 #include "battle_pike.h"
 #include "battle_pyramid.h"
@@ -54,7 +53,7 @@
 #include "constants/songs.h"
 #include "rtc.h"
 
-// --CALLBACKS--
+/* CALLBACKS */
 static void SpriteCB_IconPoketch(struct Sprite* sprite);
 static void SpriteCB_IconPokedex(struct Sprite* sprite);
 static void SpriteCB_IconParty(struct Sprite* sprite);
@@ -63,17 +62,34 @@ static void SpriteCB_IconTrainerCard(struct Sprite* sprite);
 static void SpriteCB_IconSave(struct Sprite* sprite);
 static void SpriteCB_IconOptions(struct Sprite* sprite);
 
-// --TASKS--
+/* TASKs */
 static void Task_HeatStartMenu_HandleMainInput(u8 taskId);
+static void Task_HandleSave(u8 taskId);
 
-// --OTHER-FUNCTIONS-
+/* OTHER FUNCTIONS */
 static void HeatStartMenu_LoadSprites(void);
 static void HeatStartMenu_CreateSprites(void);
 static void HeatStartMenu_LoadBgGfx(void);
 static void HeatStartMenu_ShowTimeWindow(void);
 static void HeatStartMenu_UpdateMenuName(void);
+static u8 RunSaveCallback(void);
+static u8 SaveDoSaveCallback(void);
+static void HideSaveInfoWindow(void);
+static void HideSaveMessageWindow(void);
+static u8 SaveOverwriteInputCallback(void);
+static u8 SaveConfirmOverwriteDefaultNoCallback(void);
+static u8 SaveConfirmOverwriteCallback(void);
+static void ShowSaveMessage(const u8 *message, u8 (*saveCallback)(void));
+static u8 SaveFileExistsCallback(void);
+static u8 SaveSavingMessageCallback(void);
+static u8 SaveConfirmInputCallback(void);
+static u8 SaveYesNoCallback(void);
+static void ShowSaveInfoWindow(void);
+static u8 SaveConfirmSaveCallback(void);
+static void InitSave(void);
 
-enum {
+/* ENUMs */
+enum MENU {
   MENU_POKETCH,
   MENU_POKEDEX,
   MENU_PARTY,
@@ -88,12 +104,20 @@ enum FLAG_VALUES {
   FLAG_VALUE_SET,
 };
 
-// --EWRAM--
+enum SAVE_STATES {
+  SAVE_IN_PROGRESS,
+  SAVE_SUCCESS,
+  SAVE_CANCELED,
+  SAVE_ERROR
+};
+
+/* STRUCTs */
 struct HeatStartMenu {
   MainCallback savedCallback;
   u32 loadState;
   u8 sStartClockWindowId;
   u32 sMenuNameWindowId;
+  u32 sSaveInfoWindowId;
   u32 flag; // some u32 holding values for controlling the sprite anims an lifetime
   
   u32 spriteIdPoketch;
@@ -103,10 +127,13 @@ struct HeatStartMenu {
   u32 spriteIdTrainerCard;
   u32 spriteIdSave;
   u32 spriteIdOptions;
+
+  u32 sSaveDialogTimer;
 };
 
 static EWRAM_DATA struct HeatStartMenu *sHeatStartMenu = NULL;
 static EWRAM_DATA u32 menuSelected = MENU_POKETCH;
+EWRAM_DATA static u8 (*sSaveDialogCallback)(void) = NULL;
 
 // --BG-GFX--
 static const u32 sStartMenuTiles[] = INCBIN_U32("graphics/heat_start_menu/bg.4bpp.lz");
@@ -119,6 +146,16 @@ static const u16 sStartMenuPalette[] = INCBIN_U16("graphics/heat_start_menu/bg.g
 
 static const u32 sIconGfx[] = INCBIN_U32("graphics/heat_start_menu/icons.4bpp.lz");
 static const u16 sIconPal[] = INCBIN_U16("graphics/heat_start_menu/icons.gbapal");
+
+static const struct WindowTemplate sSaveInfoWindowTemplate = {
+    .bg = 0,
+    .tilemapLeft = 1,
+    .tilemapTop = 1,
+    .width = 14,
+    .height = 10,
+    .paletteNum = 15,
+    .baseBlock = 45
+};
 
 static const struct SpritePalette sSpritePal_Icon[] =
 {
@@ -615,7 +652,13 @@ static void HeatStartMenu_UpdateMenuName(void) {
 static void HeatStartMenu_ExitAndClearTilemap(void) {
   u32 i;
   u8 *buf = GetBgTilemapBuffer(0);
-  
+ 
+  FillWindowPixelBuffer(sHeatStartMenu->sMenuNameWindowId, PIXEL_FILL(TEXT_COLOR_TRANSPARENT));
+  FillWindowPixelBuffer(sHeatStartMenu->sStartClockWindowId, PIXEL_FILL(TEXT_COLOR_TRANSPARENT));
+
+  ClearWindowTilemap(sHeatStartMenu->sMenuNameWindowId);
+  ClearWindowTilemap(sHeatStartMenu->sStartClockWindowId);
+
   RemoveWindow(sHeatStartMenu->sStartClockWindowId);
   RemoveWindow(sHeatStartMenu->sMenuNameWindowId);
 
@@ -660,6 +703,357 @@ static void DoCleanUpAndChangeCallback(MainCallback callback) {
   }
 }
 
+static void DoCleanUpAndOpenTrainerCard(void) {
+  if (!gPaletteFade.active) {
+    PlayRainStoppingSoundEffect();
+    HeatStartMenu_ExitAndClearTilemap();
+    CleanupOverworldWindowsAndTilemaps();
+    if (IsOverworldLinkActive() || InUnionRoom()) {
+      ShowPlayerTrainerCard(CB2_ReturnToFieldWithOpenMenu); // Display trainer card
+      DestroyTask(FindTaskIdByFunc(Task_HeatStartMenu_HandleMainInput));
+    } else if (FlagGet(FLAG_SYS_FRONTIER_PASS)) {
+      ShowFrontierPass(CB2_ReturnToFieldWithOpenMenu); // Display frontier pass
+      DestroyTask(FindTaskIdByFunc(Task_HeatStartMenu_HandleMainInput));
+    } else {
+      ShowPlayerTrainerCard(CB2_ReturnToFieldWithOpenMenu); // Display trainer card
+      DestroyTask(FindTaskIdByFunc(Task_HeatStartMenu_HandleMainInput));
+    }
+  }
+}
+
+static u8 RunSaveCallback(void)
+{
+    // True if text is still printing
+    if (RunTextPrintersAndIsPrinter0Active() == TRUE)
+    {
+        return SAVE_IN_PROGRESS;
+    }
+
+    return sSaveDialogCallback();
+}
+
+static void SaveStartTimer(void)
+{
+    sHeatStartMenu->sSaveDialogTimer = 60;
+}
+
+static bool8 SaveSuccesTimer(void)
+{
+    sHeatStartMenu->sSaveDialogTimer--;
+
+    if (JOY_HELD(A_BUTTON))
+    {
+        PlaySE(SE_SELECT);
+        return TRUE;
+    }
+    if (sHeatStartMenu->sSaveDialogTimer == 0)
+    {
+        return TRUE;
+    }
+
+    return FALSE;
+}
+
+static bool8 SaveErrorTimer(void)
+{
+    if (sHeatStartMenu->sSaveDialogTimer != 0)
+    {
+        sHeatStartMenu->sSaveDialogTimer--;
+    }
+    else if (JOY_HELD(A_BUTTON))
+    {
+        return TRUE;
+    }
+
+    return FALSE;
+}
+
+static u8 SaveReturnSuccessCallback(void)
+{
+    if (!IsSEPlaying() && SaveSuccesTimer())
+    {
+        HideSaveInfoWindow();
+        return SAVE_SUCCESS;
+    }
+    else
+    {
+        return SAVE_IN_PROGRESS;
+    }
+}
+
+static u8 SaveSuccessCallback(void)
+{
+    if (!IsTextPrinterActive(0))
+    {
+        PlaySE(SE_SAVE);
+        sSaveDialogCallback = SaveReturnSuccessCallback;
+    }
+
+    return SAVE_IN_PROGRESS;
+}
+
+static u8 SaveReturnErrorCallback(void)
+{
+    if (!SaveErrorTimer())
+    {
+        return SAVE_IN_PROGRESS;
+    }
+    else
+    {
+        HideSaveInfoWindow();
+        return SAVE_ERROR;
+    }
+}
+
+static u8 SaveErrorCallback(void)
+{
+    if (!IsTextPrinterActive(0))
+    {
+        PlaySE(SE_BOO);
+        sSaveDialogCallback = SaveReturnErrorCallback;
+    }
+
+    return SAVE_IN_PROGRESS;
+}
+
+static u8 SaveDoSaveCallback(void)
+{
+    u8 saveStatus;
+
+    IncrementGameStat(GAME_STAT_SAVED_GAME);
+    PausePyramidChallenge();
+
+    if (gDifferentSaveFile == TRUE)
+    {
+        saveStatus = TrySavingData(SAVE_OVERWRITE_DIFFERENT_FILE);
+        gDifferentSaveFile = FALSE;
+    }
+    else
+    {
+        saveStatus = TrySavingData(SAVE_NORMAL);
+    }
+
+    if (saveStatus == SAVE_STATUS_OK)
+        ShowSaveMessage(gText_PlayerSavedGame, SaveSuccessCallback);
+    else
+        ShowSaveMessage(gText_SaveError, SaveErrorCallback);
+
+    SaveStartTimer();
+    return SAVE_IN_PROGRESS;
+}
+
+static void HideSaveInfoWindow(void) {
+  ClearStdWindowAndFrame(sHeatStartMenu->sSaveInfoWindowId, FALSE);
+  RemoveWindow(sHeatStartMenu->sSaveInfoWindowId);
+}
+
+static void HideSaveMessageWindow(void) {
+  ClearDialogWindowAndFrame(0, TRUE);
+}
+
+static u8 SaveOverwriteInputCallback(void)
+{
+    switch (Menu_ProcessInputNoWrapClearOnChoose())
+    {
+    case 0: // Yes
+        sSaveDialogCallback = SaveSavingMessageCallback;
+        return SAVE_IN_PROGRESS;
+    case MENU_B_PRESSED:
+    case 1: // No
+        HideSaveInfoWindow();
+        HideSaveMessageWindow();
+        return SAVE_CANCELED;
+    }
+
+    return SAVE_IN_PROGRESS;
+}
+
+static u8 SaveConfirmOverwriteDefaultNoCallback(void)
+{
+    DisplayYesNoMenuWithDefault(1); // Show Yes/No menu (No selected as default)
+    sSaveDialogCallback = SaveOverwriteInputCallback;
+    return SAVE_IN_PROGRESS;
+}
+
+static u8 SaveConfirmOverwriteCallback(void)
+{
+    DisplayYesNoMenuDefaultYes(); // Show Yes/No menu
+    sSaveDialogCallback = SaveOverwriteInputCallback;
+    return SAVE_IN_PROGRESS;
+}
+
+static void ShowSaveMessage(const u8 *message, u8 (*saveCallback)(void)) {
+    StringExpandPlaceholders(gStringVar4, message);
+    LoadMessageBoxAndFrameGfx(0, TRUE);
+    AddTextPrinterForMessage_2(TRUE);
+    sSaveDialogCallback = saveCallback;
+}
+
+static u8 SaveFileExistsCallback(void)
+{
+  if (gDifferentSaveFile == TRUE) {
+    ShowSaveMessage(gText_DifferentSaveFile, SaveConfirmOverwriteDefaultNoCallback);
+  } else {
+    ShowSaveMessage(gText_AlreadySavedFile, SaveConfirmOverwriteCallback);
+  }
+  return SAVE_IN_PROGRESS;
+}
+
+static u8 SaveSavingMessageCallback(void) {
+  ShowSaveMessage(gText_SavingDontTurnOff, SaveDoSaveCallback);
+  return SAVE_IN_PROGRESS;
+}
+
+static u8 SaveConfirmInputCallback(void)
+{
+    switch (Menu_ProcessInputNoWrapClearOnChoose())
+    {
+    case 0: // Yes
+        switch (gSaveFileStatus)
+        {
+        case SAVE_STATUS_EMPTY:
+        case SAVE_STATUS_CORRUPT:
+            if (gDifferentSaveFile == FALSE)
+            {
+                sSaveDialogCallback = SaveFileExistsCallback;
+                return SAVE_IN_PROGRESS;
+            }
+
+            sSaveDialogCallback = SaveSavingMessageCallback;
+            return SAVE_IN_PROGRESS;
+        default:
+            sSaveDialogCallback = SaveFileExistsCallback;
+            return SAVE_IN_PROGRESS;
+        }
+    case MENU_B_PRESSED:
+    case 1: // No
+        HideSaveInfoWindow();
+        HideSaveMessageWindow();
+        return SAVE_CANCELED;
+    }
+
+    return SAVE_IN_PROGRESS;
+}
+
+static u8 SaveYesNoCallback(void) {
+    DisplayYesNoMenuDefaultYes(); // Show Yes/No menu
+    sSaveDialogCallback = SaveConfirmInputCallback;
+    return SAVE_IN_PROGRESS;
+}
+
+
+static void ShowSaveInfoWindow(void) {
+    struct WindowTemplate saveInfoWindow = sSaveInfoWindowTemplate;
+    u8 gender;
+    u8 color;
+    u32 xOffset;
+    u32 yOffset;
+    const u8 *suffix;
+    u8 *alignedSuffix = gStringVar3;
+
+    if (!FlagGet(FLAG_SYS_POKEDEX_GET))
+    {
+        saveInfoWindow.height -= 2;
+    }
+
+    sHeatStartMenu->sSaveInfoWindowId = AddWindow(&saveInfoWindow);
+    DrawStdWindowFrame(sHeatStartMenu->sSaveInfoWindowId, FALSE);
+
+    gender = gSaveBlock2Ptr->playerGender;
+    color = TEXT_COLOR_RED;  // Red when female, blue when male.
+
+    if (gender == MALE)
+    {
+        color = TEXT_COLOR_BLUE;
+    }
+
+    // Print region name
+    yOffset = 1;
+    BufferSaveMenuText(SAVE_MENU_LOCATION, gStringVar4, TEXT_COLOR_GREEN);
+    AddTextPrinterParameterized(sHeatStartMenu->sSaveInfoWindowId, FONT_NORMAL, gStringVar4, 0, yOffset, TEXT_SKIP_DRAW, NULL);
+
+    // Print player name
+    yOffset += 16;
+    AddTextPrinterParameterized(sHeatStartMenu->sSaveInfoWindowId, FONT_NORMAL, gText_SavingPlayer, 0, yOffset, TEXT_SKIP_DRAW, NULL);
+    BufferSaveMenuText(SAVE_MENU_NAME, gStringVar4, color);
+    xOffset = GetStringRightAlignXOffset(FONT_NORMAL, gStringVar4, 0x70);
+    PrintPlayerNameOnWindow(sHeatStartMenu->sSaveInfoWindowId, gStringVar4, xOffset, yOffset);
+
+    // Print badge count
+    yOffset += 16;
+    AddTextPrinterParameterized(sHeatStartMenu->sSaveInfoWindowId, FONT_NORMAL, gText_SavingBadges, 0, yOffset, TEXT_SKIP_DRAW, NULL);
+    BufferSaveMenuText(SAVE_MENU_BADGES, gStringVar4, color);
+    xOffset = GetStringRightAlignXOffset(FONT_NORMAL, gStringVar4, 0x70);
+    AddTextPrinterParameterized(sHeatStartMenu->sSaveInfoWindowId, FONT_NORMAL, gStringVar4, xOffset, yOffset, TEXT_SKIP_DRAW, NULL);
+
+    if (FlagGet(FLAG_SYS_POKEDEX_GET) == TRUE)
+    {
+        // Print pokedex count
+        yOffset += 16;
+        AddTextPrinterParameterized(sHeatStartMenu->sSaveInfoWindowId, FONT_NORMAL, gText_SavingPokedex, 0, yOffset, TEXT_SKIP_DRAW, NULL);
+        BufferSaveMenuText(SAVE_MENU_CAUGHT, gStringVar4, color);
+        xOffset = GetStringRightAlignXOffset(FONT_NORMAL, gStringVar4, 0x70);
+        AddTextPrinterParameterized(sHeatStartMenu->sSaveInfoWindowId, FONT_NORMAL, gStringVar4, xOffset, yOffset, TEXT_SKIP_DRAW, NULL);
+    }
+
+    // Print play time
+    yOffset += 16;
+    AddTextPrinterParameterized(sHeatStartMenu->sSaveInfoWindowId, FONT_NORMAL, gText_SavingTime, 0, yOffset, TEXT_SKIP_DRAW, NULL);
+    BufferSaveMenuText(SAVE_MENU_PLAY_TIME, gStringVar4, color);
+    xOffset = GetStringRightAlignXOffset(FONT_NORMAL, gStringVar4, 0x70);
+    AddTextPrinterParameterized(sHeatStartMenu->sSaveInfoWindowId, FONT_NORMAL, gStringVar4, xOffset, yOffset, TEXT_SKIP_DRAW, NULL);
+
+    CopyWindowToVram(sHeatStartMenu->sSaveInfoWindowId, COPYWIN_GFX);
+}
+
+static u8 SaveConfirmSaveCallback(void) {
+  ClearStdWindowAndFrame(GetStartMenuWindowId(), FALSE);
+  //RemoveStartMenuWindow();
+  ShowSaveInfoWindow();
+
+  if (InBattlePyramid()) {
+    ShowSaveMessage(gText_BattlePyramidConfirmRest, SaveYesNoCallback);
+  } else {
+    ShowSaveMessage(gText_ConfirmSave, SaveYesNoCallback);
+  }
+  return SAVE_IN_PROGRESS;
+}
+
+static void InitSave(void)
+{
+    SaveMapView();
+    sSaveDialogCallback = SaveConfirmSaveCallback;
+}
+
+static void Task_HandleSave(u8 taskId) {
+  switch (RunSaveCallback()) {
+    case SAVE_IN_PROGRESS:
+      break;
+    case SAVE_CANCELED: // Back to start menu
+      ClearDialogWindowAndFrameToTransparent(0, FALSE);
+      HeatStartMenu_Init();
+      break;
+    case SAVE_SUCCESS:
+      break;
+    case SAVE_ERROR:    // Close start menu
+      ClearDialogWindowAndFrameToTransparent(0, TRUE);
+      ScriptUnfreezeObjectEvents();
+      UnlockPlayerFieldControls();
+      SoftResetInBattlePyramid();
+      DestroyTask(taskId);
+      break;
+  }
+}
+
+static void DoCleanUpAndStartSaveMenu(void) {
+  if (!gPaletteFade.active) {
+    DestroyTask(FindTaskIdByFunc(Task_HeatStartMenu_HandleMainInput));
+    HeatStartMenu_ExitAndClearTilemap();
+    InitSave();
+    CreateTask(Task_HandleSave, 0x80);
+  }
+}
+
 #include "heat_options.h" 
 static void HeatStartMenu_OpenMenu(void) {
   switch (menuSelected) {
@@ -675,15 +1069,7 @@ static void HeatStartMenu_OpenMenu(void) {
       DoCleanUpAndChangeCallback(CB2_BagMenuFromStartMenu);
       break;
     case MENU_TRAINER_CARD:
-      if (IsOverworldLinkActive() || InUnionRoom())
-        ShowPlayerTrainerCard(CB2_ReturnToFieldWithOpenMenu); // Display trainer card
-      else if (FlagGet(FLAG_SYS_FRONTIER_PASS))
-        ShowFrontierPass(CB2_ReturnToFieldWithOpenMenu); // Display frontier pass
-      else
-        ShowPlayerTrainerCard(CB2_ReturnToFieldWithOpenMenu); // Display trainer card
-      break;
-    case MENU_SAVE:
-      SaveMapView();
+      DoCleanUpAndOpenTrainerCard();
       break;
     case MENU_OPTIONS:
       DoCleanUpAndChangeCallback(CB_EnterOptionsUI);
@@ -698,15 +1084,16 @@ void GoToHandleInput(void) {
 static void Task_HeatStartMenu_HandleMainInput(u8 taskId) {
   if (JOY_NEW(A_BUTTON)) {
     if (sHeatStartMenu->loadState == 0) {
-      FadeScreen(FADE_TO_BLACK, 0);
+      if (menuSelected != MENU_SAVE) {
+        FadeScreen(FADE_TO_BLACK, 0);
+      }
       sHeatStartMenu->loadState = 1;
     }
   } else if (JOY_NEW(B_BUTTON)) {
     PlaySE(SE_SELECT);
-    //sHeatStartMenu->flag = FLAG_VALUE_DESTROY;
     HeatStartMenu_ExitAndClearTilemap();  
     DestroyTask(taskId);
-  } else if (gMain.newKeys & DPAD_DOWN) {
+  } else if (gMain.newKeys & DPAD_DOWN && sHeatStartMenu->loadState == 0) {
     switch (menuSelected) {
       case MENU_OPTIONS:
         break;
@@ -717,7 +1104,7 @@ static void Task_HeatStartMenu_HandleMainInput(u8 taskId) {
         HeatStartMenu_UpdateMenuName();
         break;
     }
-  } else if (gMain.newKeys & DPAD_UP) {
+  } else if (gMain.newKeys & DPAD_UP && sHeatStartMenu->loadState == 0) {
     switch (menuSelected) {
       case MENU_POKETCH:
         break;
@@ -729,7 +1116,11 @@ static void Task_HeatStartMenu_HandleMainInput(u8 taskId) {
         break;
     }
   } else if (sHeatStartMenu->loadState == 1) {
-    HeatStartMenu_OpenMenu();
+    if (menuSelected != MENU_SAVE) {
+      HeatStartMenu_OpenMenu();
+    } else {
+      DoCleanUpAndStartSaveMenu();
+    }
   }
 }
 
