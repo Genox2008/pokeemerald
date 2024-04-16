@@ -52,8 +52,7 @@ static void Excavation_CheckItemFound(void);
 static void Task_ExcavationWaitFadeIn(u8 taskId);
 static void Task_ExcavationMainInput(u8 taskId);
 static void Task_ExcavationFadeAndExitMenu(u8 taskId);
-static void Mining_AddTextPrinter(u8 windowId, const u8 *string, u8 x, u8 y, s32 speed, s32 caseId);
-static bool32 PrintMessage(s16 *textState, const u8 *string, s32 textSpeed);
+static void PrintMessage(const u8 *string);
 static void InitMiningWindows(void);
 
 struct ExcavationState {
@@ -69,7 +68,6 @@ struct ExcavationState {
   u8 cursorY;
   u8 layerMap[96];
   u8 itemMap[96];
-  s16 textState;
 
   // Item 1
   u8 state_item1;
@@ -904,8 +902,8 @@ enum {
   STATE_LOAD_BGS,
   STATE_LOAD_SPRITES,
   STATE_WAIT_FADE,
-  STATE_FADE,
   STATE_TEXT_BOX,
+  STATE_FADE,
   STATE_SET_CALLBACKS,
 };
 
@@ -947,7 +945,6 @@ static void Excavation_SetupCB(void) {
 		  // Load BG(s)
 	  case STATE_LOAD_BGS:
 		  if (Excavation_LoadBgGraphics() == TRUE) {
-			  LoadMessageBoxGfx(WIN_MSG, 20, BG_PLTT_ID(15));
 			  InitMiningWindows();
 			  gMain.state++;
 		  }
@@ -965,14 +962,13 @@ static void Excavation_SetupCB(void) {
 		  gMain.state++;
 		  break;
 
-	  case STATE_FADE:
-		  BeginNormalPaletteFade(PALETTES_ALL, 0, 16, 0, RGB_BLACK);
+	  case STATE_TEXT_BOX:
+		  PrintMessage(sText_TheWall);
 		  gMain.state++;
 		  break;
 
-	  case STATE_TEXT_BOX:
-		  sExcavationUiState->textState = 0;
-		  PrintMessage(&sExcavationUiState->textState, sText_TheWall, GetPlayerTextSpeedDelay());
+	  case STATE_FADE:
+		  BeginNormalPaletteFade(PALETTES_ALL, 0, 16, 0, RGB_BLACK);
 		  gMain.state++;
 		  break;
 
@@ -2541,66 +2537,30 @@ static void Excavation_FreeResources(void)
 
 static void InitMiningWindows(void)
 {
-    if (InitWindows(sWindowTemplates))
-    {
-        DeactivateAllTextPrinters();
-		FillWindowPixelBuffer(WIN_MSG, PIXEL_FILL(0));
-        FillBgTilemapBufferRect_Palette0(0, 0, 0, 0, DISPLAY_TILE_WIDTH, DISPLAY_TILE_HEIGHT);
-        Menu_LoadStdPalAt(BG_PLTT_ID(14));
-    }
+	if (InitWindows(sWindowTemplates))
+	{
+		DeactivateAllTextPrinters();
+		ScheduleBgCopyTilemapToVram(0);
+
+		FillWindowPixelBuffer(WIN_MSG, PIXEL_FILL(TEXT_COLOR_WHITE));
+		LoadMessageBoxGfx(WIN_MSG, 20, BG_PLTT_ID(15));
+		PutWindowTilemap(WIN_MSG);
+		CopyWindowToVram(WIN_MSG, COPYWIN_FULL);
+		Menu_LoadStdPalAt(BG_PLTT_ID(14));
+	}
 }
 
-static void Mining_AddTextPrinter(u8 windowId, const u8 *string, u8 x, u8 y, s32 speed, s32 caseId)
+static void PrintMessage(const u8 *string)
 {
-    u8 txtColor[3];
-    u32 letterSpacing = 0;
+	u32 letterSpacing = 0;
+	u32 x = 0;
+	u32 y = 1;
 
-    switch (caseId)
-    {
-    case 0:
-    case 3:
-    default:
-        txtColor[0] = TEXT_COLOR_WHITE;
-        txtColor[1] = TEXT_COLOR_DARK_GRAY;
-        txtColor[2] = TEXT_COLOR_LIGHT_GRAY;
-        break;
-    case 1:
-        txtColor[0] = TEXT_COLOR_TRANSPARENT;
-        txtColor[1] = TEXT_COLOR_DARK_GRAY;
-        txtColor[2] = TEXT_COLOR_LIGHT_GRAY;
-        break;
-    case 2:
-        txtColor[0] = TEXT_COLOR_TRANSPARENT;
-        txtColor[1] = TEXT_COLOR_RED;
-        txtColor[2] = TEXT_COLOR_LIGHT_RED;
-        break;
-    }
+	u8 txtColor[]= {TEXT_COLOR_TRANSPARENT, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_LIGHT_GRAY};
 
-    if (caseId != 3)
-        FillWindowPixelBuffer(windowId, PIXEL_FILL(txtColor[0]));
-
-    AddTextPrinterParameterized4(windowId, FONT_NORMAL, x, y, letterSpacing, 1, txtColor, speed, string);
-}
-
-static bool32 PrintMessage(s16 *textState, const u8 *string, s32 textSpeed)
-{
-    switch (*textState)
-    {
-    case 0:
-        DrawDialogFrameWithCustomTileAndPalette(WIN_MSG, FALSE, 0x14, 0xF);
-        Mining_AddTextPrinter(WIN_MSG, string, 0, 1, textSpeed, 0);
-        PutWindowTilemap(WIN_MSG);
-        CopyWindowToVram(WIN_MSG, COPYWIN_FULL);
-        (*textState)++;
-        break;
-    case 1:
-        if (!IsTextPrinterActive(WIN_MSG))
-        {
-            *textState = 0;
-            return TRUE;
-        }
-        break;
-    }
-
-    return FALSE;
+	DrawDialogFrameWithCustomTileAndPalette(WIN_MSG, FALSE, 20, 15);
+	FillWindowPixelBuffer(WIN_MSG, PIXEL_FILL(TEXT_COLOR_WHITE));
+	AddTextPrinterParameterized4(WIN_MSG, FONT_NORMAL, x, y, letterSpacing, 1, txtColor, TEXT_SKIP_DRAW,string);
+	PutWindowTilemap(WIN_MSG);
+	CopyWindowToVram(WIN_MSG,COPYWIN_FULL);
 }
