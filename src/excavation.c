@@ -47,12 +47,14 @@ static void Excavation_UpdateCracks(void);
 static void Excavation_UpdateTerrain(void);
 static void Excavation_DrawRandomTerrain(void);
 static void DoDrawRandomItem(u8 itemStateId, u8 itemId);
-static void DoDrawRandomStone(u8 itemId); 
+static void DoDrawRandomStone(u8 itemId);
 static void Excavation_CheckItemFound(void);
 static void Task_ExcavationWaitFadeIn(u8 taskId);
 static void Task_ExcavationMainInput(u8 taskId);
 static void Task_ExcavationFadeAndExitMenu(u8 taskId);
-
+static void Mining_AddTextPrinter(u8 windowId, const u8 *string, u8 x, u8 y, s32 speed, s32 caseId);
+static bool32 PrintMessage(s16 *textState, const u8 *string, s32 textSpeed);
+static void InitMiningWindows(void);
 
 struct ExcavationState {
   MainCallback leavingCallback;
@@ -67,7 +69,8 @@ struct ExcavationState {
   u8 cursorY;
   u8 layerMap[96];
   u8 itemMap[96];
-    
+  s16 textState;
+
   // Item 1
   u8 state_item1;
   u8 Item1_TilesToDigUp;
@@ -75,11 +78,11 @@ struct ExcavationState {
   // Item 2
   u8 state_item2;
   u8 Item2_TilesToDigUp;
-    
+
   // Item 3
   u8 state_item3;
   u8 Item3_TilesToDigUp;
-    
+
   // Item 4
   u8 state_item4;
   u8 Item4_TilesToDigUp;
@@ -95,8 +98,30 @@ static EWRAM_DATA struct ExcavationState *sExcavationUiState = NULL;
 static EWRAM_DATA u8 *sBg2TilemapBuffer = NULL;
 static EWRAM_DATA u8 *sBg3TilemapBuffer = NULL;
 
+#define WIN_MSG 0
+
+static const struct WindowTemplate sWindowTemplates[] =
+{
+    [WIN_MSG] =
+	{
+        .bg = 0,
+        .tilemapLeft = 2,
+        .tilemapTop = 15,
+        .width = 27,
+        .height = 4,
+        .paletteNum = 14,
+        .baseBlock = 256,
+    },
+};
+
 static const struct BgTemplate sExcavationBgTemplates[] =
-{   
+{
+    {
+        .bg = 0,
+        .charBaseIndex = 0,
+        .mapBaseIndex = 13,
+        .priority = 0,
+    },
     // Cracks, Terrain (idk how its called lol)
     {
         .bg = 2,
@@ -114,7 +139,7 @@ static const struct BgTemplate sExcavationBgTemplates[] =
     },
 };
 
-// UI 
+// UI
 static const u32 sUiTiles[] = INCBIN_U32("graphics/excavation/ui.4bpp.lz");
 static const u32 sUiTilemap[] = INCBIN_U32("graphics/excavation/ui.bin.lz");
 static const u16 sUiPalette[] = INCBIN_U16("graphics/excavation/ui.gbapal");
@@ -139,6 +164,12 @@ const u32 gHitEffectPickaxeGfx[] = INCBIN_U32("graphics/excavation/hit_effect_pi
 const u32 gHitHammerGfx[] = INCBIN_U32("graphics/excavation/hit_hammer.4bpp.lz");
 const u32 gHitPickaxeGfx[] = INCBIN_U32("graphics/excavation/hit_pickaxe.4bpp.lz");
 const u16 gHitEffectPal[] = INCBIN_U16("graphics/excavation/hit_effects.gbapal");
+
+static const u8 sText_TooBad[] = _("Too bad!\nYour Bag is full!");
+static const u8 sText_WasObtained[] = _("{STR_VAR_1}\nwas obtained!");
+static const u8 sText_SomethingPinged[] = _("Something pinged in the wall!\n{STR_VAR_1} confirmed!");
+static const u8 sText_TheWall[] = _("The wall collapsed!");
+static const u8 sText_EverythingWas[] = _("Everything was dug up!");
 
 // Item Sprite Tags
 #define TAG_ITEM_HEARTSCALE 3
@@ -237,43 +268,43 @@ static const struct SpritePalette sSpritePal_Cursor[] =
   {NULL},
 };
 
-static const struct CompressedSpriteSheet sSpriteSheet_Buttons[] = 
+static const struct CompressedSpriteSheet sSpriteSheet_Buttons[] =
 {
   {gButtonGfx, 8192/2 , TAG_BUTTONS},
   {NULL},
 };
 
-static const struct SpritePalette sSpritePal_Buttons[] = 
+static const struct SpritePalette sSpritePal_Buttons[] =
 {
   {gButtonPal, TAG_BUTTONS},
   {NULL},
 };
 
-static const struct CompressedSpriteSheet sSpriteSheet_HitEffectHammer[] = 
+static const struct CompressedSpriteSheet sSpriteSheet_HitEffectHammer[] =
 {
   {gHitEffectHammerGfx, 64*64/2 , TAG_HIT_EFFECT_HAMMER},
   {NULL},
 };
 
-static const struct CompressedSpriteSheet sSpriteSheet_HitEffectPickaxe[] = 
+static const struct CompressedSpriteSheet sSpriteSheet_HitEffectPickaxe[] =
 {
   {gHitEffectPickaxeGfx, 64*64/2 , TAG_HIT_EFFECT_PICKAXE},
   {NULL},
 };
 
-static const struct CompressedSpriteSheet sSpriteSheet_HitHammer[] = 
+static const struct CompressedSpriteSheet sSpriteSheet_HitHammer[] =
 {
   {gHitHammerGfx, 32*64/2 , TAG_HIT_HAMMER},
   {NULL},
 };
 
-static const struct CompressedSpriteSheet sSpriteSheet_HitPickaxe[] = 
+static const struct CompressedSpriteSheet sSpriteSheet_HitPickaxe[] =
 {
   {gHitPickaxeGfx, 32*64/2 , TAG_HIT_PICKAXE},
   {NULL},
 };
 
-static const struct SpritePalette sSpritePal_HitEffect[] = 
+static const struct SpritePalette sSpritePal_HitEffect[] =
 {
   {gHitEffectPal, TAG_PAL_HIT_EFFECTS},
   {NULL},
@@ -366,12 +397,12 @@ static const struct CompressedSpriteSheet sSpriteSheet_ItemStarPiece[] = {
   {gItemStarPieceGfx, 64*64/2, TAG_ITEM_STAR_PIECE},
   {NULL},
 };
- 
+
 static const struct CompressedSpriteSheet sSpriteSheet_ItemDampRock[] = {
   {gItemDampRockGfx, 64*64/2, TAG_ITEM_DAMP_ROCK},
   {NULL},
 };
- 
+
 static const struct CompressedSpriteSheet sSpriteSheet_ItemRedShard[] = {
   {gItemRedShardGfx, 64*64/2, TAG_ITEM_RED_SHARD},
   {NULL},
@@ -421,7 +452,7 @@ static const struct OamData gOamButton = {
     .matrixNum = 0,
     .size = 3,
     .tileNum = 0,
-    .priority = 0,
+    .priority = 1,
     .paletteNum = 0,
 };
 
@@ -694,6 +725,7 @@ static const struct SpriteTemplate gSpriteStone3x3 = {
     .callback = SpriteCallbackDummy,
 };
 
+
 static u8 ExcavationUtil_GetTotalTileAmount(u8 itemId) {
   switch(itemId) {
     case ITEMID_HEART_SCALE:
@@ -726,7 +758,7 @@ static u8 ExcavationUtil_GetTotalTileAmount(u8 itemId) {
     case ITEMID_EVER_STONE:
       return EVER_STONE_TOTAL_TILES;
       break;
-    default: 
+    default:
       return 0;
       break;
   }
@@ -759,19 +791,19 @@ static void UiShake(void) {
   delay(3000);
   BuildOamBuffer();
   SetGpuReg(REG_OFFSET_BG3VOFS, 1);
-  SetGpuReg(REG_OFFSET_BG2VOFS, 1); 
+  SetGpuReg(REG_OFFSET_BG2VOFS, 1);
   gSprites[i].invisible = 1;
   gSprites[i2].invisible = 1;
   BuildOamBuffer();
   delay(3000);
   SetGpuReg(REG_OFFSET_BG3HOFS, -1);
   SetGpuReg(REG_OFFSET_BG2HOFS, -1);
-  gSprites[i].invisible = 0; 
-  gSprites[i2].invisible = 0; 
+  gSprites[i].invisible = 0;
+  gSprites[i2].invisible = 0;
   BuildOamBuffer();
   delay(3000);
   SetGpuReg(REG_OFFSET_BG3VOFS, -1);
-  SetGpuReg(REG_OFFSET_BG2VOFS, -1); 
+  SetGpuReg(REG_OFFSET_BG2VOFS, -1);
   gSprites[i].invisible = 1;
   BuildOamBuffer();
   delay(3000);
@@ -785,7 +817,7 @@ static void UiShake(void) {
   delay(3000);
   SetGpuReg(REG_OFFSET_BG3VOFS, 1);
   SetGpuReg(REG_OFFSET_BG2VOFS, 1);
-  gSprites[i].invisible = 1; 
+  gSprites[i].invisible = 1;
   BuildOamBuffer();
   delay(3000);
   SetGpuReg(REG_OFFSET_BG3HOFS, -1);
@@ -807,7 +839,7 @@ static void UiShake(void) {
   SetGpuReg(REG_OFFSET_BG2HOFS, 0);
   SetGpuReg(REG_OFFSET_BG2VOFS, 0);
   gSprites[sExcavationUiState->cursorSpriteIndex].invisible = 0;
-  DestroySprite(&gSprites[i]); 
+  DestroySprite(&gSprites[i]);
   delay(8000);
   DestroySprite(&gSprites[i2]);
 }
@@ -819,12 +851,12 @@ void Excavation_ItemUseCB(void) {
 static void Excavation_Init(MainCallback callback) {
   u8 rnd = Random();
   sExcavationUiState = AllocZeroed(sizeof(struct ExcavationState));
-    
+
   if (sExcavationUiState == NULL) {
       SetMainCallback2(callback);
       return;
   }
-  
+
   sExcavationUiState->leavingCallback = callback;
   sExcavationUiState->loadState = 0;
   sExcavationUiState->crackCount = 0;
@@ -838,7 +870,7 @@ static void Excavation_Init(MainCallback callback) {
   // Always two stones
   sExcavationUiState->state_stone1 = SELECTED;
   sExcavationUiState->state_stone2 = SELECTED;
-  
+
   // TODO: Change this randomness by using my function `random(u32 amount);`
   if (rnd < 85) {
     rnd = 0;
@@ -873,73 +905,81 @@ enum {
   STATE_LOAD_SPRITES,
   STATE_WAIT_FADE,
   STATE_FADE,
+  STATE_TEXT_BOX,
   STATE_SET_CALLBACKS,
 };
 
 static void Excavation_SetupCB(void) {
   u8 taskId;
   switch(gMain.state) {
-    // Clear Screen
-    case STATE_CLEAR_SCREEN:
-      SetVBlankHBlankCallbacksToNull();
-      ClearScheduledBgCopiesToVram();
-      ScanlineEffect_Stop();
-      DmaClearLarge16(3, (void *)VRAM, VRAM_SIZE, 0x1000); 
-      gMain.state++;
-      break;
-    
-    // Reset data
-    case STATE_RESET_DATA:
-      FreeAllSpritePalettes();
-      ResetPaletteFade();
-      ResetSpriteData();
-      ResetTasks();
-      gMain.state++;
-      break;
+	  // Clear Screen
+	  case STATE_CLEAR_SCREEN:
+		  SetVBlankHBlankCallbacksToNull();
+		  ClearScheduledBgCopiesToVram();
+		  ScanlineEffect_Stop();
+		  DmaClearLarge16(3, (void *)VRAM, VRAM_SIZE, 0x1000);
+		  gMain.state++;
+		  break;
 
-    // Initialize BGs 
-    case STATE_INIT_BGS:
-      // Try to run the BG init code
-      if (Excavation_InitBgs() == TRUE) {
-        // If we successfully init the BGs, lets gooooo
-        sExcavationUiState->loadState = 0;
-      } else {
-        // If something went wrong, Fade and Bail
-        Excavation_FadeAndBail();
-        return;
-      }
-      
-      gMain.state++;
-      break;
-  
-    // Load BG(s)
-    case STATE_LOAD_BGS:
-      if (Excavation_LoadBgGraphics() == TRUE) {      
-        gMain.state++;
-      }
-      break;
+		  // Reset data
+	  case STATE_RESET_DATA:
+		  FreeAllSpritePalettes();
+		  ResetPaletteFade();
+		  ResetSpriteData();
+		  ResetTasks();
+		  gMain.state++;
+		  break;
 
-    // Load Sprite(s)
-    case STATE_LOAD_SPRITES: 
-      Excavation_LoadSpriteGraphics();
-      gMain.state++;
-      break;
-    
-    // Check if fade in is done
-    case STATE_WAIT_FADE:
-      taskId = CreateTask(Task_ExcavationWaitFadeIn, 0);
-      gMain.state++;
-      break;
+		  // Initialize BGs
+	  case STATE_INIT_BGS:
+		  // Try to run the BG init code
+		  if (Excavation_InitBgs() == TRUE) {
+			  // If we successfully init the BGs, lets gooooo
+			  sExcavationUiState->loadState = 0;
+		  } else {
+			  // If something went wrong, Fade and Bail
+			  Excavation_FadeAndBail();
+			  return;
+		  }
+		  gMain.state++;
+		  break;
 
-    case STATE_FADE:
-      BeginNormalPaletteFade(PALETTES_ALL, 0, 16, 0, RGB_BLACK);
-      gMain.state++;
-      break;
+		  // Load BG(s)
+	  case STATE_LOAD_BGS:
+		  if (Excavation_LoadBgGraphics() == TRUE) {
+			  LoadMessageBoxGfx(WIN_MSG, 20, BG_PLTT_ID(15));
+			  InitMiningWindows();
+			  gMain.state++;
+		  }
+		  break;
 
-    case STATE_SET_CALLBACKS:
-      SetVBlankCallback(Excavation_VBlankCB);
-      SetMainCallback2(Excavation_MainCB);
-      break;
+		  // Load Sprite(s)
+	  case STATE_LOAD_SPRITES:
+		  Excavation_LoadSpriteGraphics();
+		  gMain.state++;
+		  break;
+
+		  // Check if fade in is done
+	  case STATE_WAIT_FADE:
+		  taskId = CreateTask(Task_ExcavationWaitFadeIn, 0);
+		  gMain.state++;
+		  break;
+
+	  case STATE_FADE:
+		  BeginNormalPaletteFade(PALETTES_ALL, 0, 16, 0, RGB_BLACK);
+		  gMain.state++;
+		  break;
+
+	  case STATE_TEXT_BOX:
+		  sExcavationUiState->textState = 0;
+		  PrintMessage(&sExcavationUiState->textState, sText_TheWall, GetPlayerTextSpeedDelay());
+		  gMain.state++;
+		  break;
+
+	  case STATE_SET_CALLBACKS:
+		  SetVBlankCallback(Excavation_VBlankCB);
+		  SetMainCallback2(Excavation_MainCB);
+		  break;
   }
 }
 
@@ -975,7 +1015,8 @@ static bool8 Excavation_InitBgs(void)
 
     ScheduleBgCopyTilemapToVram(2);
     ScheduleBgCopyTilemapToVram(3);
-  
+
+	ShowBg(0);
     ShowBg(2);
     ShowBg(3);
 
@@ -994,7 +1035,7 @@ static void Task_Excavation_WaitFadeAndBail(u8 taskId)
 }
 
 static void Excavation_MainCB(void)
-{ 
+{
   RunTasks();
   AnimateSprites();
   BuildOamBuffer();
@@ -1004,7 +1045,7 @@ static void Excavation_MainCB(void)
 static void Excavation_VBlankCB(void)
 {
   // I discovered that the VBlankCB is actually ran every VBlank. There's no function that can halt it just because of a huge loop or smth
-  // However I discovered that the MainCB can be halted! And that's actually the case. UiShake() delays with huge loops to make the shake 
+  // However I discovered that the MainCB can be halted! And that's actually the case. UiShake() delays with huge loops to make the shake
   // effect visible! Because of this, other tasks cannot run (or other functions) in the same time as UiShake is ran. This makes the fade/flash
   // effect on the items which got dug up, delay by a few `ms`! Because Vblank cannot be halted, we just do the checking, each vblank + there's no lag
   // because of this!
@@ -1030,7 +1071,7 @@ static void Excavation_FadeAndBail(void)
 }
 
 static bool8 Excavation_LoadBgGraphics(void) {
-  
+
   switch (sExcavationUiState->loadState) {
     case 0:
       ResetTempTileDataBuffers();
@@ -1052,10 +1093,10 @@ static bool8 Excavation_LoadBgGraphics(void) {
     case 3:
       Excavation_DrawRandomTerrain();
       sExcavationUiState->loadState++;
-    default: 
+    default:
       sExcavationUiState->loadState = 0;
       return TRUE;
-  } 
+  }
   return FALSE;
 }
 
@@ -1100,7 +1141,7 @@ static u8 GetRandomItemId() {
   u32 index;
   u32 rnd = random(7);
 
-  
+
   if (rnd < 4) {
     rarity = RARITY_COMMON;
   } else if (rnd < 6) {
@@ -1110,7 +1151,7 @@ static u8 GetRandomItemId() {
   }
 
   switch (rarity) {
-    case RARITY_COMMON: 
+    case RARITY_COMMON:
       index = random(3);
       return ItemRarityTable_Common[index].itemId;
       break;
@@ -1123,7 +1164,7 @@ static u8 GetRandomItemId() {
       return ItemRarityTable_Rare[index].itemId;
       break;
   }
-  
+
   // This won't ever happen.
   return 0;
 }
@@ -1136,16 +1177,16 @@ static void Excavation_LoadSpriteGraphics(void) {
   LoadCompressedSpriteSheet(sSpriteSheet_Cursor);
 
   LoadSpritePalette(sSpritePal_Buttons);
-  LoadCompressedSpriteSheet(sSpriteSheet_Buttons);  
+  LoadCompressedSpriteSheet(sSpriteSheet_Buttons);
 
-  ClearItemMap(); 
-  
+  ClearItemMap();
+
   // ITEMS
   if (sExcavationUiState->state_item1 == SELECTED) {
     itemId1 = GetRandomItemId();
     DoDrawRandomItem(1, itemId1);
     sExcavationUiState->Item1_TilesToDigUp = ExcavationUtil_GetTotalTileAmount(itemId1);
-  } 
+  }
   if (sExcavationUiState->state_item2 == SELECTED) {
     itemId2 = GetRandomItemId();
     DoDrawRandomItem(2, itemId2);
@@ -1165,19 +1206,19 @@ static void Excavation_LoadSpriteGraphics(void) {
     DoDrawRandomItem(4, itemId4);
     sExcavationUiState->Item4_TilesToDigUp = ExcavationUtil_GetTotalTileAmount(itemId4);
   }
-    
+
   // TODO: Change this randomness by using my new `random(u32 amount);` function!
   for (i=0; i<2; i++) {
-    rnd = Random(); 
-  
+    rnd = Random();
+
     if (rnd < 10922) {
-      DoDrawRandomStone(ID_STONE_1x4); 
+      DoDrawRandomStone(ID_STONE_1x4);
     } else if (rnd < 21844) {
-      DoDrawRandomStone(ID_STONE_4x1); 
+      DoDrawRandomStone(ID_STONE_4x1);
     } else if (rnd < 32766) {
-      DoDrawRandomStone(ID_STONE_2x4); 
+      DoDrawRandomStone(ID_STONE_2x4);
     } else if (rnd < 43688) {
-      DoDrawRandomStone(ID_STONE_4x2); 
+      DoDrawRandomStone(ID_STONE_4x2);
     } else if (rnd < 54610) {
       DoDrawRandomStone(ID_STONE_2x2);
     } else if (rnd < 65535) {
@@ -1214,13 +1255,13 @@ static void Task_ExcavationMainInput(u8 taskId) {
     PlaySE(SE_PC_OFF);
     BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);
     gTasks[taskId].func = Task_ExcavationFadeAndExitMenu;
-  } 
-  
-  // Because the UiShake function does manual delays with for loops, we have to imediatly call the update functions for sprites and the schedule 
+  }
+
+  // Because the UiShake function does manual delays with for loops, we have to imediatly call the update functions for sprites and the schedule
   // functions for bgs. Otherwise we would notice the changes very late
   else if (gMain.newKeys & A_BUTTON /*&& sExcavationUiState->crackPos < 8 */)  {
     Excavation_UpdateTerrain();
-    Excavation_UpdateCracks(); 
+    Excavation_UpdateCracks();
     ScheduleBgCopyTilemapToVram(2);
     DoScheduledBgTilemapCopiesToVram();
     BuildOamBuffer();
@@ -1262,22 +1303,22 @@ static void OverwriteTileDataInTilemapBuffer(u8 tile, u8 x, u8 y, u16* tilemapBu
 }
 
 // DO NOT TOUCH ANY OF THE CRACK UPDATE FUNCTIONS!!!!! GENERATION IS TOO COMPLICATED TO GET FIXED! (most likely will forget everything lmao (thats why)! )!
-// 
+//
 // Each function represent one frame of a crack, but why are there two offset vars?????
 // Well there's `ofs` for telling how much to the left the next crack goes, (cracks are splite up by seven of these 32x32 `sprites`) (Cracks start at the end, so 23 is the first tile.);
-// 
-// `ofs2` tells how far the tile should move to the right side. Thats because the cracks dont really line up each other. 
-// So you cant put one 32x32 `sprite` (calling them sprites) right next to another 32x32 `sprite`. To align the next `sprite` so it looks right, we have to offset the next `sprite` by 8 pixels or 1 tile. 
-// 
+//
+// `ofs2` tells how far the tile should move to the right side. Thats because the cracks dont really line up each other.
+// So you cant put one 32x32 `sprite` (calling them sprites) right next to another 32x32 `sprite`. To align the next `sprite` so it looks right, we have to offset the next `sprite` by 8 pixels or 1 tile.
+//
 // You are still confused? Im sorry I cant help you, after one week, I will also have problems understanding that again.
 //
-// NOTE TO MY FUTURE SELF: The crack updating 
+// NOTE TO MY FUTURE SELF: The crack updating
 static void Crack_DrawCrack_0(u8 ofs, u8 ofs2, u16* ptr) {
   OverwriteTileDataInTilemapBuffer(0x07, 21 - ofs * 4 + ofs2, 1, ptr, 0x01);
   OverwriteTileDataInTilemapBuffer(0x08, 22 - ofs * 4 + ofs2, 1, ptr, 0x01);
   OverwriteTileDataInTilemapBuffer(0x09, 23 - ofs * 4 + ofs2, 1, ptr, 0x01);
   OverwriteTileDataInTilemapBuffer(0x0E, 22 - ofs * 4 + ofs2, 2, ptr, 0x01);
-  OverwriteTileDataInTilemapBuffer(0x0F, 23 - ofs * 4 + ofs2, 2, ptr, 0x01);  
+  OverwriteTileDataInTilemapBuffer(0x0F, 23 - ofs * 4 + ofs2, 2, ptr, 0x01);
   OverwriteTileDataInTilemapBuffer(0x14, 23 - ofs * 4 + ofs2, 3, ptr, 0x01);
 }
 
@@ -1329,7 +1370,7 @@ static void Crack_DrawCrack_4(u8 ofs, u8 ofs2, u16* ptr) {
   OverwriteTileDataInTilemapBuffer(0x00, 20 - ofs * 4 + ofs2, 0, ptr, 0x01);
   OverwriteTileDataInTilemapBuffer(0x00, 21 - ofs * 4 + ofs2, 0, ptr, 0x01);
   OverwriteTileDataInTilemapBuffer(0x00, 22 - ofs * 4 + ofs2, 0, ptr, 0x01);
-  
+
   OverwriteTileDataInTilemapBuffer(0x38, 22 - ofs * 4 + ofs2, 0, ptr, 0x01);
   OverwriteTileDataInTilemapBuffer(0x39, 20 - ofs * 4 + ofs2, 1, ptr, 0x01);
   OverwriteTileDataInTilemapBuffer(0x3A, 21 - ofs * 4 + ofs2, 1, ptr, 0x01);
@@ -1388,35 +1429,35 @@ static void Crack_UpdateCracksRelativeToCrackPos(u8 offsetIn8, u8 ofs2, u16* ptr
   switch (sExcavationUiState->crackCount) {
     case 0:
       Crack_DrawCrack_0(offsetIn8, ofs2, ptr);
-      if (sExcavationUiState->mode == 1) { 
+      if (sExcavationUiState->mode == 1) {
         sExcavationUiState->crackCount++;
       }
       sExcavationUiState->crackCount++;
       break;
     case 1:
       Crack_DrawCrack_1(offsetIn8, ofs2, ptr);
-      if (sExcavationUiState->mode == 1) { 
+      if (sExcavationUiState->mode == 1) {
         sExcavationUiState->crackCount++;
       }
       sExcavationUiState->crackCount++;
       break;
     case 2:
       Crack_DrawCrack_2(offsetIn8, ofs2, ptr);
-      if (sExcavationUiState->mode == 1) { 
+      if (sExcavationUiState->mode == 1) {
         sExcavationUiState->crackCount++;
       }
       sExcavationUiState->crackCount++;
       break;
     case 3:
       Crack_DrawCrack_3(offsetIn8, ofs2, ptr);
-      if (sExcavationUiState->mode == 1) { 
+      if (sExcavationUiState->mode == 1) {
         sExcavationUiState->crackCount++;
       }
       sExcavationUiState->crackCount++;
       break;
     case 4:
       Crack_DrawCrack_4(offsetIn8, ofs2, ptr);
-      if (sExcavationUiState->mode == 1) { 
+      if (sExcavationUiState->mode == 1) {
         sExcavationUiState->crackCount++;
       }
       sExcavationUiState->crackCount++;
@@ -1466,8 +1507,8 @@ static void Excavation_UpdateCracks(void) {
 
 // Draws a tile layer (of the terrain) to the screen.
 // This function is used to make a random sequence of terrain tiles.
-// 
-// In the switch statement, for example case 0 and case 1 do the same thing. Thats because the layer is a 3 bit integer (2 * 2 * 2 possible nums) and I want multiple probabilies for 
+//
+// In the switch statement, for example case 0 and case 1 do the same thing. Thats because the layer is a 3 bit integer (2 * 2 * 2 possible nums) and I want multiple probabilies for
 // other tiles as well. Thats why case 0 and case 1 do the same thing, to increase the probabily of drawing layer_tile 0 to the screen.
 static void Terrain_DrawLayerTileToScreen(u8 x, u8 y, u8 layer, u16* ptr) {
   u8 tileX = x;
@@ -1486,7 +1527,7 @@ static void Terrain_DrawLayerTileToScreen(u8 x, u8 y, u8 layer, u16* ptr) {
   } else {
     tileY = y*2;
   }
-  
+
   switch(layer) {
      // layer 0 and 1 - tile: 0
     case 0:
@@ -1507,7 +1548,7 @@ static void Terrain_DrawLayerTileToScreen(u8 x, u8 y, u8 layer, u16* ptr) {
       OverwriteTileDataInTilemapBuffer(0x15, tileX, tileY + 1, ptr, 0x01);
       OverwriteTileDataInTilemapBuffer(0x16, tileX + 1, tileY + 1, ptr, 0x01);
       break;
-    case 3: 
+    case 3:
       OverwriteTileDataInTilemapBuffer(0x0C, tileX, tileY, ptr, 0x01);
       OverwriteTileDataInTilemapBuffer(0x0D, tileX + 1, tileY, ptr, 0x01);
       OverwriteTileDataInTilemapBuffer(0x12, tileX, tileY + 1, ptr, 0x01);
@@ -1530,7 +1571,7 @@ static void Terrain_DrawLayerTileToScreen(u8 x, u8 y, u8 layer, u16* ptr) {
 
 static const u16* GetCorrectPalette(u32 TileTag) {
   switch (TileTag) {
-    case TAG_ITEM_REVIVE: 
+    case TAG_ITEM_REVIVE:
       return gItemRevivePal;
       break;
     case TAG_ITEM_DAMP_ROCK:
@@ -1566,7 +1607,7 @@ static const u16* GetCorrectPalette(u32 TileTag) {
 static struct SpriteTemplate CreatePaletteAndReturnTemplate(u32 TileTag, u32 PalTag) {
   struct SpritePalette TempPalette;
   struct SpriteTemplate TempSpriteTemplate = gDummySpriteTemplate;
-  
+
   TempPalette.tag = PalTag;
   TempPalette.data = GetCorrectPalette(TileTag);
   LoadSpritePalette(&TempPalette);
@@ -1588,12 +1629,12 @@ static struct SpriteTemplate CreatePaletteAndReturnTemplate(u32 TileTag, u32 Pal
 //
 // x + 16:
 //
-//    @--|--| 
+//    @--|--|
 //    c--|--|
 //    |--|--|
 //
 // and finally, y + 16
-// 
+//
 //    (@c)--|--|
 //    | - - |--|
 //    | - - |--|
@@ -1646,7 +1687,7 @@ static void DrawItemSprite(u8 x, u8 y, u8 itemId, u32 itemNumPalTag) {
       LoadCompressedSpriteSheet(sSpriteSheet_ItemHeartScale);
       CreateSprite(&gSpriteTemplate, posX+POS_OFFS_64X64, posY+POS_OFFS_64X64, 3);
       break;
-    case ITEMID_HARD_STONE: 
+    case ITEMID_HARD_STONE:
       gSpriteTemplate = CreatePaletteAndReturnTemplate(TAG_ITEM_HARDSTONE, itemNumPalTag);
       LoadCompressedSpriteSheet(sSpriteSheet_ItemHardStone);
       CreateSprite(&gSpriteTemplate, posX+POS_OFFS_64X64, posY+POS_OFFS_64X64, 3);
@@ -1690,7 +1731,7 @@ static void DrawItemSprite(u8 x, u8 y, u8 itemId, u32 itemNumPalTag) {
       gSpriteTemplate = CreatePaletteAndReturnTemplate(TAG_ITEM_EVER_STONE, itemNumPalTag);
       LoadCompressedSpriteSheet(sSpriteSheet_ItemEverStone);
       CreateSprite(&gSpriteTemplate, posX+POS_OFFS_64X64, posY+POS_OFFS_64X64, 3);
-      break; 
+      break;
   }
 }
 
@@ -1848,12 +1889,12 @@ static u8 CheckIfItemCanBePlaced(u8 itemId, u8 posX, u8 posY, u8 xBorder, u8 yBo
   u8 i;
 
   for(i=1;i<=4;i++) {
-  
+
     switch (itemId) {
       case ITEMID_HEART_SCALE:
         if (
           sExcavationUiState->itemMap[posX + posY * 12]           == i ||
-          sExcavationUiState->itemMap[posX + (posY + 1) * 12]     == i || 
+          sExcavationUiState->itemMap[posX + (posY + 1) * 12]     == i ||
           sExcavationUiState->itemMap[posX + 1 + (posY + 1) * 12] == i ||
           posX + HEART_SCALE_TILE_AMOUNT_RIGHT > xBorder ||
           posY + HEART_SCALE_TILE_AMOUNT_BOTTOM > yBorder
@@ -2061,7 +2102,7 @@ static void DoDrawRandomItem(u8 itemStateId, u8 itemId) {
           y = 0;
         }
       }
- 
+
     case 4:
      for(y=4; y<=7; y++) {
       for(x=6; x<=11; x++) {
@@ -2096,7 +2137,7 @@ static void DoDrawRandomStone(u8 itemId) {
   for(y=0;y<8;y++) {
     for(x=0;x<12;x++) {
       switch(itemId) {
-        case ID_STONE_1x4: 
+        case ID_STONE_1x4:
           if (
             sExcavationUiState->itemMap[x + y * 12]       == 0 &&
             sExcavationUiState->itemMap[x + (y + 1) * 12] == 0 &&
@@ -2104,7 +2145,7 @@ static void DoDrawRandomStone(u8 itemId) {
             sExcavationUiState->itemMap[x + (y + 3) * 12] == 0 &&
             x + STONE_1x4_TILE_AMOUNT_RIGHT < 12 &&
             y + STONE_1x4_TILE_AMOUNT_BOTTOM < 8 &&
-            Random() > 60000 
+            Random() > 60000
           ) {
             DrawItemSprite(x, y, itemId, TAG_DUMMY);
             // Dont want to use ITEM_TILE_DUG_UP, not sure if something unexpected will happen
@@ -2115,7 +2156,7 @@ static void DoDrawRandomStone(u8 itemId) {
             stoneIsPlaced = 1;
           }
           break;
-        case ID_STONE_4x1: 
+        case ID_STONE_4x1:
           if (
             sExcavationUiState->itemMap[x + y * 12]     == 0 &&
             sExcavationUiState->itemMap[x + 1 + y * 12] == 0 &&
@@ -2123,7 +2164,7 @@ static void DoDrawRandomStone(u8 itemId) {
             sExcavationUiState->itemMap[x + 3 + y * 12] == 0 &&
             x + STONE_4x1_TILE_AMOUNT_RIGHT < 12 &&
             y + STONE_4x1_TILE_AMOUNT_BOTTOM < 8 &&
-            Random() > 60000 
+            Random() > 60000
           ) {
             DrawItemSprite(x, y, itemId, TAG_DUMMY);
             OverwriteItemMapData(x, y, 6, itemId);
@@ -2132,7 +2173,7 @@ static void DoDrawRandomStone(u8 itemId) {
             stoneIsPlaced = 1;
           }
           break;
-        case ID_STONE_2x4: 
+        case ID_STONE_2x4:
           if (
             sExcavationUiState->itemMap[x + y * 12]           == 0 &&
             sExcavationUiState->itemMap[x + (y + 1) * 12]     == 0 &&
@@ -2144,7 +2185,7 @@ static void DoDrawRandomStone(u8 itemId) {
             sExcavationUiState->itemMap[x + 1 + (y + 3) * 12] == 0 &&
             x + STONE_2x4_TILE_AMOUNT_RIGHT < 12 &&
             y + STONE_2x4_TILE_AMOUNT_BOTTOM < 8 &&
-            Random() > 60000 
+            Random() > 60000
           ) {
             DrawItemSprite(x, y, itemId, TAG_DUMMY);
             OverwriteItemMapData(x, y, 6, itemId);
@@ -2153,7 +2194,7 @@ static void DoDrawRandomStone(u8 itemId) {
             stoneIsPlaced = 1;
           }
           break;
-        case ID_STONE_4x2: 
+        case ID_STONE_4x2:
           if (
             sExcavationUiState->itemMap[x + y * 12]           == 0 &&
             sExcavationUiState->itemMap[x + 1 + y * 12]       == 0 &&
@@ -2165,7 +2206,7 @@ static void DoDrawRandomStone(u8 itemId) {
             sExcavationUiState->itemMap[x + 3 + (y + 1) * 12] == 0 &&
             x + STONE_4x2_TILE_AMOUNT_RIGHT < 12 &&
             y + STONE_4x2_TILE_AMOUNT_BOTTOM < 8 &&
-            Random() > 60000 
+            Random() > 60000
           ) {
             DrawItemSprite(x, y, itemId, TAG_DUMMY);
             OverwriteItemMapData(x, y, 6, itemId);
@@ -2174,7 +2215,7 @@ static void DoDrawRandomStone(u8 itemId) {
             stoneIsPlaced = 1;
           }
           break;
-        case ID_STONE_2x2: 
+        case ID_STONE_2x2:
           if (
             sExcavationUiState->itemMap[x + y * 12]           == 0 &&
             sExcavationUiState->itemMap[x + 1 + y * 12]       == 0 &&
@@ -2182,7 +2223,7 @@ static void DoDrawRandomStone(u8 itemId) {
             sExcavationUiState->itemMap[x + 1 + (y + 1) * 12] == 0 &&
             x + STONE_2x2_TILE_AMOUNT_RIGHT < 12 &&
             y + STONE_2x2_TILE_AMOUNT_BOTTOM < 8 &&
-            Random() > 60000 
+            Random() > 60000
           ) {
             DrawItemSprite(x, y, itemId, TAG_DUMMY);
             OverwriteItemMapData(x, y, 6, itemId);
@@ -2191,7 +2232,7 @@ static void DoDrawRandomStone(u8 itemId) {
             stoneIsPlaced = 1;
           }
           break;
-        case ID_STONE_3x3: 
+        case ID_STONE_3x3:
           if (
             sExcavationUiState->itemMap[x + y * 12]           == 0 &&
             sExcavationUiState->itemMap[x + 1 + y * 12]       == 0 &&
@@ -2204,7 +2245,7 @@ static void DoDrawRandomStone(u8 itemId) {
             sExcavationUiState->itemMap[x + (y + 2) * 12]     == 0 &&
             x + STONE_3x3_TILE_AMOUNT_RIGHT < 12 &&
             y + STONE_3x3_TILE_AMOUNT_BOTTOM < 8 &&
-            Random() > 60000 
+            Random() > 60000
           ) {
             DrawItemSprite(x, y, itemId, TAG_DUMMY);
             OverwriteItemMapData(x, y, 6, itemId);
@@ -2254,13 +2295,13 @@ static void Excavation_CheckItemFound(void) {
       }
     }
   } else if (sExcavationUiState->state_item2 == full) {
-    BeginNormalPaletteFade(0x00080000, 2, 16, 0, RGB_WHITE); 
+    BeginNormalPaletteFade(0x00080000, 2, 16, 0, RGB_WHITE);
     sExcavationUiState->state_item2 = stop;
   }
 
   full = sExcavationUiState->Item3_TilesToDigUp;
   stop = full+1;
-  
+
   if (sExcavationUiState->state_item3 < full) {
     for(i=0;i<96;i++) {
       if(sExcavationUiState->itemMap[i] == 3 && sExcavationUiState->layerMap[i] == 6) {
@@ -2269,13 +2310,13 @@ static void Excavation_CheckItemFound(void) {
       }
     }
   } else if (sExcavationUiState->state_item3 == full) {
-    BeginNormalPaletteFade(0x00100000, 2, 16, 0, RGB_WHITE); 
+    BeginNormalPaletteFade(0x00100000, 2, 16, 0, RGB_WHITE);
     sExcavationUiState->state_item3 = stop;
   }
 
   full = sExcavationUiState->Item4_TilesToDigUp;
   stop = full+1;
-  
+
   if (sExcavationUiState->state_item4 < full) {
     for(i=0;i<96;i++) {
       if(sExcavationUiState->itemMap[i] == 4 && sExcavationUiState->layerMap[i] == 6) {
@@ -2284,7 +2325,7 @@ static void Excavation_CheckItemFound(void) {
       }
     }
   } else if (sExcavationUiState->state_item4 == full) {
-    BeginNormalPaletteFade(0x00200000, 2, 16, 0, RGB_WHITE); 
+    BeginNormalPaletteFade(0x00200000, 2, 16, 0, RGB_WHITE);
     sExcavationUiState->state_item4 = stop;
   }
 
@@ -2320,9 +2361,9 @@ static void Excavation_DrawRandomTerrain(void) {
     }
 
   }
- 
+
   i = 0; // Using 'i' again to get the layer of the layer map
-  
+
   // Using 'x', 'y' and 'i' to draw the right layer_tiles from layerMap to the screen.
   // Why 'y = 2'? Because we need to have a distance from the top of the screen, which is 32px -> 2 * 16
   for (y = 2; y < 8 +2; y++) {
@@ -2354,7 +2395,7 @@ static void Terrain_UpdateLayerTileOnScreen(u16* ptr, s8 ofsX, s8 ofsY) {
   } else {
     tileX = (sExcavationUiState->cursorX+ofsX) * 2;
   }
-  
+
   if (sExcavationUiState->cursorY == 0) {
     tileY = (0+ofsY)*2;
   } else {
@@ -2365,7 +2406,7 @@ static void Terrain_UpdateLayerTileOnScreen(u16* ptr, s8 ofsX, s8 ofsY) {
   // Case 6 clears the tile so we can take a look at Bg3 (for the item sprite)!
   //
   // Other than that, the tiles here are in order.
-  
+
 sExcavationUiState->layerMap[i]++;
 
   switch (sExcavationUiState->layerMap[i]) { // Incrementing? Idk if thats the bug for wrong tile replacements...
@@ -2381,7 +2422,7 @@ sExcavationUiState->layerMap[i]++;
       OverwriteTileDataInTilemapBuffer(0x15, tileX, tileY + 1, ptr, 0x01);
       OverwriteTileDataInTilemapBuffer(0x16, tileX + 1, tileY + 1, ptr, 0x01);
       break;
-    case 3: 
+    case 3:
       OverwriteTileDataInTilemapBuffer(0x0C, tileX, tileY, ptr, 0x01);
       OverwriteTileDataInTilemapBuffer(0x0D, tileX + 1, tileY, ptr, 0x01);
       OverwriteTileDataInTilemapBuffer(0x12, tileX, tileY + 1, ptr, 0x01);
@@ -2410,7 +2451,7 @@ sExcavationUiState->layerMap[i]++;
 
 // Using this function here to overwrite the tilemap entry when hitting with the pickaxe (blue button is pressed)
 static u8 Terrain_Pickaxe_OverwriteTiles(u16* ptr) {
-  u8 pos = sExcavationUiState->cursorX + (sExcavationUiState->cursorY-2)*12; 
+  u8 pos = sExcavationUiState->cursorX + (sExcavationUiState->cursorY-2)*12;
   if (sExcavationUiState->itemMap[pos] != ITEM_TILE_DUG_UP) {
     if (sExcavationUiState->cursorX != 0) {
       Terrain_UpdateLayerTileOnScreen(ptr, -1, 0);
@@ -2437,7 +2478,7 @@ static u8 Terrain_Pickaxe_OverwriteTiles(u16* ptr) {
 
 static void Terrain_Hammer_OverwriteTiles(u16* ptr) {
   u8 isItemDugUp;
-  
+
   isItemDugUp = Terrain_Pickaxe_OverwriteTiles(ptr);
   if (isItemDugUp == 0) {
     // Corners
@@ -2449,11 +2490,11 @@ static void Terrain_Hammer_OverwriteTiles(u16* ptr) {
     if (sExcavationUiState->cursorX != 0 && sExcavationUiState->cursorY != 9) {
       Terrain_UpdateLayerTileOnScreen(ptr, -1, 1);
     }
-  
+
     if (sExcavationUiState->cursorX != 11 && sExcavationUiState->cursorY != 2) {
       Terrain_UpdateLayerTileOnScreen(ptr, 1, -1);
     }
-  
+
     if (sExcavationUiState->cursorX != 0 && sExcavationUiState->cursorY != 2) {
       Terrain_UpdateLayerTileOnScreen(ptr, -1, -1);
     }
@@ -2496,4 +2537,70 @@ static void Excavation_FreeResources(void)
     FreeAllWindowBuffers();
     // Reset all sprite data
     ResetSpriteData();
+}
+
+static void InitMiningWindows(void)
+{
+    if (InitWindows(sWindowTemplates))
+    {
+        DeactivateAllTextPrinters();
+		FillWindowPixelBuffer(WIN_MSG, PIXEL_FILL(0));
+        FillBgTilemapBufferRect_Palette0(0, 0, 0, 0, DISPLAY_TILE_WIDTH, DISPLAY_TILE_HEIGHT);
+        Menu_LoadStdPalAt(BG_PLTT_ID(14));
+    }
+}
+
+static void Mining_AddTextPrinter(u8 windowId, const u8 *string, u8 x, u8 y, s32 speed, s32 caseId)
+{
+    u8 txtColor[3];
+    u32 letterSpacing = 0;
+
+    switch (caseId)
+    {
+    case 0:
+    case 3:
+    default:
+        txtColor[0] = TEXT_COLOR_WHITE;
+        txtColor[1] = TEXT_COLOR_DARK_GRAY;
+        txtColor[2] = TEXT_COLOR_LIGHT_GRAY;
+        break;
+    case 1:
+        txtColor[0] = TEXT_COLOR_TRANSPARENT;
+        txtColor[1] = TEXT_COLOR_DARK_GRAY;
+        txtColor[2] = TEXT_COLOR_LIGHT_GRAY;
+        break;
+    case 2:
+        txtColor[0] = TEXT_COLOR_TRANSPARENT;
+        txtColor[1] = TEXT_COLOR_RED;
+        txtColor[2] = TEXT_COLOR_LIGHT_RED;
+        break;
+    }
+
+    if (caseId != 3)
+        FillWindowPixelBuffer(windowId, PIXEL_FILL(txtColor[0]));
+
+    AddTextPrinterParameterized4(windowId, FONT_NORMAL, x, y, letterSpacing, 1, txtColor, speed, string);
+}
+
+static bool32 PrintMessage(s16 *textState, const u8 *string, s32 textSpeed)
+{
+    switch (*textState)
+    {
+    case 0:
+        DrawDialogFrameWithCustomTileAndPalette(WIN_MSG, FALSE, 0x14, 0xF);
+        Mining_AddTextPrinter(WIN_MSG, string, 0, 1, textSpeed, 0);
+        PutWindowTilemap(WIN_MSG);
+        CopyWindowToVram(WIN_MSG, COPYWIN_FULL);
+        (*textState)++;
+        break;
+    case 1:
+        if (!IsTextPrinterActive(WIN_MSG))
+        {
+            *textState = 0;
+            return TRUE;
+        }
+        break;
+    }
+
+    return FALSE;
 }
