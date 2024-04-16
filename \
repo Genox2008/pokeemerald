@@ -50,7 +50,6 @@ static void DoDrawRandomItem(u8 itemStateId, u8 itemId);
 static void DoDrawRandomStone(u8 itemId);
 static void Excavation_CheckItemFound(void);
 static void Task_ExcavationWaitFadeIn(u8 taskId);
-static void Task_WaitButtonPress(u8 taskId);
 static void Task_ExcavationMainInput(u8 taskId);
 static void Task_ExcavationFadeAndExitMenu(u8 taskId);
 static void PrintMessage(const u8 *string);
@@ -1238,10 +1237,10 @@ static void Excavation_LoadSpriteGraphics(void) {
 
 static void Task_ExcavationWaitFadeIn(u8 taskId)
 {
-	if (!gPaletteFade.active) {
-		PrintMessage(sText_TheWall);
-		gTasks[taskId].func = Task_WaitButtonPress;
-	}
+    if (!gPaletteFade.active) {
+	  PrintMessage(sText_TheWall);
+        gTasks[taskId].func = Task_WaitButtonPress;
+    }
 }
 
 #define CURSOR_SPRITE gSprites[sExcavationUiState->cursorSpriteIndex]
@@ -1251,7 +1250,8 @@ static void Task_ExcavationWaitFadeIn(u8 taskId)
 static void Task_WaitButtonPress(u8 taskId) {
 	if (JOY_NEW(A_BUTTON)) {
 		PlaySE(SE_SELECT);
-		ClearDialogWindowAndFrame(WIN_MSG, TRUE);
+		DestroyTask_DrawFieldMessage();
+		ClearDialogWindowAndFrame(0, TRUE);
         gTasks[taskId].func = Task_ExcavationMainInput;
 	}
 }
