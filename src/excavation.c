@@ -55,6 +55,10 @@ static void Task_ExcavationMainInput(u8 taskId);
 static void Task_ExcavationFadeAndExitMenu(u8 taskId);
 static void PrintMessage(const u8 *string);
 static void InitMiningWindows(void);
+static u32 GetCrackPosition(void);
+static bool32 IsCrackMax(void);
+static void EndMining(u8 taskId);
+static void Task_ExcavationPrintResult(u8 taskId);
 
 struct ExcavationState {
   MainCallback leavingCallback;
@@ -164,11 +168,11 @@ const u32 gHitHammerGfx[] = INCBIN_U32("graphics/excavation/hit_hammer.4bpp.lz")
 const u32 gHitPickaxeGfx[] = INCBIN_U32("graphics/excavation/hit_pickaxe.4bpp.lz");
 const u16 gHitEffectPal[] = INCBIN_U16("graphics/excavation/hit_effects.gbapal");
 
-static const u8 sText_TooBad[] = _("Too bad!\nYour Bag is full!");
-static const u8 sText_WasObtained[] = _("{STR_VAR_1}\nwas obtained!");
 static const u8 sText_SomethingPinged[] = _("Something pinged in the wall!\n{STR_VAR_1} confirmed!");
-static const u8 sText_TheWall[] = _("The wall collapsed!");
 static const u8 sText_EverythingWas[] = _("Everything was dug up!");
+static const u8 sText_WasObtained[] = _("{STR_VAR_1}\nwas obtained!");
+static const u8 sText_TooBad[] = _("Too bad!\nYour Bag is full!");
+static const u8 sText_TheWall[] = _("The wall collapsed!");
 
 // Item Sprite Tags
 #define TAG_ITEM_HEARTSCALE 3
@@ -904,9 +908,21 @@ enum {
   STATE_LOAD_SPRITES,
   STATE_WAIT_FADE,
   STATE_FADE,
-  STATE_TEXT_BOX,
   STATE_SET_CALLBACKS,
 };
+
+enum {
+	CRACK_POS_0,
+	CRACK_POS_1,
+	CRACK_POS_2,
+	CRACK_POS_3,
+	CRACK_POS_4,
+	CRACK_POS_5,
+	CRACK_POS_6,
+	CRACK_POS_7,
+	CRACK_POS_MAX,
+};
+
 
 static void Excavation_SetupCB(void) {
   u8 taskId;
@@ -965,11 +981,6 @@ static void Excavation_SetupCB(void) {
 
 	  case STATE_FADE:
 		  BeginNormalPaletteFade(PALETTES_ALL, 0, 16, 0, RGB_BLACK);
-		  gMain.state++;
-		  break;
-
-	  case STATE_TEXT_BOX:
-		  //PrintMessage(sText_TheWall);
 		  gMain.state++;
 		  break;
 
@@ -1297,6 +1308,9 @@ static void Task_ExcavationMainInput(u8 taskId) {
     StartSpriteAnim(&gSprites[sExcavationUiState->bBlueSpriteIndex], 0);
     sExcavationUiState->mode = BLUE_BUTTON;
   }
+
+	if (IsCrackMax())
+		EndMining(taskId);
 }
 
 #define TILE_POS(x,y) (32*(y) + (x))
@@ -2551,7 +2565,6 @@ static void InitMiningWindows(void)
 		DeactivateAllTextPrinters();
 		ScheduleBgCopyTilemapToVram(0);
 
-		FillWindowPixelBuffer(WIN_MSG, PIXEL_FILL(TEXT_COLOR_WHITE));
 		LoadMessageBoxGfx(WIN_MSG, 20, BG_PLTT_ID(15));
 		PutWindowTilemap(WIN_MSG);
 		CopyWindowToVram(WIN_MSG, COPYWIN_FULL);
@@ -2572,4 +2585,28 @@ static void PrintMessage(const u8 *string)
 	AddTextPrinterParameterized4(WIN_MSG, FONT_NORMAL, x, y, letterSpacing, 1, txtColor, TEXT_SKIP_DRAW,string);
 	PutWindowTilemap(WIN_MSG);
 	CopyWindowToVram(WIN_MSG,COPYWIN_FULL);
+}
+
+static u32 GetCrackPosition(void)
+{
+	return sExcavationUiState->crackPos;
+}
+
+static bool32 IsCrackMax(void)
+{
+	return GetCrackPosition() == CRACK_POS_MAX;
+}
+
+static void EndMining(u8 taskId)
+{
+    BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);
+	gTasks[taskId].func = Task_ExcavationPrintResult;
+}
+
+static void Task_ExcavationPrintResult(u8 taskId)
+{
+	if (!gPaletteFade.active) {
+		PrintMessage(sText_TheWall);
+		gTasks[taskId].func = Task_WaitButtonPress;
+	}
 }
