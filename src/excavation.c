@@ -1140,6 +1140,7 @@ static void ClearItemMap(void) {
 
 struct ItemRarity {
   u8 itemId;
+  u16 realItemId;
   u8 rarity;
 };
 
@@ -1193,6 +1194,16 @@ static u8 GetRandomItemId() {
 
   // This won't ever happen.
   return 0;
+}
+
+static void DebugPrintItems(void)
+{
+	u32 i;
+
+	for (i = 0; i < 4; i++)
+		DebugPrintf("item %d is %d",i,GetBuriedItemId(i));
+
+	DebugPrintf("there are %d items",GetNumberOfBuriedItems());
 }
 
 static void Excavation_LoadSpriteGraphics(void) {
@@ -1267,12 +1278,13 @@ static void Excavation_LoadSpriteGraphics(void) {
   LoadCompressedSpriteSheet(sSpriteSheet_HitEffectPickaxe);
   LoadCompressedSpriteSheet(sSpriteSheet_HitHammer);
   LoadCompressedSpriteSheet(sSpriteSheet_HitPickaxe);
+	DebugPrintItems();
 }
 
 static void Task_ExcavationWaitFadeIn(u8 taskId)
 {
 	if (!gPaletteFade.active) {
-		ConvertIntToDecimalStringN(gStringVar2,2,STR_CONV_MODE_RIGHT_ALIGN,1);
+		ConvertIntToDecimalStringN(gStringVar1,GetNumberOfBuriedItems(),STR_CONV_MODE_LEFT_ALIGN,2);
 		PrintMessage(sText_SomethingPinged);
 		gTasks[taskId].func = Task_WaitButtonPressOpening;
 	}
@@ -2705,9 +2717,22 @@ static void InitBuriedItems(void)
 	}
 }
 
+static const u32 itemIdMap[] = {
+	ITEM_HEART_SCALE,
+	ITEM_HARD_STONE,
+	ITEM_REVIVE,
+	ITEM_STAR_PIECE,
+	ITEM_MASTER_BALL,
+	ITEM_RED_SHARD,
+	ITEM_BLUE_SHARD,
+	ITEM_ULTRA_BALL,
+	ITEM_MAX_REVIVE,
+	ITEM_EVERSTONE,
+};
+
 static void SetBuriedItemsId(u32 index, u32 itemId)
 {
-	sExcavationUiState->buriedItem[index].itemId = itemId;
+	sExcavationUiState->buriedItem[index].itemId = itemIdMap[itemId];
 }
 
 static void SetBuriedItemStatus(u32 index, bool32 status)
