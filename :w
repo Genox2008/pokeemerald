@@ -33,7 +33,6 @@
 #include "random.h"
 #include "field_message_box.h"
 #include "constants/items.h"
-#include "item.h"
 
 static void Excavation_Init(MainCallback callback);
 static void Excavation_SetupCB(void);
@@ -52,7 +51,7 @@ static void DoDrawRandomItem(u8 itemStateId, u8 itemId);
 static void DoDrawRandomStone(u8 itemId);
 static void Excavation_CheckItemFound(void);
 static void Task_ExcavationWaitFadeIn(u8 taskId);
-static void Task_WaitButtonPressOpening(u8 taskId);
+static void Task_WaitButtonPress(u8 taskId);
 static void Task_ExcavationMainInput(u8 taskId);
 static void Task_ExcavationFadeAndExitMenu(u8 taskId);
 static void PrintMessage(const u8 *string);
@@ -63,12 +62,10 @@ static void EndMining(u8 taskId);
 static void Task_ExcavationPrintResult(u8 taskId);
 static u32 GetNumberOfBuriedItems(void);
 static void InitBuriedItems(void);
-static bool32 AreAllItemsFound(void);
 static void SetBuriedItemsId(u32 index, u32 itemId);
-static void SetBuriedItemStatus(u32 index, bool32 status);
-static u32 GetBuriedItemId(u32 index);
-static u32 GetNumberOfFoundItems(void);
-static bool32 GetBuriedItemStatus(u32 index);
+static void SetStateToUnburied(u32 index);
+static void SetStateToBuried(u32 index);
+static u16 GetBuriedItemId(u32 index);
 
 struct BuriedItem {
   u16 itemId;
@@ -1274,7 +1271,7 @@ static void Task_ExcavationWaitFadeIn(u8 taskId)
 	if (!gPaletteFade.active) {
 		ConvertIntToDecimalStringN(gStringVar2,2,STR_CONV_MODE_RIGHT_ALIGN,1);
 		PrintMessage(sText_SomethingPinged);
-		gTasks[taskId].func = Task_WaitButtonPressOpening;
+		gTasks[taskId].func = Task_WaitButtonPress;
 	}
 }
 
@@ -1283,6 +1280,7 @@ static void Task_ExcavationWaitFadeIn(u8 taskId)
 #define RED_BUTTON 1
 
 static void Task_ExcavationMainInput(u8 taskId) {
+
   if (JOY_NEW(B_BUTTON)) {
     PlaySE(SE_PC_OFF);
     BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);
@@ -1324,9 +1322,6 @@ static void Task_ExcavationMainInput(u8 taskId) {
     StartSpriteAnim(&gSprites[sExcavationUiState->bBlueSpriteIndex], 0);
     sExcavationUiState->mode = BLUE_BUTTON;
   }
-
-	if (AreAllItemsFound())
-		EndMining(taskId);
 
 	if (IsCrackMax())
 		EndMining(taskId);
@@ -2627,42 +2622,19 @@ static void EndMining(u8 taskId)
 	gTasks[taskId].func = Task_ExcavationPrintResult;
 }
 
-static bool32 ClearWindowPlaySelectButtonPress(void)
-{
+static void Task_WaitButtonPress(u8 taskId) {
 	if (JOY_NEW(A_BUTTON)) {
 		PlaySE(SE_SELECT);
 		ClearDialogWindowAndFrame(WIN_MSG, TRUE);
-		return TRUE;
-	}
-	return FALSE;
-}
-
-static void Task_WaitButtonPressOpening(u8 taskId) {
-	if (ClearWindowPlaySelectButtonPress())
         gTasks[taskId].func = Task_ExcavationMainInput;
+	}
 }
 
 static void Task_ExcavationPrintResult(u8 taskId)
 {
-	u32 found = GetNumberOfFoundItems();
-	u32 buriedItemIndex = 0;
-	u32 itemId;
-
-	if (gPaletteFade.active)
-		return;
-
-	if (IsCrackMax())
-	{
+	if (!gPaletteFade.active) {
 		PrintMessage(sText_TheWall);
-		ClearWindowPlaySelectButtonPress();
-	}
-
-	for (buriedItemIndex = 0; buriedItemIndex < found; buriedItemIndex++)
-	{
-		itemId = GetBuriedItemId(buriedItemIndex);
-		CopyItemName(itemId,gStringVar1);
-		PrintMessage(sText_WasObtained);
-		ClearWindowPlaySelectButtonPress();
+		gTasks[taskId].func = Task_WaitButtonPress;
 	}
 }
 
@@ -2672,7 +2644,7 @@ static u32 GetNumberOfBuriedItems(void)
 	u32 count = 0;
 
 	for (index = 0; index < 4; index++)
-		if (GetBuriedItemId(index))
+		if (GetBuriedItemId())
 			count++;
 
 	return count;
@@ -2683,16 +2655,11 @@ static u32 GetNumberOfFoundItems(void)
 	u32 index = 0;
 	u32 count = 0;
 
-	for (index = 0; index < GetNumberOfBuriedItems(); index++)
+	for (index = 0; index < 4; index++)
 		if (GetBuriedItemStatus(index))
 			count++;
 
 	return count;
-}
-
-static bool32 AreAllItemsFound(void)
-{
-	return (GetNumberOfBuriedItems() == GetNumberOfFoundItems());
 }
 
 static void InitBuriedItems(void)
@@ -2701,7 +2668,7 @@ static void InitBuriedItems(void)
 	for (index = 0; index < 4; index++)
 	{
 		SetBuriedItemsId(index,ITEM_NONE);
-		SetBuriedItemStatus(index,FALSE);
+		SetStateToBuried(index);
 	}
 }
 
@@ -2710,7 +2677,7 @@ static void SetBuriedItemsId(u32 index, u32 itemId)
 	sExcavationUiState->buriedItem[index].itemId = itemId;
 }
 
-static void SetBuriedItemStatus(u32 index, bool32 status)
+static u32 SetBuriedItemStatus(u32 index, bool32 status)
 {
 	sExcavationUiState->buriedItem[index].status = status;
 }
