@@ -1285,7 +1285,8 @@ static void Task_ExcavationWaitFadeIn(u8 taskId)
 {
 	if (!gPaletteFade.active) {
 		ConvertIntToDecimalStringN(gStringVar1,GetNumberOfBuriedItems(),STR_CONV_MODE_LEFT_ALIGN,2);
-		PrintMessage(sText_SomethingPinged);
+		StringExpandPlaceholders(gStringVar2,sText_SomethingPinged);
+		PrintMessage(gStringVar2);
 		gTasks[taskId].func = Task_WaitButtonPressOpening;
 	}
 }
