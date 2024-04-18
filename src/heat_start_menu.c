@@ -52,6 +52,7 @@
 #include "constants/rgb.h"
 #include "constants/songs.h"
 #include "rtc.h"
+#include "event_object_movement.h"
 
 /* CALLBACKS */
 static void SpriteCB_IconPoketch(struct Sprite* sprite);
@@ -139,6 +140,7 @@ EWRAM_DATA static u8 (*sSaveDialogCallback)(void) = NULL;
 static const u32 sStartMenuTiles[] = INCBIN_U32("graphics/heat_start_menu/bg.4bpp.lz");
 static const u32 sStartMenuTilemap[] = INCBIN_U32("graphics/heat_start_menu/bg.bin.lz");
 static const u16 sStartMenuPalette[] = INCBIN_U16("graphics/heat_start_menu/bg.gbapal");
+static const u16 gStandardMenuPalette[] = INCBIN_U16("graphics/interface/std_menu.gbapal");
 
 //--SPRITE-GFX--
 #define TAG_ICON_GFX 1234
@@ -659,6 +661,9 @@ static void HeatStartMenu_ExitAndClearTilemap(void) {
   ClearWindowTilemap(sHeatStartMenu->sMenuNameWindowId);
   ClearWindowTilemap(sHeatStartMenu->sStartClockWindowId);
 
+  CopyWindowToVram(sHeatStartMenu->sMenuNameWindowId, COPYWIN_GFX);
+  CopyWindowToVram(sHeatStartMenu->sStartClockWindowId, COPYWIN_GFX);
+
   RemoveWindow(sHeatStartMenu->sStartClockWindowId);
   RemoveWindow(sHeatStartMenu->sMenuNameWindowId);
 
@@ -941,6 +946,7 @@ static u8 SaveYesNoCallback(void) {
     return SAVE_IN_PROGRESS;
 }
 
+#define DebugPrint PlaySE
 
 static void ShowSaveInfoWindow(void) {
     struct WindowTemplate saveInfoWindow = sSaveInfoWindowTemplate;
@@ -955,9 +961,13 @@ static void ShowSaveInfoWindow(void) {
     {
         saveInfoWindow.height -= 2;
     }
-
+    
     sHeatStartMenu->sSaveInfoWindowId = AddWindow(&saveInfoWindow);
     DrawStdWindowFrame(sHeatStartMenu->sSaveInfoWindowId, FALSE);
+
+    FillWindowPixelBuffer(sHeatStartMenu->sSaveInfoWindowId, PIXEL_FILL(TEXT_COLOR_WHITE));
+    
+    DebugPrint(407);  
 
     gender = gSaveBlock2Ptr->playerGender;
     color = TEXT_COLOR_RED;  // Red when female, blue when male.
@@ -1026,11 +1036,13 @@ static void InitSave(void)
 }
 
 static void Task_HandleSave(u8 taskId) {
+  PlaySE(407);
   switch (RunSaveCallback()) {
     case SAVE_IN_PROGRESS:
       break;
     case SAVE_CANCELED: // Back to start menu
       ClearDialogWindowAndFrameToTransparent(0, FALSE);
+      DestroyTask(taskId);
       HeatStartMenu_Init();
       break;
     case SAVE_SUCCESS:
@@ -1045,10 +1057,16 @@ static void Task_HandleSave(u8 taskId) {
   }
 }
 
+#define STD_WINDOW_BASE_TILE_NUM 0x214
+#define STD_WINDOW_PALETTE_NUM 14
+
 static void DoCleanUpAndStartSaveMenu(void) {
   if (!gPaletteFade.active) {
-    DestroyTask(FindTaskIdByFunc(Task_HeatStartMenu_HandleMainInput));
     HeatStartMenu_ExitAndClearTilemap();
+    FreezeObjectEvents();
+    LoadUserWindowBorderGfx(sHeatStartMenu->sSaveInfoWindowId, STD_WINDOW_BASE_TILE_NUM, BG_PLTT_ID(STD_WINDOW_PALETTE_NUM));
+    LockPlayerFieldControls();
+    DestroyTask(FindTaskIdByFunc(Task_HeatStartMenu_HandleMainInput));
     InitSave();
     CreateTask(Task_HandleSave, 0x80);
   }
