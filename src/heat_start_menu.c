@@ -118,7 +118,6 @@ struct HeatStartMenu {
   u32 loadState;
   u8 sStartClockWindowId;
   u32 sMenuNameWindowId;
-  u32 sSaveInfoWindowId;
   u32 flag; // some u32 holding values for controlling the sprite anims an lifetime
   
   u32 spriteIdPoketch;
@@ -135,6 +134,7 @@ static EWRAM_DATA struct HeatStartMenu *sHeatStartMenu = NULL;
 static EWRAM_DATA u8 menuSelected = MENU_POKETCH;
 static EWRAM_DATA u8 (*sSaveDialogCallback)(void) = NULL;
 static EWRAM_DATA u8 sSaveDialogTimer = 0;
+static EWRAM_DATA u8 sSaveInfoWindowId = 0;
 
 // --BG-GFX--
 static const u32 sStartMenuTiles[] = INCBIN_U32("graphics/heat_start_menu/bg.4bpp.lz");
@@ -156,7 +156,27 @@ static const struct WindowTemplate sSaveInfoWindowTemplate = {
     .width = 14,
     .height = 10,
     .paletteNum = 15,
-    .baseBlock = 45
+    .baseBlock = 8
+};
+
+static const struct WindowTemplate sWindowTemplate_StartClock = {
+  .bg = 0, 
+  .tilemapLeft = 1, 
+  .tilemapTop = 17, 
+  .width = 13, // If you want to shorten the dates to Sat., Sun., etc., change this to 9
+  .height = 2, 
+  .paletteNum = 15,
+  .baseBlock = 0x30
+};
+
+static const struct WindowTemplate sWindowTemplate_MenuName = {
+  .bg = 0, 
+  .tilemapLeft = 16, 
+  .tilemapTop = 17, 
+  .width = 7, 
+  .height = 2, 
+  .paletteNum = 15,
+  .baseBlock = 0x30 + (13*2)
 };
 
 static const struct SpritePalette sSpritePal_Icon[] =
@@ -470,25 +490,6 @@ static void SpriteCB_IconOptions(struct Sprite* sprite) {
   } 
 }
 
-static const struct WindowTemplate sWindowTemplate_StartClock = {
-  .bg = 0, 
-  .tilemapLeft = 1, 
-  .tilemapTop = 17, 
-  .width = 13, // If you want to shorten the dates to Sat., Sun., etc., change this to 9
-  .height = 2, 
-  .paletteNum = 15,
-  .baseBlock = 0x30
-};
-
-static const struct WindowTemplate sWindowTemplate_MenuName = {
-  .bg = 0, 
-  .tilemapLeft = 16, 
-  .tilemapTop = 17, 
-  .width = 7, 
-  .height = 2, 
-  .paletteNum = 15,
-  .baseBlock = 0x30 + (13*2)
-};
 
 // If you want to shorten the dates to Sat., Sun., etc., change this to 70
 #define CLOCK_WINDOW_WIDTH 100
@@ -850,8 +851,8 @@ static u8 SaveDoSaveCallback(void)
 }
 
 static void HideSaveInfoWindow(void) {
-  ClearStdWindowAndFrame(sHeatStartMenu->sSaveInfoWindowId, FALSE);
-  RemoveWindow(sHeatStartMenu->sSaveInfoWindowId);
+  ClearStdWindowAndFrame(sSaveInfoWindowId, FALSE);
+  RemoveWindow(sSaveInfoWindowId);
 }
 
 static void HideSaveMessageWindow(void) {
@@ -964,11 +965,8 @@ static void ShowSaveInfoWindow(void) {
         saveInfoWindow.height -= 2;
     }
     
-    sHeatStartMenu->sSaveInfoWindowId = AddWindow(&saveInfoWindow);
-    DrawStdWindowFrame(sHeatStartMenu->sSaveInfoWindowId, FALSE);
-
-    FillWindowPixelBuffer(sHeatStartMenu->sSaveInfoWindowId, PIXEL_FILL(TEXT_COLOR_WHITE));
-    
+    sSaveInfoWindowId = AddWindow(&saveInfoWindow);
+    DrawStdWindowFrame(sSaveInfoWindowId, FALSE);
 
     gender = gSaveBlock2Ptr->playerGender;
     color = TEXT_COLOR_RED;  // Red when female, blue when male.
@@ -981,40 +979,40 @@ static void ShowSaveInfoWindow(void) {
     // Print region name
     yOffset = 1;
     BufferSaveMenuText(SAVE_MENU_LOCATION, gStringVar4, TEXT_COLOR_GREEN);
-    AddTextPrinterParameterized(sHeatStartMenu->sSaveInfoWindowId, FONT_NORMAL, gStringVar4, 0, yOffset, TEXT_SKIP_DRAW, NULL);
+    AddTextPrinterParameterized(sSaveInfoWindowId, FONT_NORMAL, gStringVar4, 0, yOffset, TEXT_SKIP_DRAW, NULL);
 
     // Print player name
     yOffset += 16;
-    AddTextPrinterParameterized(sHeatStartMenu->sSaveInfoWindowId, FONT_NORMAL, gText_SavingPlayer, 0, yOffset, TEXT_SKIP_DRAW, NULL);
+    AddTextPrinterParameterized(sSaveInfoWindowId, FONT_NORMAL, gText_SavingPlayer, 0, yOffset, TEXT_SKIP_DRAW, NULL);
     BufferSaveMenuText(SAVE_MENU_NAME, gStringVar4, color);
     xOffset = GetStringRightAlignXOffset(FONT_NORMAL, gStringVar4, 0x70);
-    PrintPlayerNameOnWindow(sHeatStartMenu->sSaveInfoWindowId, gStringVar4, xOffset, yOffset);
+    PrintPlayerNameOnWindow(sSaveInfoWindowId, gStringVar4, xOffset, yOffset);
 
     // Print badge count
     yOffset += 16;
-    AddTextPrinterParameterized(sHeatStartMenu->sSaveInfoWindowId, FONT_NORMAL, gText_SavingBadges, 0, yOffset, TEXT_SKIP_DRAW, NULL);
+    AddTextPrinterParameterized(sSaveInfoWindowId, FONT_NORMAL, gText_SavingBadges, 0, yOffset, TEXT_SKIP_DRAW, NULL);
     BufferSaveMenuText(SAVE_MENU_BADGES, gStringVar4, color);
     xOffset = GetStringRightAlignXOffset(FONT_NORMAL, gStringVar4, 0x70);
-    AddTextPrinterParameterized(sHeatStartMenu->sSaveInfoWindowId, FONT_NORMAL, gStringVar4, xOffset, yOffset, TEXT_SKIP_DRAW, NULL);
+    AddTextPrinterParameterized(sSaveInfoWindowId, FONT_NORMAL, gStringVar4, xOffset, yOffset, TEXT_SKIP_DRAW, NULL);
 
     if (FlagGet(FLAG_SYS_POKEDEX_GET) == TRUE)
     {
         // Print pokedex count
         yOffset += 16;
-        AddTextPrinterParameterized(sHeatStartMenu->sSaveInfoWindowId, FONT_NORMAL, gText_SavingPokedex, 0, yOffset, TEXT_SKIP_DRAW, NULL);
+        AddTextPrinterParameterized(sSaveInfoWindowId, FONT_NORMAL, gText_SavingPokedex, 0, yOffset, TEXT_SKIP_DRAW, NULL);
         BufferSaveMenuText(SAVE_MENU_CAUGHT, gStringVar4, color);
         xOffset = GetStringRightAlignXOffset(FONT_NORMAL, gStringVar4, 0x70);
-        AddTextPrinterParameterized(sHeatStartMenu->sSaveInfoWindowId, FONT_NORMAL, gStringVar4, xOffset, yOffset, TEXT_SKIP_DRAW, NULL);
+        AddTextPrinterParameterized(sSaveInfoWindowId, FONT_NORMAL, gStringVar4, xOffset, yOffset, TEXT_SKIP_DRAW, NULL);
     }
 
     // Print play time
     yOffset += 16;
-    AddTextPrinterParameterized(sHeatStartMenu->sSaveInfoWindowId, FONT_NORMAL, gText_SavingTime, 0, yOffset, TEXT_SKIP_DRAW, NULL);
+    AddTextPrinterParameterized(sSaveInfoWindowId, FONT_NORMAL, gText_SavingTime, 0, yOffset, TEXT_SKIP_DRAW, NULL);
     BufferSaveMenuText(SAVE_MENU_PLAY_TIME, gStringVar4, color);
     xOffset = GetStringRightAlignXOffset(FONT_NORMAL, gStringVar4, 0x70);
-    AddTextPrinterParameterized(sHeatStartMenu->sSaveInfoWindowId, FONT_NORMAL, gStringVar4, xOffset, yOffset, TEXT_SKIP_DRAW, NULL);
+    AddTextPrinterParameterized(sSaveInfoWindowId, FONT_NORMAL, gStringVar4, xOffset, yOffset, TEXT_SKIP_DRAW, NULL);
 
-    CopyWindowToVram(sHeatStartMenu->sSaveInfoWindowId, COPYWIN_GFX);
+    CopyWindowToVram(sSaveInfoWindowId, COPYWIN_GFX);
 }
 
 static u8 SaveConfirmSaveCallback(void) {
@@ -1063,7 +1061,7 @@ static void DoCleanUpAndStartSaveMenu(void) {
   if (!gPaletteFade.active) {
     HeatStartMenu_ExitAndClearTilemap();
     FreezeObjectEvents();
-    LoadUserWindowBorderGfx(sHeatStartMenu->sSaveInfoWindowId, STD_WINDOW_BASE_TILE_NUM, BG_PLTT_ID(STD_WINDOW_PALETTE_NUM));
+    LoadUserWindowBorderGfx(sSaveInfoWindowId, STD_WINDOW_BASE_TILE_NUM, BG_PLTT_ID(STD_WINDOW_PALETTE_NUM));
     LockPlayerFieldControls();
     DestroyTask(FindTaskIdByFunc(Task_HeatStartMenu_HandleMainInput));
     InitSave();
