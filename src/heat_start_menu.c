@@ -129,12 +129,12 @@ struct HeatStartMenu {
   u32 spriteIdSave;
   u32 spriteIdOptions;
 
-  u32 sSaveDialogTimer;
 };
 
 static EWRAM_DATA struct HeatStartMenu *sHeatStartMenu = NULL;
-static EWRAM_DATA u32 menuSelected = MENU_POKETCH;
-EWRAM_DATA static u8 (*sSaveDialogCallback)(void) = NULL;
+static EWRAM_DATA u8 menuSelected = MENU_POKETCH;
+static EWRAM_DATA u8 (*sSaveDialogCallback)(void) = NULL;
+static EWRAM_DATA u8 sSaveDialogTimer = 0;
 
 // --BG-GFX--
 static const u32 sStartMenuTiles[] = INCBIN_U32("graphics/heat_start_menu/bg.4bpp.lz");
@@ -739,19 +739,21 @@ static u8 RunSaveCallback(void)
 
 static void SaveStartTimer(void)
 {
-    sHeatStartMenu->sSaveDialogTimer = 60;
+    PlaySE(120);
+    sSaveDialogTimer = 60;
 }
 
 static bool8 SaveSuccesTimer(void)
 {
-    sHeatStartMenu->sSaveDialogTimer--;
+    sSaveDialogTimer--;
 
-    if (JOY_HELD(A_BUTTON))
+
+    if (JOY_HELD(A_BUTTON) || JOY_HELD(B_BUTTON))
     {
         PlaySE(SE_SELECT);
         return TRUE;
     }
-    if (sHeatStartMenu->sSaveDialogTimer == 0)
+    if (sSaveDialogTimer == 0)
     {
         return TRUE;
     }
@@ -761,9 +763,9 @@ static bool8 SaveSuccesTimer(void)
 
 static bool8 SaveErrorTimer(void)
 {
-    if (sHeatStartMenu->sSaveDialogTimer != 0)
+    if (sSaveDialogTimer != 0)
     {
-        sHeatStartMenu->sSaveDialogTimer--;
+        sSaveDialogTimer--;
     }
     else if (JOY_HELD(A_BUTTON))
     {
@@ -930,7 +932,7 @@ static u8 SaveConfirmInputCallback(void)
             sSaveDialogCallback = SaveFileExistsCallback;
             return SAVE_IN_PROGRESS;
         }
-    case MENU_B_PRESSED:
+    case MENU_B_PRESSED: // No break, thats smart 
     case 1: // No
         HideSaveInfoWindow();
         HideSaveMessageWindow();
@@ -967,7 +969,6 @@ static void ShowSaveInfoWindow(void) {
 
     FillWindowPixelBuffer(sHeatStartMenu->sSaveInfoWindowId, PIXEL_FILL(TEXT_COLOR_WHITE));
     
-    DebugPrint(407);  
 
     gender = gSaveBlock2Ptr->playerGender;
     color = TEXT_COLOR_RED;  // Red when female, blue when male.
@@ -1036,16 +1037,14 @@ static void InitSave(void)
 }
 
 static void Task_HandleSave(u8 taskId) {
-  PlaySE(407);
   switch (RunSaveCallback()) {
     case SAVE_IN_PROGRESS:
       break;
+    case SAVE_SUCCESS:
     case SAVE_CANCELED: // Back to start menu
       ClearDialogWindowAndFrameToTransparent(0, FALSE);
       DestroyTask(taskId);
       HeatStartMenu_Init();
-      break;
-    case SAVE_SUCCESS:
       break;
     case SAVE_ERROR:    // Close start menu
       ClearDialogWindowAndFrameToTransparent(0, TRUE);
