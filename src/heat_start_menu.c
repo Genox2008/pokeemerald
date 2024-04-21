@@ -161,9 +161,9 @@ static const struct WindowTemplate sSaveInfoWindowTemplate = {
 
 static const struct WindowTemplate sWindowTemplate_StartClock = {
   .bg = 0, 
-  .tilemapLeft = 1, 
+  .tilemapLeft = 2, 
   .tilemapTop = 17, 
-  .width = 13, // If you want to shorten the dates to Sat., Sun., etc., change this to 9
+  .width = 12, // If you want to shorten the dates to Sat., Sun., etc., change this to 9
   .height = 2, 
   .paletteNum = 15,
   .baseBlock = 0x30
@@ -549,13 +549,42 @@ static void HeatStartMenu_LoadSprites(void) {
 }
 
 static void HeatStartMenu_CreateSprites(void) {
-  sHeatStartMenu->spriteIdPoketch = CreateSprite(&gSpriteIconPoketch, 224, 15, 0);
-  sHeatStartMenu->spriteIdPokedex = CreateSprite(&gSpriteIconPokedex, 223, 36, 0);
-  sHeatStartMenu->spriteIdParty   = CreateSprite(&gSpriteIconParty, 224, 58, 0);
-  sHeatStartMenu->spriteIdBag     = CreateSprite(&gSpriteIconBag, 224, 82, 0);
-  sHeatStartMenu->spriteIdTrainerCard = CreateSprite(&gSpriteIconTrainerCard, 224, 107, 0);
-  sHeatStartMenu->spriteIdSave    = CreateSprite(&gSpriteIconSave, 224, 128, 0);
-  sHeatStartMenu->spriteIdOptions = CreateSprite(&gSpriteIconOptions, 224, 148, 0);
+  u32 x = 224;
+  u32 y1 = 15;
+  u32 y2 = 36;
+  u32 y3 = 58;
+  u32 y4 = 82;
+  u32 y5 = 107;
+  u32 y6 = 128;
+  u32 y7 = 148;
+
+  if (FlagGet(FLAG_SYS_POKEMON_GET) == TRUE && FlagGet(FLAG_SYS_POKEDEX_GET) == TRUE) {
+    sHeatStartMenu->spriteIdPoketch = CreateSprite(&gSpriteIconPoketch, x, y1, 0);
+    sHeatStartMenu->spriteIdPokedex = CreateSprite(&gSpriteIconPokedex, x-1, y2, 0);
+    sHeatStartMenu->spriteIdParty   = CreateSprite(&gSpriteIconParty, x, y3, 0);
+    sHeatStartMenu->spriteIdBag     = CreateSprite(&gSpriteIconBag, x, y4, 0);
+    sHeatStartMenu->spriteIdTrainerCard = CreateSprite(&gSpriteIconTrainerCard, x, y5, 0);
+    sHeatStartMenu->spriteIdSave    = CreateSprite(&gSpriteIconSave, x, y6, 0);
+    sHeatStartMenu->spriteIdOptions = CreateSprite(&gSpriteIconOptions, x, y7, 0);
+    return;
+  } else if (FlagGet(FLAG_SYS_POKEMON_GET) == FALSE && FlagGet(FLAG_SYS_POKEDEX_GET) == FALSE) {
+    sHeatStartMenu->spriteIdPoketch = CreateSprite(&gSpriteIconPoketch, x, y1, 0);
+    sHeatStartMenu->spriteIdBag     = CreateSprite(&gSpriteIconBag, x, y2+1, 0);
+    sHeatStartMenu->spriteIdTrainerCard = CreateSprite(&gSpriteIconTrainerCard, x, y3 + 3, 0);
+    sHeatStartMenu->spriteIdSave    = CreateSprite(&gSpriteIconSave, x, y4+1, 0);
+    sHeatStartMenu->spriteIdOptions = CreateSprite(&gSpriteIconOptions, x, y5 - 4, 0);
+    return;
+  } else if (FlagGet(FLAG_SYS_POKEMON_GET) == TRUE && FlagGet(FLAG_SYS_POKEDEX_GET) == FALSE) {
+    sHeatStartMenu->spriteIdPoketch = CreateSprite(&gSpriteIconPoketch, x, y1, 0);
+    sHeatStartMenu->spriteIdParty   = CreateSprite(&gSpriteIconParty, x, y2, 0);
+  } else if (FlagGet(FLAG_SYS_POKEMON_GET) == FALSE && FlagGet(FLAG_SYS_POKEDEX_GET) == TRUE) { 
+    sHeatStartMenu->spriteIdPoketch = CreateSprite(&gSpriteIconPoketch, x, y1, 0);
+    sHeatStartMenu->spriteIdPokedex = CreateSprite(&gSpriteIconPokedex, x-1, y2, 0);
+  }
+  sHeatStartMenu->spriteIdBag     = CreateSprite(&gSpriteIconBag, x, y3+2, 0);
+  sHeatStartMenu->spriteIdTrainerCard = CreateSprite(&gSpriteIconTrainerCard, x, y4 + 2, 0);
+  sHeatStartMenu->spriteIdSave    = CreateSprite(&gSpriteIconSave, x, y5-1, 0);
+  sHeatStartMenu->spriteIdOptions = CreateSprite(&gSpriteIconOptions, x, y6-1, 0);
 }
 
 static void HeatStartMenu_LoadBgGfx(void) {
@@ -606,9 +635,9 @@ static void HeatStartMenu_ShowTimeWindow(void)
     *ptr = 0xF0;
 
     ConvertIntToDecimalStringN(ptr + 1, gLocalTime.minutes, STR_CONV_MODE_LEADING_ZEROS, 2);
-    AddTextPrinterParameterized(sHeatStartMenu->sStartClockWindowId, 1, gStringVar4, GetStringRightAlignXOffset(1, suffix, CLOCK_WINDOW_WIDTH) - (CLOCK_WINDOW_WIDTH - GetStringRightAlignXOffset(1, gStringVar4, CLOCK_WINDOW_WIDTH) + 5), 1, 0xFF, NULL); // print time
+    AddTextPrinterParameterized(sHeatStartMenu->sStartClockWindowId, 1, gStringVar4, GetStringRightAlignXOffset(1, suffix, CLOCK_WINDOW_WIDTH) - (CLOCK_WINDOW_WIDTH - GetStringRightAlignXOffset(1, gStringVar4, CLOCK_WINDOW_WIDTH) + 5)-8, 1, 0xFF, NULL); // print time
 
-    AddTextPrinterParameterized(sHeatStartMenu->sStartClockWindowId, 1, suffix, GetStringRightAlignXOffset(1, suffix, CLOCK_WINDOW_WIDTH), 1, 0xFF, NULL); // print am/pm
+    AddTextPrinterParameterized(sHeatStartMenu->sStartClockWindowId, 1, suffix, GetStringRightAlignXOffset(1, suffix, CLOCK_WINDOW_WIDTH)-8, 1, 0xFF, NULL); // print am/pm
 
     CopyWindowToVram(sHeatStartMenu->sStartClockWindowId, COPYWIN_GFX);
 }
@@ -672,17 +701,21 @@ static void HeatStartMenu_ExitAndClearTilemap(void) {
     buf[i] = 0;
   }
   ScheduleBgCopyTilemapToVram(0);
-  
+ 
+  if (FlagGet(FLAG_SYS_POKEDEX_GET) == TRUE) {
+    FreeSpriteOamMatrix(&gSprites[sHeatStartMenu->spriteIdPokedex]);
+    DestroySprite(&gSprites[sHeatStartMenu->spriteIdPokedex]);
+  }
+  if (FlagGet(FLAG_SYS_POKEMON_GET) == TRUE) {
+    FreeSpriteOamMatrix(&gSprites[sHeatStartMenu->spriteIdParty]);
+    DestroySprite(&gSprites[sHeatStartMenu->spriteIdParty]);
+  }
   FreeSpriteOamMatrix(&gSprites[sHeatStartMenu->spriteIdPoketch]);
-  FreeSpriteOamMatrix(&gSprites[sHeatStartMenu->spriteIdPokedex]);
-  FreeSpriteOamMatrix(&gSprites[sHeatStartMenu->spriteIdParty]);
   FreeSpriteOamMatrix(&gSprites[sHeatStartMenu->spriteIdBag]);
   FreeSpriteOamMatrix(&gSprites[sHeatStartMenu->spriteIdTrainerCard]);
   FreeSpriteOamMatrix(&gSprites[sHeatStartMenu->spriteIdSave]);
   FreeSpriteOamMatrix(&gSprites[sHeatStartMenu->spriteIdOptions]);
   DestroySprite(&gSprites[sHeatStartMenu->spriteIdPoketch]);
-  DestroySprite(&gSprites[sHeatStartMenu->spriteIdPokedex]);
-  DestroySprite(&gSprites[sHeatStartMenu->spriteIdParty]);
   DestroySprite(&gSprites[sHeatStartMenu->spriteIdBag]);
   DestroySprite(&gSprites[sHeatStartMenu->spriteIdTrainerCard]);
   DestroySprite(&gSprites[sHeatStartMenu->spriteIdSave]);
@@ -1096,6 +1129,44 @@ void GoToHandleInput(void) {
   CreateTask(Task_HeatStartMenu_HandleMainInput, 80);
 }
 
+static void HeatStartMenu_HandleInput_DPADDOWN(void) {
+  switch (menuSelected) {
+    case MENU_OPTIONS:
+      break;
+    default:
+      sHeatStartMenu->flag = 0;
+      menuSelected++;
+      PlaySE(SE_SELECT);
+      if (FlagGet(FLAG_SYS_POKEDEX_GET) == FALSE && menuSelected == MENU_POKEDEX) {
+        menuSelected++;
+      } 
+      if (FlagGet(FLAG_SYS_POKEMON_GET) == FALSE && menuSelected == MENU_PARTY) {
+        menuSelected++;
+      }
+      HeatStartMenu_UpdateMenuName();
+      break;
+  }
+}
+
+static void HeatStartMenu_HandleInput_DPADUP(void) {
+  switch (menuSelected) {
+    case MENU_POKETCH:
+      break;
+    default:
+      sHeatStartMenu->flag = 0;
+      menuSelected--;
+      PlaySE(SE_SELECT);
+      if (FlagGet(FLAG_SYS_POKEMON_GET) == FALSE && menuSelected == MENU_PARTY) {
+        menuSelected--;
+      }
+      if (FlagGet(FLAG_SYS_POKEDEX_GET) == FALSE && menuSelected == MENU_POKEDEX) {
+        menuSelected--;
+      }
+      HeatStartMenu_UpdateMenuName();
+      break;
+  }
+}
+
 static void Task_HeatStartMenu_HandleMainInput(u8 taskId) {
   if (JOY_NEW(A_BUTTON)) {
     if (sHeatStartMenu->loadState == 0) {
@@ -1109,27 +1180,9 @@ static void Task_HeatStartMenu_HandleMainInput(u8 taskId) {
     HeatStartMenu_ExitAndClearTilemap();  
     DestroyTask(taskId);
   } else if (gMain.newKeys & DPAD_DOWN && sHeatStartMenu->loadState == 0) {
-    switch (menuSelected) {
-      case MENU_OPTIONS:
-        break;
-      default:
-        sHeatStartMenu->flag = 0;
-        menuSelected++;
-        PlaySE(SE_SELECT);
-        HeatStartMenu_UpdateMenuName();
-        break;
-    }
+    HeatStartMenu_HandleInput_DPADDOWN();
   } else if (gMain.newKeys & DPAD_UP && sHeatStartMenu->loadState == 0) {
-    switch (menuSelected) {
-      case MENU_POKETCH:
-        break;
-      default:
-        sHeatStartMenu->flag = 0;
-        menuSelected--;
-        PlaySE(SE_SELECT);
-        HeatStartMenu_UpdateMenuName();
-        break;
-    }
+    HeatStartMenu_HandleInput_DPADUP();
   } else if (sHeatStartMenu->loadState == 1) {
     if (menuSelected != MENU_SAVE) {
       HeatStartMenu_OpenMenu();
