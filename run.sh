@@ -1,3 +1,4 @@
-cd ./game
+cd ./GAME
 make -j8 agbcc
-mgba ./game/pokemagma.gba
+# THIS WILL MOST LIKELY NOT WORK ON YOUR MACHINE! 
+mgba.appimage ./GAME/pokemagma.gba
