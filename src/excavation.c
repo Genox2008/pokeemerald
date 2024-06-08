@@ -2700,7 +2700,7 @@ static void Task_ExcavationPrintResult(u8 taskId)
 	u32 found = GetNumberOfFoundItems();
 	u32 buriedItemIndex = 0;
 
-	DebugPrintf("We are in state %d",sExcavationUiState->loadGameState);
+	//DebugPrintf("We are in state %d",sExcavationUiState->loadGameState);
 
 	if (gPaletteFade.active)
 		return;
@@ -2763,7 +2763,8 @@ static void PrintItemSuccess(u32 buriedItemIndex)
 
 	itemId = GetBuriedItemId(buriedItemIndex);
 	CopyItemName(itemId,gStringVar1);
-	PrintMessage(sText_WasObtained);
+	StringExpandPlaceholders(gStringVar2,sText_WasObtained);
+	PrintMessage(gStringVar2);
 }
 
 static u32 GetNumberOfBuriedItems(void)
