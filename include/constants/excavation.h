@@ -31,11 +31,6 @@
 #define STONE_3x3_TILE_AMOUNT_BOTTOM    2
 
 /*          --Items--                   */
-#define ITEMID_HEART_SCALE              0
-#define HEART_SCALE_TOTAL_TILES         3
-#define HEART_SCALE_TILE_AMOUNT_RIGHT   1
-#define HEART_SCALE_TILE_AMOUNT_BOTTOM  1
-
 #define ITEMID_HARD_STONE               1
 #define HARD_STONE_TOTAL_TILES          4
 #define HARD_STONE_TILE_AMOUNT_RIGHT    1
@@ -80,6 +75,13 @@
 #define EVER_STONE_TOTAL_TILES          8
 #define EVER_STONE_TILE_AMOUNT_RIGHT    3
 #define EVER_STONE_TILE_AMOUNT_BOTTOM   1
+
+#define ITEMID_HEART_SCALE              10
+#define HEART_SCALE_TOTAL_TILES         3
+#define HEART_SCALE_TILE_AMOUNT_RIGHT   1
+#define HEART_SCALE_TILE_AMOUNT_BOTTOM  1
+
+#define ITEMID_NONE 0
 
 // TODO: change this value to the max itemId
 #define EXCAVATION_ITEM_COUNT ITEMID_REVIVE_MAX

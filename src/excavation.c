@@ -1246,30 +1246,30 @@ static void Excavation_LoadSpriteGraphics(void) {
   // ITEMS
   if (sExcavationUiState->state_item1 == SELECTED) {
     itemId1 = GetRandomItemId();
-	SetBuriedItemsId(1, itemId1);
-    DoDrawRandomItem(1, itemId1);
+	SetBuriedItemsId(0, itemId1);
+    DoDrawRandomItem(0, itemId1);
     sExcavationUiState->Item1_TilesToDigUp = ExcavationUtil_GetTotalTileAmount(itemId1);
   }
   if (sExcavationUiState->state_item2 == SELECTED) {
     itemId2 = GetRandomItemId();
-	SetBuriedItemsId(2, itemId2);
-    DoDrawRandomItem(2, itemId2);
+	SetBuriedItemsId(1, itemId2);
+    DoDrawRandomItem(1, itemId2);
     sExcavationUiState->Item2_TilesToDigUp = ExcavationUtil_GetTotalTileAmount(itemId2);
   } else {
     LoadSpritePalette(sSpritePal_Blank1);
   }
   if (sExcavationUiState->state_item3 == SELECTED) {
     itemId3 = GetRandomItemId();
-	SetBuriedItemsId(3, itemId3);
-    DoDrawRandomItem(3, itemId3);
+	SetBuriedItemsId(2, itemId3);
+    DoDrawRandomItem(2, itemId3);
     sExcavationUiState->Item3_TilesToDigUp = ExcavationUtil_GetTotalTileAmount(itemId3);
   } else {
     LoadSpritePalette(sSpritePal_Blank2);
   }
   if (sExcavationUiState->state_item4 == SELECTED) {
     itemId4 = GetRandomItemId();
-	SetBuriedItemsId(4, itemId4);
-    DoDrawRandomItem(4, itemId4);
+	SetBuriedItemsId(3, itemId4);
+    DoDrawRandomItem(3, itemId4);
     sExcavationUiState->Item4_TilesToDigUp = ExcavationUtil_GetTotalTileAmount(itemId4);
   }
 
@@ -1336,7 +1336,7 @@ static void Task_ExcavationMainInput(u8 taskId) {
     DoScheduledBgTilemapCopiesToVram();
     BuildOamBuffer();
     UiShake();
-	//sExcavationUiState->crackPos = CRACK_POS_MAX; Debug
+	//sExcavationUiState->crackPos = CRACK_POS_MAX; //Debug
     //delay(8000);
   }
 
@@ -1367,8 +1367,8 @@ static void Task_ExcavationMainInput(u8 taskId) {
 	if (AreAllItemsFound())
 		EndMining(taskId);
 
-	if (IsCrackMax())
-		EndMining(taskId);
+	//if (IsCrackMax())
+		//EndMining(taskId);
 }
 
 #define TILE_POS(x,y) (32*(y) + (x))
@@ -2349,17 +2349,25 @@ static void Excavation_CheckItemFound(void) {
   full = sExcavationUiState->Item1_TilesToDigUp;
   stop = full+1;
 
+  /*
+  DebugPrintf("Item1_TilesToDigUp %d",sExcavationUiState->Item1_TilesToDigUp);
+  DebugPrintf("Item2_TilesToDigUp %d",sExcavationUiState->Item2_TilesToDigUp);
+  DebugPrintf("Item3_TilesToDigUp %d",sExcavationUiState->Item3_TilesToDigUp);
+  DebugPrintf("Item4_TilesToDigUp %d",sExcavationUiState->Item4_TilesToDigUp);
+  DebugPrintf("-----------------------------");
+  */
+
   if (sExcavationUiState->state_item1 < full) {
     for(i=0;i<96;i++) {
       if(sExcavationUiState->itemMap[i] == 1 && sExcavationUiState->layerMap[i] == 6) {
         sExcavationUiState->itemMap[i] = ITEM_TILE_DUG_UP;
         sExcavationUiState->state_item1++;
-		SetBuriedItemStatus(1,TRUE);
       }
     }
   } else if (sExcavationUiState->state_item1 == full) {
     BeginNormalPaletteFade(0x00040000, 2, 16, 0, RGB_WHITE);
     sExcavationUiState->state_item1 = stop;
+		SetBuriedItemStatus(1,TRUE);
   }
 
   full = sExcavationUiState->Item2_TilesToDigUp;
@@ -2370,12 +2378,12 @@ static void Excavation_CheckItemFound(void) {
       if(sExcavationUiState->itemMap[i] == 2 && sExcavationUiState->layerMap[i] == 6) {
         sExcavationUiState->itemMap[i] = ITEM_TILE_DUG_UP;
         sExcavationUiState->state_item2++;
-	SetBuriedItemStatus(2,TRUE);
       }
     }
   } else if (sExcavationUiState->state_item2 == full) {
     BeginNormalPaletteFade(0x00080000, 2, 16, 0, RGB_WHITE);
     sExcavationUiState->state_item2 = stop;
+	SetBuriedItemStatus(2,TRUE);
   }
 
   full = sExcavationUiState->Item3_TilesToDigUp;
@@ -2386,12 +2394,12 @@ static void Excavation_CheckItemFound(void) {
       if(sExcavationUiState->itemMap[i] == 3 && sExcavationUiState->layerMap[i] == 6) {
         sExcavationUiState->itemMap[i] = ITEM_TILE_DUG_UP;
         sExcavationUiState->state_item3++;
-	SetBuriedItemStatus(3,TRUE);
       }
     }
   } else if (sExcavationUiState->state_item3 == full) {
     BeginNormalPaletteFade(0x00100000, 2, 16, 0, RGB_WHITE);
     sExcavationUiState->state_item3 = stop;
+	SetBuriedItemStatus(3,TRUE);
   }
 
   full = sExcavationUiState->Item4_TilesToDigUp;
@@ -2402,12 +2410,12 @@ static void Excavation_CheckItemFound(void) {
       if(sExcavationUiState->itemMap[i] == 4 && sExcavationUiState->layerMap[i] == 6) {
         sExcavationUiState->itemMap[i] = ITEM_TILE_DUG_UP;
         sExcavationUiState->state_item4++;
-	SetBuriedItemStatus(4,TRUE);
       }
     }
   } else if (sExcavationUiState->state_item4 == full) {
     BeginNormalPaletteFade(0x00200000, 2, 16, 0, RGB_WHITE);
     sExcavationUiState->state_item4 = stop;
+	SetBuriedItemStatus(4,TRUE);
   }
 
   for(i=0;i<96;i++) {
@@ -2707,7 +2715,7 @@ static void Task_ExcavationPrintResult(u8 taskId)
 	u32 found = GetNumberOfFoundItems();
 	u32 buriedItemIndex = 0;
 
-	DebugPrintf("Current game state: %d",sExcavationUiState->loadGameState);
+	//DebugPrintf("Current game state: %d",sExcavationUiState->loadGameState);
 
 	if (gPaletteFade.active)
 		return;
@@ -2737,13 +2745,36 @@ static void Task_ExcavationPrintResult(u8 taskId)
 	}
 }
 
+static u32 ConvertLoadGameStateToItemIndex(void)
+{
+	switch (sExcavationUiState->loadGameState)
+	{
+		default:
+		case STATE_ITEM_NAME_1:
+		case STATE_ITEM_BAG_1:
+			return 0;
+		case STATE_ITEM_NAME_2:
+		case STATE_ITEM_BAG_2:
+			return 1;
+		case STATE_ITEM_NAME_3:
+		case STATE_ITEM_BAG_3:
+			return 2;
+		case STATE_ITEM_NAME_4:
+		case STATE_ITEM_BAG_4:
+			return 3;
+	}
+}
+
 static void GetItemOrPrintError(u8 taskId)
 {
-	u32 itemIndex = sExcavationUiState->loadGameState - STATE_GAME_FINISH;
+	u32 itemIndex = ConvertLoadGameStateToItemIndex();
 	u32 itemId = GetBuriedItemId(itemIndex);
 	sExcavationUiState->loadGameState++;
 
-	if (AddBagItem(itemId,1))
+	if (itemId == ITEM_NONE)
+		return;
+
+	if (!AddBagItem(itemId,1))
 		return;
 
 	PrintBagFull();
@@ -2752,14 +2783,17 @@ static void GetItemOrPrintError(u8 taskId)
 
 static void CheckItemAndPrint(u8 taskId)
 {
-	u32 itemIndex = sExcavationUiState->loadGameState - STATE_GAME_FINISH;
-	u32 itemId = 0;
+	u32 itemIndex = ConvertLoadGameStateToItemIndex();
+	u32 itemId = GetBuriedItemId(itemIndex);
+
 	sExcavationUiState->loadGameState++;
 
 	if (!GetBuriedItemStatus(itemIndex))
 		return;
 
-	itemId = GetBuriedItemId(itemIndex);
+	if (!itemId)
+		return;
+
 	PrintItemSuccess(itemId);
 	gTasks[taskId].func = Task_WaitButtonPressOpening;
 }
@@ -2815,27 +2849,43 @@ static bool32 AreAllItemsFound(void)
 	return (GetNumberOfBuriedItems() == GetNumberOfFoundItems());
 }
 
-static void InitBuriedItems(void)
+static void FillBagDebug(void)
 {
-	u32 index = 0;
-	for (index = 0; index < 4; index++)
+	while (AddBagItem(ITEM_MAX_REVIVE,999))
 	{
-		SetBuriedItemsId(index,ITEM_NONE);
-		SetBuriedItemStatus(index,FALSE);
+		index++;
+	}
+	while (AddBagItem(ITEM_MASTER_BALL,999))
+	{
+		index++;
 	}
 }
 
+
+static void InitBuriedItems(void)
+{
+	u32 index = 0;
+	for (index = 0; index < MAX_NUM_BURIED_ITEMS; index++)
+	{
+		SetBuriedItemsId(index,ITEMID_NONE);
+		SetBuriedItemStatus(index,FALSE);
+	}
+	FillBagDebug();
+
+}
+
 static const u32 itemIdMap[] = {
-	ITEM_HEART_SCALE,
+	ITEM_NONE,
 	ITEM_HARD_STONE,
 	ITEM_REVIVE,
 	ITEM_STAR_PIECE,
-	ITEM_MASTER_BALL,
+	ITEM_WATER_STONE,
 	ITEM_RED_SHARD,
 	ITEM_BLUE_SHARD,
 	ITEM_ULTRA_BALL,
 	ITEM_MAX_REVIVE,
 	ITEM_EVERSTONE,
+	ITEM_HEART_SCALE,
 };
 
 static void SetBuriedItemsId(u32 index, u32 itemId)
@@ -2855,6 +2905,6 @@ static u32 GetBuriedItemId(u32 index)
 
 static bool32 GetBuriedItemStatus(u32 index)
 {
-	DebugPrintf("item %d is %d",index,sExcavationUiState->buriedItem[index].status);
+	//DebugPrintf("item index %d (item %d) is %d",index,sExcavationUiState->buriedItem[index].itemId,sExcavationUiState->buriedItem[index].status);
 	return sExcavationUiState->buriedItem[index].status;
 }
