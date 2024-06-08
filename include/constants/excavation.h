@@ -3,6 +3,8 @@
 #define ITEM_TILE_NONE    0
 #define ITEM_TILE_DUG_UP  5
 
+#define MAX_NUM_BURIED_ITEMS 4
+
 /*          --Stones--                  */
 #define ID_STONE_1x4                    250
 #define STONE_1x4_TILE_AMOUNT_RIGHT     0
@@ -37,7 +39,7 @@
 #define ITEMID_HARD_STONE               1
 #define HARD_STONE_TOTAL_TILES          4
 #define HARD_STONE_TILE_AMOUNT_RIGHT    1
-#define HARD_STONE_TILE_AMOUNT_BOTTOM   1  
+#define HARD_STONE_TILE_AMOUNT_BOTTOM   1
 
 #define ITEMID_REVIVE                   2
 #define REVIVE_TOTAL_TILES              5
@@ -57,12 +59,12 @@
 #define ITEMID_RED_SHARD                5
 #define RED_SHARD_TOTAL_TILES           8
 #define RED_SHARD_TILE_AMOUNT_RIGHT     2
-#define RED_SHARD_TILE_AMOUNT_BOTTOM    2   
+#define RED_SHARD_TILE_AMOUNT_BOTTOM    2
 
 #define ITEMID_BLUE_SHARD               6
 #define BLUE_SHARD_TOTAL_TILES          8
 #define BLUE_SHARD_TILE_AMOUNT_RIGHT    2
-#define BLUE_SHARD_TILE_AMOUNT_BOTTOM   2 
+#define BLUE_SHARD_TILE_AMOUNT_BOTTOM   2
 
 #define ITEMID_IRON_BALL                7
 #define IRON_BALL_TOTAL_TILES           9
