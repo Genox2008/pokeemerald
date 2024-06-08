@@ -61,6 +61,10 @@ static u32 GetCrackPosition(void);
 static bool32 IsCrackMax(void);
 static void EndMining(u8 taskId);
 static void Task_ExcavationPrintResult(u8 taskId);
+static void GetItemOrPrintError(u8 taskId);
+static void CheckItemAndPrint(u8 taskId);
+static void HandleGameFinish(u8 taskId);
+static void PrintBagFull(void);
 static void PrintItemSuccess(u32 buriedItemIndex);
 static u32 GetNumberOfBuriedItems(void);
 static void InitBuriedItems(void);
@@ -938,13 +942,14 @@ enum
 	STATE_GAME_START,
 	STATE_GAME_FINISH,
 	STATE_ITEM_NAME_1,
-	STATE_ITEM_ERROR_1,
+	STATE_ITEM_BAG_1,
 	STATE_ITEM_NAME_2,
-	STATE_ITEM_ERROR_2,
+	STATE_ITEM_BAG_2,
 	STATE_ITEM_NAME_3,
-	STATE_ITEM_ERROR_3,
+	STATE_ITEM_BAG_3,
 	STATE_ITEM_NAME_4,
-	STATE_ITEM_ERROR_4,
+	STATE_ITEM_BAG_4,
+	STATE_QUIT,
 };
 
 enum {
@@ -2349,11 +2354,11 @@ static void Excavation_CheckItemFound(void) {
       if(sExcavationUiState->itemMap[i] == 1 && sExcavationUiState->layerMap[i] == 6) {
         sExcavationUiState->itemMap[i] = ITEM_TILE_DUG_UP;
         sExcavationUiState->state_item1++;
+		SetBuriedItemStatus(1,TRUE);
       }
     }
   } else if (sExcavationUiState->state_item1 == full) {
     BeginNormalPaletteFade(0x00040000, 2, 16, 0, RGB_WHITE);
-	SetBuriedItemStatus(1,TRUE);
     sExcavationUiState->state_item1 = stop;
   }
 
@@ -2365,11 +2370,11 @@ static void Excavation_CheckItemFound(void) {
       if(sExcavationUiState->itemMap[i] == 2 && sExcavationUiState->layerMap[i] == 6) {
         sExcavationUiState->itemMap[i] = ITEM_TILE_DUG_UP;
         sExcavationUiState->state_item2++;
+	SetBuriedItemStatus(2,TRUE);
       }
     }
   } else if (sExcavationUiState->state_item2 == full) {
     BeginNormalPaletteFade(0x00080000, 2, 16, 0, RGB_WHITE);
-	SetBuriedItemStatus(2,TRUE);
     sExcavationUiState->state_item2 = stop;
   }
 
@@ -2381,11 +2386,11 @@ static void Excavation_CheckItemFound(void) {
       if(sExcavationUiState->itemMap[i] == 3 && sExcavationUiState->layerMap[i] == 6) {
         sExcavationUiState->itemMap[i] = ITEM_TILE_DUG_UP;
         sExcavationUiState->state_item3++;
+	SetBuriedItemStatus(3,TRUE);
       }
     }
   } else if (sExcavationUiState->state_item3 == full) {
     BeginNormalPaletteFade(0x00100000, 2, 16, 0, RGB_WHITE);
-	SetBuriedItemStatus(3,TRUE);
     sExcavationUiState->state_item3 = stop;
   }
 
@@ -2397,11 +2402,11 @@ static void Excavation_CheckItemFound(void) {
       if(sExcavationUiState->itemMap[i] == 4 && sExcavationUiState->layerMap[i] == 6) {
         sExcavationUiState->itemMap[i] = ITEM_TILE_DUG_UP;
         sExcavationUiState->state_item4++;
+	SetBuriedItemStatus(4,TRUE);
       }
     }
   } else if (sExcavationUiState->state_item4 == full) {
     BeginNormalPaletteFade(0x00200000, 2, 16, 0, RGB_WHITE);
-	SetBuriedItemStatus(4,TRUE);
     sExcavationUiState->state_item4 = stop;
   }
 
@@ -2680,14 +2685,16 @@ static void Task_WaitButtonPressOpening(u8 taskId) {
 	{
 		case STATE_GAME_FINISH:
 		case STATE_ITEM_NAME_1:
-		case STATE_ITEM_ERROR_1:
+		case STATE_ITEM_BAG_1:
 		case STATE_ITEM_NAME_2:
-		case STATE_ITEM_ERROR_2:
+		case STATE_ITEM_BAG_2:
 		case STATE_ITEM_NAME_3:
-		case STATE_ITEM_ERROR_3:
+		case STATE_ITEM_BAG_3:
 		case STATE_ITEM_NAME_4:
-		case STATE_ITEM_ERROR_4:
+		case STATE_ITEM_BAG_4:
 			gTasks[taskId].func = Task_ExcavationPrintResult;
+			break;
+		case STATE_QUIT:
 			break;
 		default:
 			gTasks[taskId].func = Task_ExcavationMainInput;
@@ -2700,7 +2707,7 @@ static void Task_ExcavationPrintResult(u8 taskId)
 	u32 found = GetNumberOfFoundItems();
 	u32 buriedItemIndex = 0;
 
-	//DebugPrintf("We are in state %d",sExcavationUiState->loadGameState);
+	DebugPrintf("Current game state: %d",sExcavationUiState->loadGameState);
 
 	if (gPaletteFade.active)
 		return;
@@ -2711,57 +2718,69 @@ static void Task_ExcavationPrintResult(u8 taskId)
 			gTasks[taskId].func = Task_ExcavationMainInput;
 			break;
 		case STATE_GAME_FINISH:
-			if (IsCrackMax())
-			{
-				PrintMessage(sText_TheWall);
-			}
-			else
-			{
-				PrintMessage(sText_EverythingWas);
-			}
-			sExcavationUiState->loadGameState++;
-			gTasks[taskId].func = Task_WaitButtonPressOpening;
+			HandleGameFinish(taskId);
 			break;
 		case STATE_ITEM_NAME_1:
-			sExcavationUiState->loadGameState++;
-			PrintItemSuccess(0);
-			gTasks[taskId].func = Task_WaitButtonPressOpening;
-			break;
-		case STATE_ITEM_ERROR_1:
-			sExcavationUiState->loadGameState++;
-			break;
 		case STATE_ITEM_NAME_2:
-			PrintItemSuccess(1);
-			sExcavationUiState->loadGameState++;
-			gTasks[taskId].func = Task_WaitButtonPressOpening;
-			break;
-		case STATE_ITEM_ERROR_2:
-			sExcavationUiState->loadGameState++;
-			break;
 		case STATE_ITEM_NAME_3:
-			PrintItemSuccess(2);
-			sExcavationUiState->loadGameState++;
-			gTasks[taskId].func = Task_WaitButtonPressOpening;
-			break;
-		case STATE_ITEM_ERROR_3:
-			sExcavationUiState->loadGameState++;
-			break;
 		case STATE_ITEM_NAME_4:
-			PrintItemSuccess(3);
-			sExcavationUiState->loadGameState++;
-			gTasks[taskId].func = Task_WaitButtonPressOpening;
+			CheckItemAndPrint(taskId);
 			break;
-		case STATE_ITEM_ERROR_4:
-			sExcavationUiState->loadGameState++;
+		case STATE_ITEM_BAG_1:
+		case STATE_ITEM_BAG_2:
+		case STATE_ITEM_BAG_3:
+		case STATE_ITEM_BAG_4:
+			GetItemOrPrintError(taskId);
+			break;
+		default:
 			break;
 	}
 }
 
-static void PrintItemSuccess(u32 buriedItemIndex)
+static void GetItemOrPrintError(u8 taskId)
 {
-	u32 itemId;
+	u32 itemIndex = sExcavationUiState->loadGameState - STATE_GAME_FINISH;
+	u32 itemId = GetBuriedItemId(itemIndex);
+	sExcavationUiState->loadGameState++;
 
-	itemId = GetBuriedItemId(buriedItemIndex);
+	if (AddBagItem(itemId,1))
+		return;
+
+	PrintBagFull();
+	gTasks[taskId].func = Task_WaitButtonPressOpening;
+}
+
+static void CheckItemAndPrint(u8 taskId)
+{
+	u32 itemIndex = sExcavationUiState->loadGameState - STATE_GAME_FINISH;
+	u32 itemId = 0;
+	sExcavationUiState->loadGameState++;
+
+	if (!GetBuriedItemStatus(itemIndex))
+		return;
+
+	itemId = GetBuriedItemId(itemIndex);
+	PrintItemSuccess(itemId);
+	gTasks[taskId].func = Task_WaitButtonPressOpening;
+}
+
+static void HandleGameFinish(u8 taskId)
+{
+	if (IsCrackMax())
+		PrintMessage(sText_TheWall);
+	else
+		PrintMessage(sText_EverythingWas);
+	sExcavationUiState->loadGameState++;
+	gTasks[taskId].func = Task_WaitButtonPressOpening;
+}
+
+static void PrintBagFull(void)
+{
+	PrintMessage(sText_TooBad);
+}
+
+static void PrintItemSuccess(u32 itemId)
+{
 	CopyItemName(itemId,gStringVar1);
 	StringExpandPlaceholders(gStringVar2,sText_WasObtained);
 	PrintMessage(gStringVar2);
@@ -2836,5 +2855,6 @@ static u32 GetBuriedItemId(u32 index)
 
 static bool32 GetBuriedItemStatus(u32 index)
 {
+	DebugPrintf("item %d is %d",index,sExcavationUiState->buriedItem[index].status);
 	return sExcavationUiState->buriedItem[index].status;
 }
