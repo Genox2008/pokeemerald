@@ -64,6 +64,7 @@ static u32 ConvertLoadGameStateToItemIndex(void);
 static void Task_ExcavationPrintResult(u8 taskId);
 static void GetItemOrPrintError(u8 taskId, u32 itemIndex, u32 itemId);
 static void CheckItemAndPrint(u8 taskId, u32 itemIndex, u32 itemId);
+static void MakeCursorInvisible(void);
 static void HandleGameFinish(u8 taskId);
 static void PrintItemSuccess(u32 buriedItemIndex);
 static u32 GetTotalNumberOfBuriedItems(void);
@@ -120,17 +121,17 @@ struct ExcavationState {
 };
 
 static const u32 excavationIdItemIdMap[] = {
-	ITEM_NONE
-	ITEM_HARD_STONE
-	ITEM_REVIVE
-	ITEM_STAR_PIECE
-	ITEM_WATER_STONE
-	ITEM_RED_SHARD
-	ITEM_BLUE_SHARD
-	ITEM_ULTRA_BALL
-	ITEM_MAX_REVIVE
-	ITEM_EVERSTONE
-	ITEM_HEART_SCALE
+	ITEM_NONE,
+	ITEM_HARD_STONE,
+	ITEM_REVIVE,
+	ITEM_STAR_PIECE,
+	ITEM_WATER_STONE,
+	ITEM_RED_SHARD,
+	ITEM_BLUE_SHARD,
+	ITEM_ULTRA_BALL,
+	ITEM_MAX_REVIVE,
+	ITEM_EVERSTONE,
+	ITEM_HEART_SCALE,
 };
 
 static EWRAM_DATA struct ExcavationState *sExcavationUiState = NULL;
@@ -822,7 +823,7 @@ static void UiShake(void) {
     i = CreateSprite(&gSpriteHitEffectPickaxe, (sExcavationUiState->cursorX*16)+8, (sExcavationUiState->cursorY*16)+8, 0);
     i2 = CreateSprite(&gSpriteHitPickaxe, (sExcavationUiState->cursorX*16)+24, sExcavationUiState->cursorY*16, 0);
   }
-  gSprites[sExcavationUiState->cursorSpriteIndex].invisible = 1;
+  MakeCursorInvisible();
   SetGpuReg(REG_OFFSET_BG3HOFS, 1);
   SetGpuReg(REG_OFFSET_BG2HOFS, 1);
   delay(3000);
@@ -2718,6 +2719,7 @@ static void Task_ExcavationPrintResult(u8 taskId) {
 			GetItemOrPrintError(taskId,itemIndex,itemId);
 			break;
 		default:
+			ExitExcavationUI(taskId);
 			break;
 	}
 }
@@ -2747,7 +2749,7 @@ static void GetItemOrPrintError(u8 taskId, u32 itemIndex, u32 itemId) {
 	if (itemId == ITEM_NONE)
 		return;
 
-	if (!AddBagItem(itemId,1))
+	if (AddBagItem(itemId,1))
 		return;
 
 	PrintMessage(sText_TooBad);
@@ -2767,7 +2769,13 @@ static void CheckItemAndPrint(u8 taskId, u32 itemIndex, u32 itemId) {
 	gTasks[taskId].func = Task_WaitButtonPressOpening;
 }
 
+static void MakeCursorInvisible(void) {
+	  gSprites[sExcavationUiState->cursorSpriteIndex].invisible = 1;
+}
+
 static void HandleGameFinish(u8 taskId) {
+	MakeCursorInvisible();
+
 	if (IsCrackMax())
 		PrintMessage(sText_TheWall);
 	else
