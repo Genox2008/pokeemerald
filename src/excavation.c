@@ -74,10 +74,11 @@ static void SetBuriedItemStatus(u32 index, bool32 status);
 static u32 GetBuriedItemId(u32 index);
 static u32 GetNumberOfFoundItems(void);
 static bool32 GetBuriedItemStatus(u32 index);
+static void ExitExcavationGame(u8 taskId);
 
 struct BuriedItem {
-  u16 itemId;
-  bool8 status;
+  u32 itemId;
+  bool32 status;
 };
 
 struct ExcavationState {
@@ -870,7 +871,7 @@ static void UiShake(void) {
 }
 
 void Excavation_ItemUseCB(void) {
-  Excavation_Init(CB2_ReturnToFieldWithOpenMenu);
+  Excavation_Init(CB2_ReturnToField);
 }
 
 static void Excavation_Init(MainCallback callback) {
@@ -1320,15 +1321,10 @@ static void Task_ExcavationWaitFadeIn(u8 taskId)
 #define RED_BUTTON 1
 
 static void Task_ExcavationMainInput(u8 taskId) {
-  if (JOY_NEW(B_BUTTON)) {
-    PlaySE(SE_PC_OFF);
-    BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);
-    gTasks[taskId].func = Task_ExcavationFadeAndExitMenu;
-  }
 
   // Because the UiShake function does manual delays with for loops, we have to imediatly call the update functions for sprites and the schedule
   // functions for bgs. Otherwise we would notice the changes very late
-  else if (gMain.newKeys & A_BUTTON /*&& sExcavationUiState->crackPos < 8 */)  {
+  if (gMain.newKeys & A_BUTTON /*&& sExcavationUiState->crackPos < 8 */)  {
     Excavation_UpdateTerrain();
     Excavation_UpdateCracks();
     ScheduleBgCopyTilemapToVram(2);
@@ -1366,8 +1362,8 @@ static void Task_ExcavationMainInput(u8 taskId) {
 	if (AreAllItemsFound())
 		EndMining(taskId);
 
-	//if (IsCrackMax())
-		//EndMining(taskId);
+	if (IsCrackMax())
+		EndMining(taskId);
 }
 
 #define TILE_POS(x,y) (32*(y) + (x))
@@ -2366,7 +2362,7 @@ static void Excavation_CheckItemFound(void) {
   } else if (sExcavationUiState->state_item1 == full) {
     BeginNormalPaletteFade(0x00040000, 2, 16, 0, RGB_WHITE);
     sExcavationUiState->state_item1 = stop;
-		SetBuriedItemStatus(1,TRUE);
+		SetBuriedItemStatus(0,TRUE);
   }
 
   full = sExcavationUiState->Item2_TilesToDigUp;
@@ -2382,7 +2378,7 @@ static void Excavation_CheckItemFound(void) {
   } else if (sExcavationUiState->state_item2 == full) {
     BeginNormalPaletteFade(0x00080000, 2, 16, 0, RGB_WHITE);
     sExcavationUiState->state_item2 = stop;
-	SetBuriedItemStatus(2,TRUE);
+	SetBuriedItemStatus(1,TRUE);
   }
 
   full = sExcavationUiState->Item3_TilesToDigUp;
@@ -2398,7 +2394,7 @@ static void Excavation_CheckItemFound(void) {
   } else if (sExcavationUiState->state_item3 == full) {
     BeginNormalPaletteFade(0x00100000, 2, 16, 0, RGB_WHITE);
     sExcavationUiState->state_item3 = stop;
-	SetBuriedItemStatus(3,TRUE);
+	SetBuriedItemStatus(2,TRUE);
   }
 
   full = sExcavationUiState->Item4_TilesToDigUp;
@@ -2414,7 +2410,7 @@ static void Excavation_CheckItemFound(void) {
   } else if (sExcavationUiState->state_item4 == full) {
     BeginNormalPaletteFade(0x00200000, 2, 16, 0, RGB_WHITE);
     sExcavationUiState->state_item4 = stop;
-	SetBuriedItemStatus(4,TRUE);
+	SetBuriedItemStatus(3,TRUE);
   }
 
   for(i=0;i<96;i++) {
@@ -2702,6 +2698,7 @@ static void Task_WaitButtonPressOpening(u8 taskId) {
 			gTasks[taskId].func = Task_ExcavationPrintResult;
 			break;
 		case STATE_QUIT:
+			ExitExcavationGame(taskId);
 			break;
 		default:
 			gTasks[taskId].func = Task_ExcavationMainInput;
@@ -2803,6 +2800,7 @@ static void HandleGameFinish(u8 taskId)
 		PrintMessage(sText_TheWall);
 	else
 		PrintMessage(sText_EverythingWas);
+
 	sExcavationUiState->loadGameState++;
 	gTasks[taskId].func = Task_WaitButtonPressOpening;
 }
@@ -2836,9 +2834,12 @@ static u32 GetNumberOfFoundItems(void)
 	u32 index = 0;
 	u32 count = 0;
 
-	for (index = 0; index < GetNumberOfBuriedItems(); index++)
+	for (index = 0; index < MAX_NUM_BURIED_ITEMS; index++)
 		if (GetBuriedItemStatus(index))
 			count++;
+
+	//DebugPrintf("found items %d",count);
+	//DebugPrintf("buried items %d",GetNumberOfBuriedItems());
 
 	return count;
 }
@@ -2906,6 +2907,13 @@ static u32 GetBuriedItemId(u32 index)
 
 static bool32 GetBuriedItemStatus(u32 index)
 {
-	//DebugPrintf("item index %d (item %d) is %d",index,sExcavationUiState->buriedItem[index].itemId,sExcavationUiState->buriedItem[index].status);
+	DebugPrintf("item index %d (item %d) is %d",index,sExcavationUiState->buriedItem[index].itemId,sExcavationUiState->buriedItem[index].status);
 	return sExcavationUiState->buriedItem[index].status;
 }
+
+static void ExitExcavationGame(u8 taskId) {
+	PlaySE(SE_PC_OFF);
+	BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);
+	gTasks[taskId].func = Task_ExcavationFadeAndExitMenu;
+}
+
