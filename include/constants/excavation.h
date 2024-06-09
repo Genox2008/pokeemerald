@@ -3,6 +3,8 @@
 #define ITEM_TILE_NONE    0
 #define ITEM_TILE_DUG_UP  5
 
+#define WIN_MSG 0
+
 #define MAX_NUM_BURIED_ITEMS 4
 
 /*          --Stones--                  */
@@ -31,6 +33,9 @@
 #define STONE_3x3_TILE_AMOUNT_BOTTOM    2
 
 /*          --Items--                   */
+
+#define ITEMID_NONE 0
+
 #define ITEMID_HARD_STONE               1
 #define HARD_STONE_TOTAL_TILES          4
 #define HARD_STONE_TILE_AMOUNT_RIGHT    1
@@ -80,8 +85,6 @@
 #define HEART_SCALE_TOTAL_TILES         3
 #define HEART_SCALE_TILE_AMOUNT_RIGHT   1
 #define HEART_SCALE_TILE_AMOUNT_BOTTOM  1
-
-#define ITEMID_NONE 0
 
 // TODO: change this value to the max itemId
 #define EXCAVATION_ITEM_COUNT ITEMID_REVIVE_MAX
