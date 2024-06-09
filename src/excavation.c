@@ -1165,7 +1165,6 @@ static void ClearItemMap(void) {
 
 struct ItemRarity {
   u8 itemId;
-  u16 realItemId;
   u8 rarity;
 };
 
@@ -1247,13 +1246,13 @@ static void Excavation_LoadSpriteGraphics(void) {
   if (sExcavationUiState->state_item1 == SELECTED) {
     itemId1 = GetRandomItemId();
 	SetBuriedItemsId(0, itemId1);
-    DoDrawRandomItem(0, itemId1);
+    DoDrawRandomItem(1, itemId1);
     sExcavationUiState->Item1_TilesToDigUp = ExcavationUtil_GetTotalTileAmount(itemId1);
   }
   if (sExcavationUiState->state_item2 == SELECTED) {
     itemId2 = GetRandomItemId();
 	SetBuriedItemsId(1, itemId2);
-    DoDrawRandomItem(1, itemId2);
+    DoDrawRandomItem(2, itemId2);
     sExcavationUiState->Item2_TilesToDigUp = ExcavationUtil_GetTotalTileAmount(itemId2);
   } else {
     LoadSpritePalette(sSpritePal_Blank1);
@@ -1261,7 +1260,7 @@ static void Excavation_LoadSpriteGraphics(void) {
   if (sExcavationUiState->state_item3 == SELECTED) {
     itemId3 = GetRandomItemId();
 	SetBuriedItemsId(2, itemId3);
-    DoDrawRandomItem(2, itemId3);
+    DoDrawRandomItem(3, itemId3);
     sExcavationUiState->Item3_TilesToDigUp = ExcavationUtil_GetTotalTileAmount(itemId3);
   } else {
     LoadSpritePalette(sSpritePal_Blank2);
@@ -1269,7 +1268,7 @@ static void Excavation_LoadSpriteGraphics(void) {
   if (sExcavationUiState->state_item4 == SELECTED) {
     itemId4 = GetRandomItemId();
 	SetBuriedItemsId(3, itemId4);
-    DoDrawRandomItem(3, itemId4);
+    DoDrawRandomItem(4, itemId4);
     sExcavationUiState->Item4_TilesToDigUp = ExcavationUtil_GetTotalTileAmount(itemId4);
   }
 
@@ -2851,6 +2850,8 @@ static bool32 AreAllItemsFound(void)
 
 static void FillBagDebug(void)
 {
+	u32 index = 0;
+
 	while (AddBagItem(ITEM_MAX_REVIVE,999))
 	{
 		index++;
