@@ -522,8 +522,6 @@ static const struct OamData gOamHitTools = {
     .paletteNum = 0,
 };
 
-//#define DEBUG_ITEM_GEN
-
 static const struct OamData gOamItem32x32 = {
     .y = 0,
     .affineMode = 0,
@@ -629,7 +627,6 @@ static const union AnimCmd *const gHitPickaxeAnim[] = {
   gAnimCmd_EffectPickaxeHit,
   gAnimCmd_EffectPickaxeNotHit,
 };
-
 
 static const struct SpriteTemplate gSpriteCursor = {
     .tileTag = TAG_CURSOR,
@@ -764,42 +761,8 @@ static const struct SpriteTemplate gSpriteStone3x3 = {
 };
 
 
-static u8 ExcavationUtil_GetTotalTileAmount(u8 itemId) {
-  switch(itemId) {
-    case ITEMID_HEART_SCALE:
-      return HEART_SCALE_TOTAL_TILES;
-      break;
-    case ITEMID_HARD_STONE:
-      return HARD_STONE_TOTAL_TILES;
-      break;
-    case ITEMID_REVIVE:
-      return REVIVE_TOTAL_TILES;
-      break;
-    case ITEMID_STAR_PIECE:
-      return STAR_PIECE_TOTAL_TILES;
-      break;
-    case ITEMID_DAMP_ROCK:
-      return DAMP_ROCK_TOTAL_TILES;
-      break;
-    case ITEMID_RED_SHARD:
-      return RED_SHARD_TOTAL_TILES;
-      break;
-    case ITEMID_BLUE_SHARD:
-      return BLUE_SHARD_TOTAL_TILES;
-      break;
-    case ITEMID_IRON_BALL:
-      return IRON_BALL_TOTAL_TILES;
-      break;
-    case ITEMID_REVIVE_MAX:
-      return REVIVE_MAX_TOTAL_TILES;
-      break;
-    case ITEMID_EVER_STONE:
-      return EVER_STONE_TOTAL_TILES;
-      break;
-    default:
-      return 0;
-      break;
-  }
+static u32 ExcavationUtil_GetTotalTileAmount(u8 itemId) {
+ return ExcavationItemList[itemId].totalTiles + 1;
 }
 
 // It will create a random number between 0 and amount-1
@@ -946,8 +909,7 @@ enum {
   STATE_SET_CALLBACKS,
 };
 
-enum
-{
+enum {
 	STATE_GRAPHICS_VRAM,
 	STATE_GRAPHICS_DECOMPRESS,
 	STATE_GRAPHICS_PALETTES,
@@ -1080,7 +1042,7 @@ static bool8 Excavation_InitBgs(void)
     ScheduleBgCopyTilemapToVram(2);
     ScheduleBgCopyTilemapToVram(3);
 
-	ShowBg(0);
+	  ShowBg(0);
     ShowBg(2);
     ShowBg(3);
 
@@ -1640,6 +1602,7 @@ static void Terrain_DrawLayerTileToScreen(u8 x, u8 y, u8 layer, u16* ptr) {
   }
 }
 
+// Turn this into a table
 static const u16* GetCorrectPalette(u32 TileTag) {
   switch (TileTag) {
     case TAG_ITEM_REVIVE:
@@ -1967,8 +1930,8 @@ static u8 CheckIfItemCanBePlaced(u8 itemId, u8 posX, u8 posY, u8 xBorder, u8 yBo
           sExcavationUiState->itemMap[posX + posY * 12]           == i ||
           sExcavationUiState->itemMap[posX + (posY + 1) * 12]     == i ||
           sExcavationUiState->itemMap[posX + 1 + (posY + 1) * 12] == i ||
-          posX + HEART_SCALE_TILE_AMOUNT_RIGHT > xBorder ||
-          posY + HEART_SCALE_TILE_AMOUNT_BOTTOM > yBorder
+          posX + ExcavationItemList[itemId].left > xBorder ||
+          posY + ExcavationItemList[itemId].top > yBorder
         ) { return 0;}
         break;
       case ITEMID_HARD_STONE:
@@ -1977,8 +1940,8 @@ static u8 CheckIfItemCanBePlaced(u8 itemId, u8 posX, u8 posY, u8 xBorder, u8 yBo
           sExcavationUiState->itemMap[posX + 1 + posY * 12]       == i ||
           sExcavationUiState->itemMap[posX + (posY + 1) * 12]     == i ||
           sExcavationUiState->itemMap[posX + 1 + (posY + 1) * 12] == i ||
-          posX + HARD_STONE_TILE_AMOUNT_RIGHT > xBorder ||
-          posY + HARD_STONE_TILE_AMOUNT_BOTTOM > yBorder
+          posX + ExcavationItemList[itemId].left > xBorder ||
+          posY + ExcavationItemList[itemId].top > yBorder
         ) {return 0;}
         break;
       case ITEMID_REVIVE:
@@ -1988,8 +1951,8 @@ static u8 CheckIfItemCanBePlaced(u8 itemId, u8 posX, u8 posY, u8 xBorder, u8 yBo
           sExcavationUiState->itemMap[posX + (posY + 1) * 12]     == i ||
           sExcavationUiState->itemMap[posX + 2 + (posY + 1) * 12] == i ||
           sExcavationUiState->itemMap[posX + 1 + (posY + 2) * 12] == i ||
-          posX + REVIVE_TILE_AMOUNT_RIGHT > xBorder ||
-          posY + REVIVE_TILE_AMOUNT_BOTTOM > yBorder
+          posX + ExcavationItemList[itemId].left > xBorder ||
+          posY + ExcavationItemList[itemId].top > yBorder
         ) {return 0;}
         break;
       case ITEMID_STAR_PIECE:
@@ -1999,8 +1962,8 @@ static u8 CheckIfItemCanBePlaced(u8 itemId, u8 posX, u8 posY, u8 xBorder, u8 yBo
           sExcavationUiState->itemMap[posX + (posY + 1) * 12]     == i ||
           sExcavationUiState->itemMap[posX + 2 + (posY + 1) * 12] == i ||
           sExcavationUiState->itemMap[posX + 1 + (posY + 2) * 12] == i ||
-          posX + STAR_PIECE_TILE_AMOUNT_RIGHT > xBorder ||
-          posY + STAR_PIECE_TILE_AMOUNT_BOTTOM > yBorder
+          posX + ExcavationItemList[itemId].left > xBorder ||
+          posY + ExcavationItemList[itemId].top > yBorder
         ) {return 0;}
         break;
       case ITEMID_DAMP_ROCK:
@@ -2013,8 +1976,8 @@ static u8 CheckIfItemCanBePlaced(u8 itemId, u8 posX, u8 posY, u8 xBorder, u8 yBo
           sExcavationUiState->itemMap[posX + 2 + posY * 12]       == i ||
           sExcavationUiState->itemMap[posX + (posY + 2) * 12]     == i ||
           sExcavationUiState->itemMap[posX + 2 + (posY + 2) * 12] == i ||
-          posX + DAMP_ROCK_TILE_AMOUNT_RIGHT > xBorder ||
-          posY + DAMP_ROCK_TILE_AMOUNT_BOTTOM > yBorder
+          posX + ExcavationItemList[itemId].left > xBorder ||
+          posY + ExcavationItemList[itemId].top > yBorder
         ) {return 0;}
         break;
       case ITEMID_RED_SHARD:
@@ -2027,8 +1990,8 @@ static u8 CheckIfItemCanBePlaced(u8 itemId, u8 posX, u8 posY, u8 xBorder, u8 yBo
           sExcavationUiState->itemMap[posX + 2 + posY * 12]       == i ||
           sExcavationUiState->itemMap[posX + (posY + 2) * 12]     == i ||
           sExcavationUiState->itemMap[posX + 2 + (posY + 2) * 12] == i ||
-          posX + RED_SHARD_TILE_AMOUNT_RIGHT > xBorder ||
-          posY + RED_SHARD_TILE_AMOUNT_BOTTOM > yBorder
+          posX + ExcavationItemList[itemId].left > xBorder ||
+          posY + ExcavationItemList[itemId].top > yBorder
         ) {return 0;}
         break;
       case ITEMID_BLUE_SHARD:
@@ -2041,8 +2004,8 @@ static u8 CheckIfItemCanBePlaced(u8 itemId, u8 posX, u8 posY, u8 xBorder, u8 yBo
           sExcavationUiState->itemMap[posX + posY * 12]           == i ||
           sExcavationUiState->itemMap[posX + 2 + posY * 12]       == i ||
           sExcavationUiState->itemMap[posX + (posY + 2) * 12]     == i ||
-          posX + BLUE_SHARD_TILE_AMOUNT_RIGHT > xBorder ||
-          posY + BLUE_SHARD_TILE_AMOUNT_BOTTOM > yBorder
+          posX + ExcavationItemList[itemId].left > xBorder ||
+          posY + ExcavationItemList[itemId].top > yBorder
         ) {return 0;}
         break;
       case ITEMID_IRON_BALL:
@@ -2056,8 +2019,8 @@ static u8 CheckIfItemCanBePlaced(u8 itemId, u8 posX, u8 posY, u8 xBorder, u8 yBo
           sExcavationUiState->itemMap[posX + 2 + posY * 12]       == i ||
           sExcavationUiState->itemMap[posX + (posY + 2) * 12]     == i ||
           sExcavationUiState->itemMap[posX + 2 + (posY + 2) * 12] == i ||
-          posX + IRON_BALL_TILE_AMOUNT_RIGHT > xBorder ||
-          posY + IRON_BALL_TILE_AMOUNT_BOTTOM > yBorder
+          posX + ExcavationItemList[itemId].left > xBorder ||
+          posY + ExcavationItemList[itemId].top > yBorder
         ) {return 0;}
         break;
       case ITEMID_REVIVE_MAX:
@@ -2071,8 +2034,8 @@ static u8 CheckIfItemCanBePlaced(u8 itemId, u8 posX, u8 posY, u8 xBorder, u8 yBo
           sExcavationUiState->itemMap[posX + 2 + posY * 12]       == i ||
           sExcavationUiState->itemMap[posX + (posY + 2) * 12]     == i ||
           sExcavationUiState->itemMap[posX + 2 + (posY + 2) * 12] == i ||
-          posX + REVIVE_MAX_TILE_AMOUNT_RIGHT > xBorder ||
-          posY + REVIVE_MAX_TILE_AMOUNT_BOTTOM > yBorder
+          posX + ExcavationItemList[itemId].left > xBorder ||
+          posY + ExcavationItemList[itemId].top > yBorder
         ) {return 0;}
         break;
       case ITEMID_EVER_STONE:
@@ -2085,11 +2048,10 @@ static u8 CheckIfItemCanBePlaced(u8 itemId, u8 posX, u8 posY, u8 xBorder, u8 yBo
           sExcavationUiState->itemMap[posX + 1 + (posY + 1) * 12] == i ||
           sExcavationUiState->itemMap[posX + 2 + (posY + 1) * 12] == i ||
           sExcavationUiState->itemMap[posX + 3 + (posY + 1) * 12] == i ||
-          posX + EVER_STONE_TILE_AMOUNT_RIGHT > xBorder ||
-          posY + EVER_STONE_TILE_AMOUNT_BOTTOM > yBorder
+          posX + ExcavationItemList[itemId].left > xBorder ||
+          posY + ExcavationItemList[itemId].top > yBorder
         ) {return 0;}
         break;
-
       }
   }
   return 1;
@@ -2369,7 +2331,7 @@ static void Excavation_CheckItemFound(void) {
   } else if (sExcavationUiState->state_item2 == full) {
     BeginNormalPaletteFade(0x00080000, 2, 16, 0, RGB_WHITE);
     sExcavationUiState->state_item2 = stop;
-	SetBuriedItemStatus(1,TRUE);
+	  SetBuriedItemStatus(1,TRUE);
   }
 
   full = sExcavationUiState->Item3_TilesToDigUp;
@@ -2385,7 +2347,7 @@ static void Excavation_CheckItemFound(void) {
   } else if (sExcavationUiState->state_item3 == full) {
     BeginNormalPaletteFade(0x00100000, 2, 16, 0, RGB_WHITE);
     sExcavationUiState->state_item3 = stop;
-	SetBuriedItemStatus(2,TRUE);
+	  SetBuriedItemStatus(2,TRUE);
   }
 
   full = sExcavationUiState->Item4_TilesToDigUp;
@@ -2401,7 +2363,7 @@ static void Excavation_CheckItemFound(void) {
   } else if (sExcavationUiState->state_item4 == full) {
     BeginNormalPaletteFade(0x00200000, 2, 16, 0, RGB_WHITE);
     sExcavationUiState->state_item4 = stop;
-	SetBuriedItemStatus(3,TRUE);
+	  SetBuriedItemStatus(3,TRUE);
   }
 
   for(i=0;i<96;i++) {
