@@ -120,19 +120,26 @@ struct ExcavationState {
   u32 state_stone2;
 };
 
-static const u32 excavationIdItemIdMap[] = {
-	ITEM_NONE,
-	ITEM_HARD_STONE,
-	ITEM_REVIVE,
-	ITEM_STAR_PIECE,
-	ITEM_WATER_STONE,
-	ITEM_RED_SHARD,
-	ITEM_BLUE_SHARD,
-	ITEM_ULTRA_BALL,
-	ITEM_MAX_REVIVE,
-	ITEM_EVERSTONE,
-	ITEM_HEART_SCALE,
-};
+// Win IDs
+#define WIN_MSG         0
+
+// Other Sprite Tags
+#define TAG_CURSOR      1
+#define TAG_BUTTONS     2
+
+#define TAG_BLANK1              3
+#define TAG_BLANK2              4
+
+#define TAG_PAL_ITEM1           5
+#define TAG_PAL_ITEM2           6
+#define TAG_PAL_ITEM3           7
+#define TAG_PAL_ITEM4           8
+
+#define TAG_PAL_HIT_EFFECTS     9
+#define TAG_HIT_EFFECT_HAMMER   10
+#define TAG_HIT_EFFECT_PICKAXE  11
+#define TAG_HIT_HAMMER          12
+#define TAG_HIT_PICKAXE         13
 
 static EWRAM_DATA struct ExcavationState *sExcavationUiState = NULL;
 static EWRAM_DATA u8 *sBg2TilemapBuffer = NULL;
@@ -186,10 +193,6 @@ static const u32 gCracksAndTerrainTiles[] = INCBIN_U32("graphics/excavation/crac
 static const u32 gCracksAndTerrainTilemap[] = INCBIN_U32("graphics/excavation/cracks_terrain.bin.lz");
 static const u16 gCracksAndTerrainPalette[] = INCBIN_U16("graphics/excavation/cracks_terrain.gbapal");
 
-// Other Sprite Tags
-#define TAG_CURSOR 1
-#define TAG_BUTTONS 2
-
 // Sprite data
 const u32 gCursorGfx[] = INCBIN_U32("graphics/pokenav/region_map/cursor_small.4bpp.lz");
 const u16 gCursorPal[] = INCBIN_U16("graphics/pokenav/region_map/cursor.gbapal");
@@ -202,85 +205,6 @@ const u32 gHitEffectPickaxeGfx[] = INCBIN_U32("graphics/excavation/hit_effect_pi
 const u32 gHitHammerGfx[] = INCBIN_U32("graphics/excavation/hit_hammer.4bpp.lz");
 const u32 gHitPickaxeGfx[] = INCBIN_U32("graphics/excavation/hit_pickaxe.4bpp.lz");
 const u16 gHitEffectPal[] = INCBIN_U16("graphics/excavation/hit_effects.gbapal");
-
-static const u8 sText_SomethingPinged[] = _("Something pinged in the wall!\n{STR_VAR_1} confirmed!");
-static const u8 sText_EverythingWas[] = _("Everything was dug up!");
-static const u8 sText_WasObtained[] = _("{STR_VAR_1}\nwas obtained!");
-static const u8 sText_TooBad[] = _("Too bad!\nYour Bag is full!");
-static const u8 sText_TheWall[] = _("The wall collapsed!");
-
-// Item Sprite Tags
-#define TAG_ITEM_HEARTSCALE 3
-#define TAG_ITEM_HARDSTONE  4
-#define TAG_ITEM_REVIVE     5
-#define TAG_ITEM_STAR_PIECE 6
-#define TAG_ITEM_DAMP_ROCK  7
-#define TAG_ITEM_RED_SHARD  8
-#define TAG_ITEM_BLUE_SHARD 9
-#define TAG_ITEM_IRON_BALL  10
-#define TAG_ITEM_REVIVE_MAX 11
-#define TAG_ITEM_EVER_STONE 12
-
-#define TAG_STONE_1X4       13
-#define TAG_STONE_4X1       14
-#define TAG_STONE_2X4       15
-#define TAG_STONE_4X2       16
-#define TAG_STONE_2X2       17
-#define TAG_STONE_3X3       18
-
-#define TAG_BLANK1          19
-#define TAG_BLANK2          20
-
-#define TAG_PAL_ITEM1       21
-#define TAG_PAL_ITEM2       22
-#define TAG_PAL_ITEM3       23
-#define TAG_PAL_ITEM4       24
-
-#define TAG_PAL_HIT_EFFECTS     25
-#define TAG_HIT_EFFECT_HAMMER   26
-#define TAG_HIT_EFFECT_PICKAXE  27
-#define TAG_HIT_HAMMER          28
-#define TAG_HIT_PICKAXE         29
-
-// Item sprite & palette data
-const u16 gStonePal[] = INCBIN_U16("graphics/excavation/stones/stones.gbapal");
-
-const u32 gStone1x4Gfx[] = INCBIN_U32("graphics/excavation/stones/stone_1x4.4bpp.lz");
-const u32 gStone4x1Gfx[] = INCBIN_U32("graphics/excavation/stones/stone_4x1.4bpp.lz");
-const u32 gStone2x4Gfx[] = INCBIN_U32("graphics/excavation/stones/stone_2x4.4bpp.lz");
-const u32 gStone4x2Gfx[] = INCBIN_U32("graphics/excavation/stones/stone_4x2.4bpp.lz");
-const u32 gStone2x2Gfx[] = INCBIN_U32("graphics/excavation/stones/stone_2x2.4bpp.lz");
-const u32 gStone3x3Gfx[] = INCBIN_U32("graphics/excavation/stones/stone_3x3.4bpp.lz");
-
-const u32 gItemHeartScaleGfx[] = INCBIN_U32("graphics/excavation/items/heart_scale.4bpp.lz");
-const u16 gItemHeartScalePal[] = INCBIN_U16("graphics/excavation/items/heart_scale.gbapal");
-
-const u32 gItemHardStoneGfx[] = INCBIN_U32("graphics/excavation/items/hard_stone.4bpp.lz");
-const u16 gItemHardStonePal[] = INCBIN_U16("graphics/excavation/items/hard_stone.gbapal");
-
-const u32 gItemReviveGfx[] = INCBIN_U32("graphics/excavation/items/revive.4bpp.lz");
-const u16 gItemRevivePal[] = INCBIN_U16("graphics/excavation/items/revive.gbapal");
-
-const u32 gItemStarPieceGfx[] = INCBIN_U32("graphics/excavation/items/star_piece.4bpp.lz");
-const u16 gItemStarPiecePal[] = INCBIN_U16("graphics/excavation/items/star_piece.gbapal");
-
-const u32 gItemDampRockGfx[] = INCBIN_U32("graphics/excavation/items/damp_rock.4bpp.lz");
-const u16 gItemDampRockPal[] = INCBIN_U16("graphics/excavation/items/damp_rock.gbapal");
-
-const u32 gItemRedShardGfx[] = INCBIN_U32("graphics/excavation/items/red_shard.4bpp.lz");
-const u16 gItemRedShardPal[] = INCBIN_U16("graphics/excavation/items/red_shard.gbapal");
-
-const u32 gItemBlueShardGfx[] = INCBIN_U32("graphics/excavation/items/blue_shard.4bpp.lz");
-const u16 gItemBlueShardPal[] = INCBIN_U16("graphics/excavation/items/blue_shard.gbapal");
-
-const u32 gItemIronBallGfx[] = INCBIN_U32("graphics/excavation/items/iron_ball.4bpp.lz");
-const u16 gItemIronBallPal[] = INCBIN_U16("graphics/excavation/items/iron_ball.gbapal");
-
-const u32 gItemReviveMaxGfx[] = INCBIN_U32("graphics/excavation/items/revive_max.4bpp.lz");
-const u16 gItemReviveMaxPal[] = INCBIN_U16("graphics/excavation/items/revive_max.gbapal");
-
-const u32 gItemEverStoneGfx[] = INCBIN_U32("graphics/excavation/items/ever_stone.4bpp.lz");
-const u16 gItemEverStonePal[] = INCBIN_U16("graphics/excavation/items/ever_stone.gbapal");
 
 static const struct SpritePalette sSpritePal_Blank1[] =
 {
@@ -348,124 +272,6 @@ static const struct SpritePalette sSpritePal_HitEffect[] =
   {NULL},
 };
 
-// Stone SpriteSheets and SpritePalettes
-static const struct CompressedSpriteSheet sSpriteSheet_Stone1x4[] = {
-  {gStone1x4Gfx, 64*64/2, TAG_STONE_1X4},
-  {NULL},
-};
-
-static const struct SpritePalette sSpritePal_Stone1x4[] =
-{
-  {gStonePal, TAG_STONE_1X4},
-  {NULL},
-};
-
-static const struct CompressedSpriteSheet sSpriteSheet_Stone4x1[] = {
-  {gStone4x1Gfx, 64*64/2, TAG_STONE_4X1},
-  {NULL},
-};
-
-static const struct SpritePalette sSpritePal_Stone4x1[] =
-{
-  {gStonePal, TAG_STONE_4X1},
-  {NULL},
-};
-
-static const struct CompressedSpriteSheet sSpriteSheet_Stone2x4[] = {
-  {gStone2x4Gfx, 64*64/2, TAG_STONE_2X4},
-  {NULL},
-};
-
-static const struct SpritePalette sSpritePal_Stone2x4[] =
-{
-  {gStonePal, TAG_STONE_2X4},
-  {NULL},
-};
-
-static const struct CompressedSpriteSheet sSpriteSheet_Stone4x2[] = {
-  {gStone4x2Gfx, 64*64/2, TAG_STONE_4X2},
-  {NULL},
-};
-
-static const struct SpritePalette sSpritePal_Stone4x2[] =
-{
-  {gStonePal, TAG_STONE_4X2},
-  {NULL},
-};
-
-static const struct CompressedSpriteSheet sSpriteSheet_Stone2x2[] = {
-  {gStone2x2Gfx, 64*64/2, TAG_STONE_2X2},
-  {NULL},
-};
-
-static const struct SpritePalette sSpritePal_Stone2x2[] =
-{
-  {gStonePal, TAG_STONE_2X2},
-  {NULL},
-};
-
-static const struct CompressedSpriteSheet sSpriteSheet_Stone3x3[] = {
-  {gStone3x3Gfx, 64*64/2, TAG_STONE_3X3},
-  {NULL},
-};
-
-static const struct SpritePalette sSpritePal_Stone3x3[] =
-{
-  {gStonePal, TAG_STONE_3X3},
-  {NULL},
-};
-
-// Item SpriteSheets and SpritePalettes
-static const struct CompressedSpriteSheet sSpriteSheet_ItemHeartScale[] = {
-  {gItemHeartScaleGfx, 64*64/2, TAG_ITEM_HEARTSCALE},
-  {NULL},
-};
-
-static const struct CompressedSpriteSheet sSpriteSheet_ItemHardStone[] = {
-  {gItemHardStoneGfx, 64*64/2, TAG_ITEM_HARDSTONE},
-  {NULL},
-};
-
-static const struct CompressedSpriteSheet sSpriteSheet_ItemRevive[] = {
-  {gItemReviveGfx, 64*64/2, TAG_ITEM_REVIVE},
-  {NULL},
-};
-
-static const struct CompressedSpriteSheet sSpriteSheet_ItemStarPiece[] = {
-  {gItemStarPieceGfx, 64*64/2, TAG_ITEM_STAR_PIECE},
-  {NULL},
-};
-
-static const struct CompressedSpriteSheet sSpriteSheet_ItemDampRock[] = {
-  {gItemDampRockGfx, 64*64/2, TAG_ITEM_DAMP_ROCK},
-  {NULL},
-};
-
-static const struct CompressedSpriteSheet sSpriteSheet_ItemRedShard[] = {
-  {gItemRedShardGfx, 64*64/2, TAG_ITEM_RED_SHARD},
-  {NULL},
-};
-
-static const struct CompressedSpriteSheet sSpriteSheet_ItemBlueShard[] = {
-  {gItemBlueShardGfx, 64*64/2, TAG_ITEM_BLUE_SHARD},
-  {NULL},
-};
-
-static const struct CompressedSpriteSheet sSpriteSheet_ItemIronBall[] = {
-  {gItemIronBallGfx, 64*64/2, TAG_ITEM_IRON_BALL},
-  {NULL},
-};
-
-static const struct CompressedSpriteSheet sSpriteSheet_ItemReviveMax[] = {
-  {gItemReviveMaxGfx, 64*64/2, TAG_ITEM_REVIVE_MAX},
-  {NULL},
-};
-
-static const struct CompressedSpriteSheet sSpriteSheet_ItemEverStone[] = {
-  {gItemEverStoneGfx, 64*64/2, TAG_ITEM_EVER_STONE},
-  {NULL},
-};
-
 static const struct OamData gOamCursor = {
     .y = 0,
     .affineMode = 0,
@@ -519,42 +325,6 @@ static const struct OamData gOamHitTools = {
     .size = 2,
     .tileNum = 0,
     .priority = 0,
-    .paletteNum = 0,
-};
-
-static const struct OamData gOamItem32x32 = {
-    .y = 0,
-    .affineMode = 0,
-    .objMode = 0,
-    .bpp = 0,
-    .shape = 0,
-    .x = 0,
-    .matrixNum = 0,
-    .size = 2,
-    .tileNum = 0,
-    #ifdef DEBUG_ITEM_GEN
-    .priority = 0,
-    #else
-    .priority = 3,
-    #endif
-    .paletteNum = 0,
-};
-
-static const struct OamData gOamItem64x64 = {
-    .y = 0,
-    .affineMode = 0,
-    .objMode = 0,
-    .bpp = 0,
-    .shape = 0,
-    .x = 0,
-    .matrixNum = 0,
-    .size = 3,
-    .tileNum = 0,
-    #ifdef DEBUG_ITEM_GEN
-    .priority = 0,
-    #else
-    .priority = 3,
-    #endif
     .paletteNum = 0,
 };
 
@@ -699,67 +469,11 @@ static const struct SpriteTemplate gSpriteHitPickaxe = {
   .callback = SpriteCallbackDummy,
 };
 
-// Stone SpriteTemplates
-static const struct SpriteTemplate gSpriteStone1x4 = {
-    .tileTag = TAG_STONE_1X4,
-    .paletteTag = TAG_STONE_1X4,
-    .oam = &gOamItem64x64,
-    .anims = gDummySpriteAnimTable,
-    .images = NULL,
-    .affineAnims = gDummySpriteAffineAnimTable,
-    .callback = SpriteCallbackDummy,
-};
-
-static const struct SpriteTemplate gSpriteStone4x1 = {
-    .tileTag = TAG_STONE_4X1,
-    .paletteTag = TAG_STONE_4X1,
-    .oam = &gOamItem64x64,
-    .anims = gDummySpriteAnimTable,
-    .images = NULL,
-    .affineAnims = gDummySpriteAffineAnimTable,
-    .callback = SpriteCallbackDummy,
-};
-
-static const struct SpriteTemplate gSpriteStone2x4 = {
-    .tileTag = TAG_STONE_2X4,
-    .paletteTag = TAG_STONE_2X4,
-    .oam = &gOamItem64x64,
-    .anims = gDummySpriteAnimTable,
-    .images = NULL,
-    .affineAnims = gDummySpriteAffineAnimTable,
-    .callback = SpriteCallbackDummy,
-};
-
-static const struct SpriteTemplate gSpriteStone4x2 = {
-    .tileTag = TAG_STONE_4X2,
-    .paletteTag = TAG_STONE_4X2,
-    .oam = &gOamItem64x64,
-    .anims = gDummySpriteAnimTable,
-    .images = NULL,
-    .affineAnims = gDummySpriteAffineAnimTable,
-    .callback = SpriteCallbackDummy,
-};
-
-static const struct SpriteTemplate gSpriteStone2x2 = {
-    .tileTag = TAG_STONE_2X2,
-    .paletteTag = TAG_STONE_2X2,
-    .oam = &gOamItem64x64,
-    .anims = gDummySpriteAnimTable,
-    .images = NULL,
-    .affineAnims = gDummySpriteAffineAnimTable,
-    .callback = SpriteCallbackDummy,
-};
-
-static const struct SpriteTemplate gSpriteStone3x3 = {
-    .tileTag = TAG_STONE_3X3,
-    .paletteTag = TAG_STONE_3X3,
-    .oam = &gOamItem64x64,
-    .anims = gDummySpriteAnimTable,
-    .images = NULL,
-    .affineAnims = gDummySpriteAffineAnimTable,
-    .callback = SpriteCallbackDummy,
-};
-
+static const u8 sText_SomethingPinged[] = _("Something pinged in the wall!\n{STR_VAR_1} confirmed!");
+static const u8 sText_EverythingWas[] = _("Everything was dug up!");
+static const u8 sText_WasObtained[] = _("{STR_VAR_1}\nwas obtained!");
+static const u8 sText_TooBad[] = _("Too bad!\nYour Bag is full!");
+static const u8 sText_TheWall[] = _("The wall collapsed!");
 
 static u32 ExcavationUtil_GetTotalTileAmount(u8 itemId) {
  return ExcavationItemList[itemId].totalTiles + 1;
@@ -2792,7 +2506,7 @@ static void InitBuriedItems(void) {
 }
 
 static void SetBuriedItemsId(u32 index, u32 itemId) {
-	sExcavationUiState->buriedItem[index].itemId = excavationIdItemIdMap[itemId];
+	sExcavationUiState->buriedItem[index].itemId = ExcavationItemList[itemId].realItemId;
 }
 
 static void SetBuriedItemStatus(u32 index, bool32 status) {
