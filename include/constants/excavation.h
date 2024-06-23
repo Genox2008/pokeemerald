@@ -1,7 +1,7 @@
 #include "constants/items.h"
 #include "gba/types.h"
 
-//#define DEBUG_ITEM_GEN
+#define DEBUG_ITEM_GEN
 
 #define SELECTED          0
 #define DESELECTED        255
@@ -23,6 +23,13 @@
 #define ITEMID_REVIVE_MAX               8
 #define ITEMID_EVER_STONE               9
 #define ITEMID_HEART_SCALE              10
+
+#define ID_STONE_1x4                    250
+#define ID_STONE_4x1                    251
+#define ID_STONE_2x4                    252
+#define ID_STONE_4x2                    253
+#define ID_STONE_2x2                    254
+#define ID_STONE_3x3                    255
 
 struct ExcavationItem {
   u32 excItemId;
@@ -122,29 +129,40 @@ static const struct ExcavationItem ExcavationItemList[] = {
   },
 };
 
+static const struct ExcavationStone ExcavationStoneList[] = {
+  [ID_STONE_1x4] = {
+    .excStoneId = ID_STONE_1x4,
+    .top = 3,
+    .left = 0,
+  },
+  [ID_STONE_4x1] = {
+    .excStoneId = ID_STONE_4x1,
+    .top = 0,
+    .left = 3,
+  },
+  [ID_STONE_2x4] = {
+    .excStoneId = ID_STONE_2x4,
+    .top = 3,
+    .left = 1,
+  },
+  [ID_STONE_4x2] = {
+    .excStoneId = ID_STONE_4x2,
+    .top = 1,
+    .left = 3,
+  },
+  [ID_STONE_2x2] = {
+    .excStoneId = ID_STONE_2x2,
+    .top = 1,
+    .left = 1,
+  },
+  [ID_STONE_3x3] = {
+    .excStoneId = ID_STONE_3x3,
+    .top = 2,
+    .left = 2,
+  },
+};
+
 /*          --Stones--                  */
-#define ID_STONE_1x4                    250
-#define STONE_1x4_TILE_AMOUNT_RIGHT     0
-#define STONE_1x4_TILE_AMOUNT_BOTTOM    4
 
-#define ID_STONE_4x1                    251
-#define STONE_4x1_TILE_AMOUNT_RIGHT     4
-#define STONE_4x1_TILE_AMOUNT_BOTTOM    0
-
-#define ID_STONE_2x4                    252
-#define STONE_2x4_TILE_AMOUNT_RIGHT     1
-#define STONE_2x4_TILE_AMOUNT_BOTTOM    4
-
-#define ID_STONE_4x2                    253
-#define STONE_4x2_TILE_AMOUNT_RIGHT     4
-#define STONE_4x2_TILE_AMOUNT_BOTTOM    1
-
-#define ID_STONE_2x2                    254
-#define STONE_2x2_TILE_AMOUNT_RIGHT     1
-#define STONE_2x2_TILE_AMOUNT_BOTTOM    1
-
-#define ID_STONE_3x3                    255
-#define STONE_3x3_TILE_AMOUNT_RIGHT     2
-#define STONE_3x3_TILE_AMOUNT_BOTTOM    2
 
 

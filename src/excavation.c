@@ -2176,8 +2176,8 @@ static void DoDrawRandomStone(u8 itemId) {
             sExcavationUiState->itemMap[x + (y + 1) * 12] == 0 &&
             sExcavationUiState->itemMap[x + (y + 2) * 12] == 0 &&
             sExcavationUiState->itemMap[x + (y + 3) * 12] == 0 &&
-            x + STONE_1x4_TILE_AMOUNT_RIGHT < 12 &&
-            y + STONE_1x4_TILE_AMOUNT_BOTTOM < 8 &&
+            x + ExcavationStoneList[itemId].left < 12 &&
+            y + ExcavationStoneList[itemId].top < 8 &&
             Random() > 60000
           ) {
             DrawItemSprite(x, y, itemId, TAG_DUMMY);
@@ -2195,8 +2195,8 @@ static void DoDrawRandomStone(u8 itemId) {
             sExcavationUiState->itemMap[x + 1 + y * 12] == 0 &&
             sExcavationUiState->itemMap[x + 2 + y * 12] == 0 &&
             sExcavationUiState->itemMap[x + 3 + y * 12] == 0 &&
-            x + STONE_4x1_TILE_AMOUNT_RIGHT < 12 &&
-            y + STONE_4x1_TILE_AMOUNT_BOTTOM < 8 &&
+            x + ExcavationStoneList[itemId].left < 12 &&
+            y + ExcavationStoneList[itemId].top < 8 &&
             Random() > 60000
           ) {
             DrawItemSprite(x, y, itemId, TAG_DUMMY);
@@ -2216,8 +2216,8 @@ static void DoDrawRandomStone(u8 itemId) {
             sExcavationUiState->itemMap[x + 1 + (y + 1) * 12] == 0 &&
             sExcavationUiState->itemMap[x + 1 + (y + 2) * 12] == 0 &&
             sExcavationUiState->itemMap[x + 1 + (y + 3) * 12] == 0 &&
-            x + STONE_2x4_TILE_AMOUNT_RIGHT < 12 &&
-            y + STONE_2x4_TILE_AMOUNT_BOTTOM < 8 &&
+            x + ExcavationStoneList[itemId].left < 12 &&
+            y + ExcavationStoneList[itemId].top < 8 &&
             Random() > 60000
           ) {
             DrawItemSprite(x, y, itemId, TAG_DUMMY);
@@ -2237,8 +2237,9 @@ static void DoDrawRandomStone(u8 itemId) {
             sExcavationUiState->itemMap[x + 1 + (y + 1) * 12] == 0 &&
             sExcavationUiState->itemMap[x + 2 + (y + 1) * 12] == 0 &&
             sExcavationUiState->itemMap[x + 3 + (y + 1) * 12] == 0 &&
-            x + STONE_4x2_TILE_AMOUNT_RIGHT < 12 &&
-            y + STONE_4x2_TILE_AMOUNT_BOTTOM < 8 &&
+            x + ExcavationStoneList[itemId].left < 12 &&
+            y + ExcavationStoneList[itemId].top < 8 &&
+
             Random() > 60000
           ) {
             DrawItemSprite(x, y, itemId, TAG_DUMMY);
@@ -2254,8 +2255,9 @@ static void DoDrawRandomStone(u8 itemId) {
             sExcavationUiState->itemMap[x + 1 + y * 12]       == 0 &&
             sExcavationUiState->itemMap[x + (y + 1) * 12]     == 0 &&
             sExcavationUiState->itemMap[x + 1 + (y + 1) * 12] == 0 &&
-            x + STONE_2x2_TILE_AMOUNT_RIGHT < 12 &&
-            y + STONE_2x2_TILE_AMOUNT_BOTTOM < 8 &&
+            x + ExcavationStoneList[itemId].left < 12 &&
+            y + ExcavationStoneList[itemId].top < 8 &&
+
             Random() > 60000
           ) {
             DrawItemSprite(x, y, itemId, TAG_DUMMY);
@@ -2276,8 +2278,9 @@ static void DoDrawRandomStone(u8 itemId) {
             sExcavationUiState->itemMap[x + 2 + (y + 2) * 12] == 0 &&
             sExcavationUiState->itemMap[x + 1 + (y + 2) * 12] == 0 &&
             sExcavationUiState->itemMap[x + (y + 2) * 12]     == 0 &&
-            x + STONE_3x3_TILE_AMOUNT_RIGHT < 12 &&
-            y + STONE_3x3_TILE_AMOUNT_BOTTOM < 8 &&
+            x + ExcavationStoneList[itemId].left < 12 &&
+            y + ExcavationStoneList[itemId].top < 8 &&
+
             Random() > 60000
           ) {
             DrawItemSprite(x, y, itemId, TAG_DUMMY);
