@@ -1857,146 +1857,116 @@ static void DrawItemSprite(u8 x, u8 y, u8 itemId, u32 itemNumPalTag) {
   }
 }
 
-static void OverwriteItemMapData(u8 posX, u8 posY, u8 itemStateId, u8 itemId) {
+// Defines && Macros
+static void SetItemState(u32 posX, u32 posY, u32 x, u32 y, u32 itemStateId) {
+  sExcavationUiState->itemMap[posX + x + (posY + y) * 12] = itemStateId;
+}
+
+#define OIMD_2x2 SetItemState(posX, posY, 0, 0, itemStateId); \
+                 SetItemState(posX, posY, 1, 0, itemStateId); \
+                 SetItemState(posX, posY, 0, 1, itemStateId); \
+                 SetItemState(posX, posY, 1, 1, itemStateId); 
+
+#define OIMD_3x3 OIMD_2x2 \
+                 SetItemState(posX, posY, 2, 0, itemStateId); \
+                 SetItemState(posX, posY, 2, 1, itemStateId); \
+                 SetItemState(posX, posY, 2, 2, itemStateId); \
+                 SetItemState(posX, posY, 0, 2, itemStateId); \
+                 SetItemState(posX, posY, 1, 2, itemStateId);
+
+#define OIMD_3x3_PLUS SetItemState(posX, posY, 1, 1, itemStateId); \
+                      SetItemState(posX, posY, 1, 0, itemStateId); \
+                      SetItemState(posX, posY, 0, 1, itemStateId); \
+                      SetItemState(posX, posY, 1, 2, itemStateId); \
+                      SetItemState(posX, posY, 2, 1, itemStateId);
+
+static void OverwriteItemMapData(u8 posX, u8 posY, u8 itemStateId, u8 itemId) { 
   switch (itemId) {
     case ID_STONE_1x4:
-      sExcavationUiState->itemMap[posX + posY * 12]           = itemStateId;
-      sExcavationUiState->itemMap[posX + (posY + 1) * 12]     = itemStateId;
-      sExcavationUiState->itemMap[posX + (posY + 2) * 12]     = itemStateId;
-      sExcavationUiState->itemMap[posX + (posY + 3) * 12]     = itemStateId;
+      SetItemState(posX, posY, 0, 0, itemStateId);
+      SetItemState(posX, posY, 0, 1, itemStateId);
+      SetItemState(posX, posY, 0, 2, itemStateId);
+      SetItemState(posX, posY, 0, 3, itemStateId);
       break;
     case ID_STONE_4x1:
-      sExcavationUiState->itemMap[posX + posY * 12]           = itemStateId;
-      sExcavationUiState->itemMap[posX + 1 + posY * 12]       = itemStateId;
-      sExcavationUiState->itemMap[posX + 2 + posY * 12]       = itemStateId;
-      sExcavationUiState->itemMap[posX + 3 + posY * 12]       = itemStateId;
+      SetItemState(posX, posY, 0, 0, itemStateId);
+      SetItemState(posX, posY, 1, 0, itemStateId);
+      SetItemState(posX, posY, 2, 0, itemStateId);
+      SetItemState(posX, posY, 3, 0, itemStateId);
       break;
     case ID_STONE_2x4:
-      sExcavationUiState->itemMap[posX + posY * 12]           = itemStateId;
-      sExcavationUiState->itemMap[posX + (posY + 1) * 12]     = itemStateId;
-      sExcavationUiState->itemMap[posX + (posY + 2) * 12]     = itemStateId;
-      sExcavationUiState->itemMap[posX + (posY + 3) * 12]     = itemStateId;
-      sExcavationUiState->itemMap[posX + 1 + posY * 12]       = itemStateId;
-      sExcavationUiState->itemMap[posX + 1 + (posY + 1) * 12] = itemStateId;
-      sExcavationUiState->itemMap[posX + 1 + (posY + 2) * 12] = itemStateId;
-      sExcavationUiState->itemMap[posX + 1 + (posY + 3) * 12] = itemStateId;
+      OIMD_2x2
+      SetItemState(posX, posY, 0, 2, itemStateId);
+      SetItemState(posX, posY, 0, 3, itemStateId);
+      SetItemState(posX, posY, 1, 2, itemStateId);
+      SetItemState(posX, posY, 1, 3, itemStateId);
       break;
     case ID_STONE_4x2:
-      sExcavationUiState->itemMap[posX + posY * 12]           = itemStateId;
-      sExcavationUiState->itemMap[posX + 1 + posY * 12]       = itemStateId;
-      sExcavationUiState->itemMap[posX + 2 + posY * 12]       = itemStateId;
-      sExcavationUiState->itemMap[posX + 3 + posY * 12]       = itemStateId;
-      sExcavationUiState->itemMap[posX + (posY + 1) * 12]     = itemStateId;
-      sExcavationUiState->itemMap[posX + 1 + (posY + 1) * 12] = itemStateId;
-      sExcavationUiState->itemMap[posX + 2 + (posY + 1) * 12] = itemStateId;
-      sExcavationUiState->itemMap[posX + 3 + (posY + 1) * 12] = itemStateId;
+      OIMD_2x2
+      SetItemState(posX, posY, 2, 0, itemStateId);
+      SetItemState(posX, posY, 3, 0, itemStateId);
+      SetItemState(posX, posY, 2, 1, itemStateId);
+      SetItemState(posX, posY, 3, 1, itemStateId);
       break;
     case ID_STONE_2x2:
-      sExcavationUiState->itemMap[posX + posY * 12]           = itemStateId;
-      sExcavationUiState->itemMap[posX + (posY + 1) * 12]     = itemStateId;
-      sExcavationUiState->itemMap[posX + 1 + posY * 12]       = itemStateId;
-      sExcavationUiState->itemMap[posX + 1 + (posY + 1) * 12] = itemStateId;
+      OIMD_2x2
       break;
      case ID_STONE_3x3:
-      sExcavationUiState->itemMap[posX + posY * 12]           = itemStateId;
-      sExcavationUiState->itemMap[posX + (posY + 1) * 12]     = itemStateId;
-      sExcavationUiState->itemMap[posX + 1 + posY * 12]       = itemStateId;
-      sExcavationUiState->itemMap[posX + 1 + (posY + 1) * 12] = itemStateId;
-      sExcavationUiState->itemMap[posX + (posY + 2) * 12]     = itemStateId;
-      sExcavationUiState->itemMap[posX + 1 + (posY + 2) * 12] = itemStateId;
-      sExcavationUiState->itemMap[posX + 2 + (posY + 2) * 12] = itemStateId;
-      sExcavationUiState->itemMap[posX + 2 + (posY + 1) * 12] = itemStateId;
-      sExcavationUiState->itemMap[posX + 2 + posY * 12]       = itemStateId;
+      OIMD_3x3
       break;
     case ITEMID_HEART_SCALE:
-      sExcavationUiState->itemMap[posX + posY * 12]           = itemStateId;
-      sExcavationUiState->itemMap[posX + (posY + 1) * 12]     = itemStateId;
-      sExcavationUiState->itemMap[posX + 1 + (posY + 1) * 12] = itemStateId;
+      SetItemState(posX, posY, 0, 0, itemStateId);
+      SetItemState(posX, posY, 0, 1, itemStateId);
+      SetItemState(posX, posY, 1, 1, itemStateId);
       break;
     case ITEMID_HARD_STONE:
-      sExcavationUiState->itemMap[posX + posY * 12]           = itemStateId;
-      sExcavationUiState->itemMap[posX + 1 + posY * 12]       = itemStateId;
-      sExcavationUiState->itemMap[posX + (posY + 1) * 12]     = itemStateId;
-      sExcavationUiState->itemMap[posX + 1 + (posY + 1) * 12] = itemStateId;
+      OIMD_2x2
       break;
     case ITEMID_REVIVE:
-      sExcavationUiState->itemMap[posX + 1 + (posY + 1) * 12] = itemStateId;
-      sExcavationUiState->itemMap[posX + 1 + posY * 12]       = itemStateId;
-      sExcavationUiState->itemMap[posX + (posY + 1) * 12]     = itemStateId;
-      sExcavationUiState->itemMap[posX + 2 + (posY + 1) * 12] = itemStateId;
-      sExcavationUiState->itemMap[posX + 1 + (posY + 2) * 12] = itemStateId;
+      OIMD_3x3_PLUS
       break;
     case ITEMID_STAR_PIECE:
-      sExcavationUiState->itemMap[posX + 1 + (posY + 1) * 12] = itemStateId;
-      sExcavationUiState->itemMap[posX + 1 + posY * 12]       = itemStateId;
-      sExcavationUiState->itemMap[posX + (posY + 1) * 12]     = itemStateId;
-      sExcavationUiState->itemMap[posX + 2 + (posY + 1) * 12] = itemStateId;
-      sExcavationUiState->itemMap[posX + 1 + (posY + 2) * 12] = itemStateId;
+      OIMD_3x3_PLUS     
       break;
     case ITEMID_DAMP_ROCK:
-      sExcavationUiState->itemMap[posX + 1 + (posY + 1) * 12] = itemStateId;
-      sExcavationUiState->itemMap[posX + 1 + posY * 12]       = itemStateId;
-      sExcavationUiState->itemMap[posX + (posY + 1) * 12]     = itemStateId;
-      sExcavationUiState->itemMap[posX + 2 + (posY + 1) * 12] = itemStateId;
-      sExcavationUiState->itemMap[posX + posY * 12]           = itemStateId;
-      sExcavationUiState->itemMap[posX + 2 + posY * 12]       = itemStateId;
-      sExcavationUiState->itemMap[posX + (posY + 2) * 12]     = itemStateId;
-      sExcavationUiState->itemMap[posX + 2 + (posY + 2) * 12] = itemStateId;
+      OIMD_2x2 
+      SetItemState(posX, posY, 2, 1, itemStateId);
+      SetItemState(posX, posY, 2, 0, itemStateId);
+      SetItemState(posX, posY, 0, 2, itemStateId);
+      SetItemState(posX, posY, 2, 2, itemStateId);
       break;
     case ITEMID_RED_SHARD:
-      sExcavationUiState->itemMap[posX + 1 + (posY + 1) * 12] = itemStateId;
-      sExcavationUiState->itemMap[posX + 1 + posY * 12]       = itemStateId;
-      sExcavationUiState->itemMap[posX + (posY + 1) * 12]     = itemStateId;
-      sExcavationUiState->itemMap[posX + 1 + (posY + 2) * 12] = itemStateId;
-      sExcavationUiState->itemMap[posX + posY * 12]           = itemStateId;
-      sExcavationUiState->itemMap[posX + 2 + posY * 12]       = itemStateId;
-      sExcavationUiState->itemMap[posX + (posY + 2) * 12]     = itemStateId;
-      sExcavationUiState->itemMap[posX + 2 + (posY + 2) * 12] = itemStateId;
+      OIMD_2x2
+      SetItemState(posX, posY, 1, 2, itemStateId);
+      SetItemState(posX, posY, 2, 0, itemStateId);
+      SetItemState(posX, posY, 0, 2, itemStateId);
+      SetItemState(posX, posY, 2, 2, itemStateId);
       break;
     case ITEMID_BLUE_SHARD:
-      sExcavationUiState->itemMap[posX + 1 + (posY + 1) * 12] = itemStateId;
-      sExcavationUiState->itemMap[posX + 1 + posY * 12]       = itemStateId;
-      sExcavationUiState->itemMap[posX + (posY + 1) * 12]     = itemStateId;
-      sExcavationUiState->itemMap[posX + 2 + (posY + 1) * 12] = itemStateId;
-      sExcavationUiState->itemMap[posX + 1 + (posY + 2) * 12] = itemStateId;
-      sExcavationUiState->itemMap[posX + posY * 12]           = itemStateId;
-      sExcavationUiState->itemMap[posX + 2 + posY * 12]       = itemStateId;
-      sExcavationUiState->itemMap[posX + (posY + 2) * 12]     = itemStateId;
+      OIMD_3x3_PLUS
+      SetItemState(posX, posY, 0, 0, itemStateId);
+      SetItemState(posX, posY, 2, 0, itemStateId);
+      SetItemState(posX, posY, 0, 2, itemStateId);
       break;
     case ITEMID_IRON_BALL:
-      sExcavationUiState->itemMap[posX + 1 + (posY + 1) * 12] = itemStateId;
-      sExcavationUiState->itemMap[posX + 1 + posY * 12]       = itemStateId;
-      sExcavationUiState->itemMap[posX + (posY + 1) * 12]     = itemStateId;
-      sExcavationUiState->itemMap[posX + 2 + (posY + 1) * 12] = itemStateId;
-      sExcavationUiState->itemMap[posX + 1 + (posY + 2) * 12] = itemStateId;
-      sExcavationUiState->itemMap[posX + posY * 12]           = itemStateId;
-      sExcavationUiState->itemMap[posX + 2 + posY * 12]       = itemStateId;
-      sExcavationUiState->itemMap[posX + (posY + 2) * 12]     = itemStateId;
-      sExcavationUiState->itemMap[posX + 2 + (posY + 2) * 12] = itemStateId;
+      OIMD_3x3
       break;
     case ITEMID_REVIVE_MAX:
-      sExcavationUiState->itemMap[posX + 1 + (posY + 1) * 12] = itemStateId;
-      sExcavationUiState->itemMap[posX + 1 + posY * 12]       = itemStateId;
-      sExcavationUiState->itemMap[posX + (posY + 1) * 12]     = itemStateId;
-      sExcavationUiState->itemMap[posX + 2 + (posY + 1) * 12] = itemStateId;
-      sExcavationUiState->itemMap[posX + 1 + (posY + 2) * 12] = itemStateId;
-      sExcavationUiState->itemMap[posX + posY * 12]           = itemStateId;
-      sExcavationUiState->itemMap[posX + 2 + posY * 12]       = itemStateId;
-      sExcavationUiState->itemMap[posX + (posY + 2) * 12]     = itemStateId;
-      sExcavationUiState->itemMap[posX + 2 + (posY + 2) * 12] = itemStateId;
+      OIMD_3x3
       break;
     case ITEMID_EVER_STONE:
-      sExcavationUiState->itemMap[posX + posY * 12]           = itemStateId;
-      sExcavationUiState->itemMap[posX + 1 + posY * 12]       = itemStateId;
-      sExcavationUiState->itemMap[posX + 2 + posY * 12]       = itemStateId;
-      sExcavationUiState->itemMap[posX + 3 + posY * 12]       = itemStateId;
-      sExcavationUiState->itemMap[posX + (posY + 1) * 12]     = itemStateId;
-      sExcavationUiState->itemMap[posX + 1 + (posY + 1) * 12] = itemStateId;
-      sExcavationUiState->itemMap[posX + 2 + (posY + 1) * 12] = itemStateId;
-      sExcavationUiState->itemMap[posX + 3 + (posY + 1) * 12] = itemStateId;
+      OIMD_2x2
+      SetItemState(posX, posY, 2, 0, itemStateId);
+      SetItemState(posX, posY, 3, 0, itemStateId);
+      SetItemState(posX, posY, 2, 1, itemStateId);
+      SetItemState(posX, posY, 3, 1, itemStateId);
       break;
   }
 }
+
+// Defines && Macros
+#define BORDERCHECK_COND(itemId) (posX + ExcavationItemList[(itemId)].left > xBorder || \
+                                  posY + ExcavationItemList[(itemId)].top > yBorder)
 
 // This function is used to determine wether an item should be placed or not.
 // Items could generate on top of each other if this function isnt used to check if the next placement will overwrite other data in itemMap
