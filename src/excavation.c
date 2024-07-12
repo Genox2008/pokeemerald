@@ -1965,8 +1965,42 @@ static void OverwriteItemMapData(u8 posX, u8 posY, u8 itemStateId, u8 itemId) {
 }
 
 // Defines && Macros
-#define BORDERCHECK_COND(itemId) (posX + ExcavationItemList[(itemId)].left > xBorder || \
-                                  posY + ExcavationItemList[(itemId)].top > yBorder)
+#define BORDERCHECK_COND(itemId) posX + ExcavationItemList[(itemId)].left > xBorder || \
+                                 posY + ExcavationItemList[(itemId)].top > yBorder
+
+static bool32 ItemStateCondition(u32 posX, u32 posY, u32 x, u32 y, u32 i) {
+  return (sExcavationUiState->itemMap[posX + (x) + (posY + (y)) * 12] == i);
+}
+
+static bool32 ItemPlaceable_Cond_2x2(u32 posX, u32 posY, u32 i) {
+  return (
+    ItemStateCondition(posX, posY, 0, 0, i) ||
+    ItemStateCondition(posX, posY, 0, 1, i) ||
+    ItemStateCondition(posX, posY, 1, 0, i) ||
+    ItemStateCondition(posX, posY, 1, 1, i) 
+  );
+}
+
+static bool32 ItemPlaceable_Cond_3x3(u32 posX, u32 posY, u32 i) {
+  return (
+    ItemPlaceable_Cond_2x2(posX, posY, i) ||
+    ItemStateCondition(posX, posY, 2, 0, i) ||
+    ItemStateCondition(posX, posY, 2, 1, i) ||
+    ItemStateCondition(posX, posY, 2, 2, i) ||
+    ItemStateCondition(posX, posY, 0, 2, i) ||
+    ItemStateCondition(posX, posY, 1, 2, i)
+  );
+}
+
+static bool32 ItemPlaceable_Cond_3x3_Plus(u32 posX, u32 posY, u32 i) {
+  return (
+    ItemStateCondition(posX, posY, 1, 1, i) ||
+    ItemStateCondition(posX, posY, 0, 1, i) ||
+    ItemStateCondition(posX, posY, 1, 0, i) ||
+    ItemStateCondition(posX, posY, 2, 1, i) ||
+    ItemStateCondition(posX, posY, 1, 2, i)
+  );
+}
 
 // This function is used to determine wether an item should be placed or not.
 // Items could generate on top of each other if this function isnt used to check if the next placement will overwrite other data in itemMap
@@ -1985,129 +2019,79 @@ static u8 CheckIfItemCanBePlaced(u8 itemId, u8 posX, u8 posY, u8 xBorder, u8 yBo
     switch (itemId) {
       case ITEMID_HEART_SCALE:
         if (
-          sExcavationUiState->itemMap[posX + posY * 12]           == i ||
-          sExcavationUiState->itemMap[posX + (posY + 1) * 12]     == i ||
-          sExcavationUiState->itemMap[posX + 1 + (posY + 1) * 12] == i ||
-          posX + ExcavationItemList[itemId].left > xBorder ||
-          posY + ExcavationItemList[itemId].top > yBorder
+          ItemStateCondition(posX, posY, 0, 0, i) ||
+          ItemStateCondition(posX, posY, 0, 1, i) ||
+          ItemStateCondition(posX, posY, 1, 1, i) ||
+          BORDERCHECK_COND(itemId)
         ) { return 0;}
         break;
       case ITEMID_HARD_STONE:
         if (
-          sExcavationUiState->itemMap[posX + posY * 12]           == i ||
-          sExcavationUiState->itemMap[posX + 1 + posY * 12]       == i ||
-          sExcavationUiState->itemMap[posX + (posY + 1) * 12]     == i ||
-          sExcavationUiState->itemMap[posX + 1 + (posY + 1) * 12] == i ||
-          posX + ExcavationItemList[itemId].left > xBorder ||
-          posY + ExcavationItemList[itemId].top > yBorder
+          ItemPlaceable_Cond_2x2(posX, posY, i) ||
+          BORDERCHECK_COND(itemId)
         ) {return 0;}
         break;
       case ITEMID_REVIVE:
         if (
-          sExcavationUiState->itemMap[posX + 1 + (posY + 1) * 12] == i ||
-          sExcavationUiState->itemMap[posX + 1 + posY * 12]       == i ||
-          sExcavationUiState->itemMap[posX + (posY + 1) * 12]     == i ||
-          sExcavationUiState->itemMap[posX + 2 + (posY + 1) * 12] == i ||
-          sExcavationUiState->itemMap[posX + 1 + (posY + 2) * 12] == i ||
-          posX + ExcavationItemList[itemId].left > xBorder ||
-          posY + ExcavationItemList[itemId].top > yBorder
+          ItemPlaceable_Cond_3x3_Plus(posX, posY, i) ||
+          BORDERCHECK_COND(itemId)
         ) {return 0;}
         break;
       case ITEMID_STAR_PIECE:
         if (
-          sExcavationUiState->itemMap[posX + 1 + (posY + 1) * 12] == i ||
-          sExcavationUiState->itemMap[posX + 1 + posY * 12]       == i ||
-          sExcavationUiState->itemMap[posX + (posY + 1) * 12]     == i ||
-          sExcavationUiState->itemMap[posX + 2 + (posY + 1) * 12] == i ||
-          sExcavationUiState->itemMap[posX + 1 + (posY + 2) * 12] == i ||
-          posX + ExcavationItemList[itemId].left > xBorder ||
-          posY + ExcavationItemList[itemId].top > yBorder
+          ItemPlaceable_Cond_3x3_Plus(posX, posY, i) ||
+          BORDERCHECK_COND(itemId)
         ) {return 0;}
         break;
       case ITEMID_DAMP_ROCK:
         if (
-          sExcavationUiState->itemMap[posX + 1 + (posY + 1) * 12] == i ||
-          sExcavationUiState->itemMap[posX + 1 + posY * 12]       == i ||
-          sExcavationUiState->itemMap[posX + (posY + 1) * 12]     == i ||
-          sExcavationUiState->itemMap[posX + 2 + (posY + 1) * 12] == i ||
-          sExcavationUiState->itemMap[posX + posY * 12]           == i ||
-          sExcavationUiState->itemMap[posX + 2 + posY * 12]       == i ||
-          sExcavationUiState->itemMap[posX + (posY + 2) * 12]     == i ||
-          sExcavationUiState->itemMap[posX + 2 + (posY + 2) * 12] == i ||
-          posX + ExcavationItemList[itemId].left > xBorder ||
-          posY + ExcavationItemList[itemId].top > yBorder
+          ItemPlaceable_Cond_2x2(posX, posY, i) ||
+          ItemStateCondition(posX, posY, 2, 1, i) ||
+          ItemStateCondition(posX, posY, 2, 0, i) ||
+          ItemStateCondition(posX, posY, 0, 2, i) ||
+          ItemStateCondition(posX, posY, 2, 2, i) ||
+          BORDERCHECK_COND(itemId)
         ) {return 0;}
         break;
       case ITEMID_RED_SHARD:
         if (
-          sExcavationUiState->itemMap[posX + 1 + (posY + 1) * 12] == i ||
-          sExcavationUiState->itemMap[posX + 1 + posY * 12]       == i ||
-          sExcavationUiState->itemMap[posX + (posY + 1) * 12]     == i ||
-          sExcavationUiState->itemMap[posX + 1 + (posY + 2) * 12] == i ||
-          sExcavationUiState->itemMap[posX + posY * 12]           == i ||
-          sExcavationUiState->itemMap[posX + 2 + posY * 12]       == i ||
-          sExcavationUiState->itemMap[posX + (posY + 2) * 12]     == i ||
-          sExcavationUiState->itemMap[posX + 2 + (posY + 2) * 12] == i ||
-          posX + ExcavationItemList[itemId].left > xBorder ||
-          posY + ExcavationItemList[itemId].top > yBorder
+          ItemPlaceable_Cond_2x2(posX, posY, i) ||
+          ItemStateCondition(posX, posY, 1, 2, i) ||
+          ItemStateCondition(posX, posY, 2, 0, i) ||
+          ItemStateCondition(posX, posY, 0, 2, i) ||
+          ItemStateCondition(posX, posY, 2, 2, i) ||
+          BORDERCHECK_COND(itemId)
         ) {return 0;}
         break;
       case ITEMID_BLUE_SHARD:
         if (
-          sExcavationUiState->itemMap[posX + 1 + (posY + 1) * 12] == i ||
-          sExcavationUiState->itemMap[posX + 1 + posY * 12]       == i ||
-          sExcavationUiState->itemMap[posX + (posY + 1) * 12]     == i ||
-          sExcavationUiState->itemMap[posX + 2 + (posY + 1) * 12] == i ||
-          sExcavationUiState->itemMap[posX + 1 + (posY + 2) * 12] == i ||
-          sExcavationUiState->itemMap[posX + posY * 12]           == i ||
-          sExcavationUiState->itemMap[posX + 2 + posY * 12]       == i ||
-          sExcavationUiState->itemMap[posX + (posY + 2) * 12]     == i ||
-          posX + ExcavationItemList[itemId].left > xBorder ||
-          posY + ExcavationItemList[itemId].top > yBorder
+          ItemPlaceable_Cond_3x3_Plus(posX, posY, i) ||
+          ItemStateCondition(posX, posY, 0, 0, i) ||
+          ItemStateCondition(posX, posY, 2, 0, i) ||
+          ItemStateCondition(posX, posY, 0, 2, i) ||
+          BORDERCHECK_COND(itemId)
         ) {return 0;}
         break;
       case ITEMID_IRON_BALL:
         if (
-          sExcavationUiState->itemMap[posX + 1 + (posY + 1) * 12] == i ||
-          sExcavationUiState->itemMap[posX + 1 + posY * 12]       == i ||
-          sExcavationUiState->itemMap[posX + (posY + 1) * 12]     == i ||
-          sExcavationUiState->itemMap[posX + 2 + (posY + 1) * 12] == i ||
-          sExcavationUiState->itemMap[posX + 1 + (posY + 2) * 12] == i ||
-          sExcavationUiState->itemMap[posX + posY * 12]           == i ||
-          sExcavationUiState->itemMap[posX + 2 + posY * 12]       == i ||
-          sExcavationUiState->itemMap[posX + (posY + 2) * 12]     == i ||
-          sExcavationUiState->itemMap[posX + 2 + (posY + 2) * 12] == i ||
-          posX + ExcavationItemList[itemId].left > xBorder ||
-          posY + ExcavationItemList[itemId].top > yBorder
+          ItemPlaceable_Cond_3x3(posX, posY, i) ||
+          BORDERCHECK_COND(itemId)
         ) {return 0;}
         break;
       case ITEMID_REVIVE_MAX:
         if (
-          sExcavationUiState->itemMap[posX + 1 + (posY + 1) * 12] == i ||
-          sExcavationUiState->itemMap[posX + 1 + posY * 12]       == i ||
-          sExcavationUiState->itemMap[posX + (posY + 1) * 12]     == i ||
-          sExcavationUiState->itemMap[posX + 2 + (posY + 1) * 12] == i ||
-          sExcavationUiState->itemMap[posX + 1 + (posY + 2) * 12] == i ||
-          sExcavationUiState->itemMap[posX + posY * 12]           == i ||
-          sExcavationUiState->itemMap[posX + 2 + posY * 12]       == i ||
-          sExcavationUiState->itemMap[posX + (posY + 2) * 12]     == i ||
-          sExcavationUiState->itemMap[posX + 2 + (posY + 2) * 12] == i ||
-          posX + ExcavationItemList[itemId].left > xBorder ||
-          posY + ExcavationItemList[itemId].top > yBorder
+          ItemPlaceable_Cond_3x3(posX, posY, i) ||
+          BORDERCHECK_COND(itemId)
         ) {return 0;}
         break;
       case ITEMID_EVER_STONE:
         if (
-          sExcavationUiState->itemMap[posX + posY * 12]           == i ||
-          sExcavationUiState->itemMap[posX + 1 + posY * 12]       == i ||
-          sExcavationUiState->itemMap[posX + 2 + posY * 12]       == i ||
-          sExcavationUiState->itemMap[posX + 3 + posY * 12]       == i ||
-          sExcavationUiState->itemMap[posX + (posY + 1) * 12]     == i ||
-          sExcavationUiState->itemMap[posX + 1 + (posY + 1) * 12] == i ||
-          sExcavationUiState->itemMap[posX + 2 + (posY + 1) * 12] == i ||
-          sExcavationUiState->itemMap[posX + 3 + (posY + 1) * 12] == i ||
-          posX + ExcavationItemList[itemId].left > xBorder ||
-          posY + ExcavationItemList[itemId].top > yBorder
+          ItemPlaceable_Cond_2x2(posX, posY, i) ||
+          ItemStateCondition(posX, posY, 2, 0, i) ||
+          ItemStateCondition(posX, posY, 3, 0, i) ||
+          ItemStateCondition(posX, posY, 2, 1, i) ||
+          ItemStateCondition(posX, posY, 3, 1, i) ||
+          BORDERCHECK_COND(itemId)
         ) {return 0;}
         break;
       }
