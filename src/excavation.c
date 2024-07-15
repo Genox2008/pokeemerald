@@ -1,53 +1,46 @@
-#include "bg.h"
-#include "characters.h"
-#include "constants/rgb.h"
-#include "constants/songs.h"
-#include "constants/items.h"
-#include "decompress.h"
-#include "data.h"
+// I have to credit grunt-lucas because I am stealing a bit of code from him ;). Check out his sample_ui branch as well!
 #include "excavation.h"
-#include "field_message_box.h"
-#include "gba/defines.h"
+
 #include "gba/types.h"
+#include "gba/defines.h"
 #include "global.h"
-#include "graphics.h"
-#include "gba/macro.h"
-#include "gpu_regs.h"
-#include "item.h"
 #include "main.h"
-#include "malloc.h"
-#include "menu.h"
-#include "menu_helpers.h"
-#include "overworld.h"
+#include "bg.h"
+#include "text_window.h"
+#include "window.h"
+#include "characters.h"
 #include "palette.h"
-#include "pokemon_icon.h"
-#include "pokedex.h"
-#include "random.h"
+#include "task.h"
+#include "overworld.h"
+#include "malloc.h"
+#include "gba/macro.h"
+#include "menu_helpers.h"
+#include "menu.h"
+#include "malloc.h"
 #include "scanline_effect.h"
 #include "sprite.h"
+#include "constants/rgb.h"
+#include "decompress.h"
+#include "constants/songs.h"
 #include "sound.h"
 #include "sprite.h"
 #include "string_util.h"
-#include "task.h"
-#include "text_window.h"
-#include "window.h"
+#include "pokemon_icon.h"
+#include "graphics.h"
+#include "data.h"
+#include "pokedex.h"
+#include "gpu_regs.h"
+#include "random.h"
+#include "field_message_box.h"
+#include "constants/items.h"
+#include "item.h"
 
-/* >> Callbacks << */
 static void Excavation_Init(MainCallback callback);
 static void Excavation_SetupCB(void);
 static bool8 Excavation_InitBgs(void);
+static void Task_Excavation_WaitFadeAndBail(u8 taskId);
 static void Excavation_MainCB(void);
 static void Excavation_VBlankCB(void);
-
-/* >> Tasks << */
-static void Task_Excavation_WaitFadeAndBail(u8 taskId);
-static void Task_ExcavationWaitFadeIn(u8 taskId);
-static void Task_WaitButtonPressOpening(u8 taskId);
-static void Task_ExcavationMainInput(u8 taskId);
-static void Task_ExcavationFadeAndExitMenu(u8 taskId);
-static void Task_ExcavationPrintResult(u8 taskId);
-
-// >> Others <<
 static void Excavation_FadeAndBail(void);
 static bool8 Excavation_LoadBgGraphics(void);
 static void Excavation_LoadSpriteGraphics(void);
@@ -58,12 +51,17 @@ static void Excavation_DrawRandomTerrain(void);
 static void DoDrawRandomItem(u8 itemStateId, u8 itemId);
 static void DoDrawRandomStone(u8 itemId);
 static void Excavation_CheckItemFound(void);
+static void Task_ExcavationWaitFadeIn(u8 taskId);
+static void Task_WaitButtonPressOpening(u8 taskId);
+static void Task_ExcavationMainInput(u8 taskId);
+static void Task_ExcavationFadeAndExitMenu(u8 taskId);
 static void PrintMessage(const u8 *string);
 static void InitMiningWindows(void);
 static u32 GetCrackPosition(void);
 static bool32 IsCrackMax(void);
 static void EndMining(u8 taskId);
 static u32 ConvertLoadGameStateToItemIndex(void);
+static void Task_ExcavationPrintResult(u8 taskId);
 static void GetItemOrPrintError(u8 taskId, u32 itemIndex, u32 itemId);
 static void CheckItemAndPrint(u8 taskId, u32 itemIndex, u32 itemId);
 static void MakeCursorInvisible(void);
