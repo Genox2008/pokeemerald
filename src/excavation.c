@@ -1,6 +1,4 @@
-// I have to credit grunt-lucas because I am stealing a bit of code from him ;). Check out his sample_ui branch as well!
 #include "excavation.h"
-
 #include "gba/types.h"
 #include "gba/defines.h"
 #include "global.h"
@@ -35,12 +33,22 @@
 #include "constants/items.h"
 #include "item.h"
 
+/* >> Callbacks << */
 static void Excavation_Init(MainCallback callback);
 static void Excavation_SetupCB(void);
 static bool8 Excavation_InitBgs(void);
-static void Task_Excavation_WaitFadeAndBail(u8 taskId);
 static void Excavation_MainCB(void);
 static void Excavation_VBlankCB(void);
+
+/* >> Tasks << */
+static void Task_Excavation_WaitFadeAndBail(u8 taskId);
+static void Task_ExcavationWaitFadeIn(u8 taskId);
+static void Task_WaitButtonPressOpening(u8 taskId);
+static void Task_ExcavationMainInput(u8 taskId);
+static void Task_ExcavationFadeAndExitMenu(u8 taskId);
+static void Task_ExcavationPrintResult(u8 taskId);
+
+// >> Others <<
 static void Excavation_FadeAndBail(void);
 static bool8 Excavation_LoadBgGraphics(void);
 static void Excavation_LoadSpriteGraphics(void);
@@ -51,17 +59,12 @@ static void Excavation_DrawRandomTerrain(void);
 static void DoDrawRandomItem(u8 itemStateId, u8 itemId);
 static void DoDrawRandomStone(u8 itemId);
 static void Excavation_CheckItemFound(void);
-static void Task_ExcavationWaitFadeIn(u8 taskId);
-static void Task_WaitButtonPressOpening(u8 taskId);
-static void Task_ExcavationMainInput(u8 taskId);
-static void Task_ExcavationFadeAndExitMenu(u8 taskId);
 static void PrintMessage(const u8 *string);
 static void InitMiningWindows(void);
 static u32 GetCrackPosition(void);
 static bool32 IsCrackMax(void);
 static void EndMining(u8 taskId);
 static u32 ConvertLoadGameStateToItemIndex(void);
-static void Task_ExcavationPrintResult(u8 taskId);
 static void GetItemOrPrintError(u8 taskId, u32 itemIndex, u32 itemId);
 static void CheckItemAndPrint(u8 taskId, u32 itemIndex, u32 itemId);
 static void MakeCursorInvisible(void);
@@ -908,6 +911,19 @@ static void delay(unsigned int amount) {
   for (i = 0; i < amount * 10; i++) {};
 }
 
+static void UiShake_MoveScreen(int x, int y) {
+  gSprites[sExcavationUiState->bRedSpriteIndex].y += y;
+  gSprites[sExcavationUiState->bBlueSpriteIndex].y += y;
+  gSprites[sExcavationUiState->bRedSpriteIndex].x += x;
+  gSprites[sExcavationUiState->bBlueSpriteIndex].x += x;
+  BuildOamBuffer();
+  SetGpuReg(REG_OFFSET_BG3VOFS, y);
+  SetGpuReg(REG_OFFSET_BG2VOFS, y); 
+  SetGpuReg(REG_OFFSET_BG3HOFS, x);
+  SetGpuReg(REG_OFFSET_BG2HOFS, x);
+  delay(3000);
+}
+
 static void UiShake(void) {
   u32 i;
   u32 i2;
@@ -924,54 +940,42 @@ static void UiShake(void) {
   SetGpuReg(REG_OFFSET_BG2HOFS, 1);
   delay(3000);
   BuildOamBuffer();
-  SetGpuReg(REG_OFFSET_BG3VOFS, 1);
-  SetGpuReg(REG_OFFSET_BG2VOFS, 1);
+
+  UiShake_MoveScreen(0,1);
   gSprites[i].invisible = 1;
   gSprites[i2].invisible = 1;
-  BuildOamBuffer();
-  delay(3000);
-  SetGpuReg(REG_OFFSET_BG3HOFS, -1);
-  SetGpuReg(REG_OFFSET_BG2HOFS, -1);
+
+  UiShake_MoveScreen(-1,0);
   gSprites[i].invisible = 0;
   gSprites[i2].invisible = 0;
-  BuildOamBuffer();
-  delay(3000);
-  SetGpuReg(REG_OFFSET_BG3VOFS, -1);
-  SetGpuReg(REG_OFFSET_BG2VOFS, -1);
+
+  UiShake_MoveScreen(0, -1);
   gSprites[i].invisible = 1;
-  BuildOamBuffer();
-  delay(3000);
-  SetGpuReg(REG_OFFSET_BG3HOFS, 1);
-  SetGpuReg(REG_OFFSET_BG2HOFS, 1);
+
+  UiShake_MoveScreen(1, 0);
   gSprites[i].invisible = 0;
   StartSpriteAnim(&gSprites[i2], 1);
   gSprites[i2].x += 7;
   AnimateSprites();
-  BuildOamBuffer();
-  delay(3000);
-  SetGpuReg(REG_OFFSET_BG3VOFS, 1);
-  SetGpuReg(REG_OFFSET_BG2VOFS, 1);
+
+  UiShake_MoveScreen(0, 1);
   gSprites[i].invisible = 1;
-  BuildOamBuffer();
-  delay(3000);
-  SetGpuReg(REG_OFFSET_BG3HOFS, -1);
-  SetGpuReg(REG_OFFSET_BG2HOFS, -1);
+
+  UiShake_MoveScreen(-1, 0);
   gSprites[i].invisible = 0;
   gSprites[i2].invisible = 1;
-  BuildOamBuffer();
-  delay(3000);
-  SetGpuReg(REG_OFFSET_BG3VOFS, -1);
-  SetGpuReg(REG_OFFSET_BG2VOFS, -1);
+
+  UiShake_MoveScreen(0, -1);
   gSprites[i].invisible = 1;
   gSprites[i2].invisible = 0;
-  BuildOamBuffer();
-  delay(3000);
 
   // Back to default offset
   SetGpuReg(REG_OFFSET_BG3VOFS, 0);
   SetGpuReg(REG_OFFSET_BG3HOFS, 0);
   SetGpuReg(REG_OFFSET_BG2HOFS, 0);
   SetGpuReg(REG_OFFSET_BG2VOFS, 0);
+  gSprites[sExcavationUiState->bRedSpriteIndex].x++;
+  gSprites[sExcavationUiState->bBlueSpriteIndex].x++;
   gSprites[sExcavationUiState->cursorSpriteIndex].invisible = 0;
   DestroySprite(&gSprites[i]);
   delay(8000);
