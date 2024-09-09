@@ -15,6 +15,8 @@
 #define TAG_ITEM_IRON_BALL      21
 #define TAG_ITEM_REVIVE_MAX     22
 #define TAG_ITEM_EVER_STONE     23
+#define TAG_ITEM_OVAL_STONE     30
+#define TAG_ITEM_LIGHT_CLAY     31
 
 #define TAG_STONE_1X4           24
 #define TAG_STONE_4X1           25
@@ -44,6 +46,8 @@
 #define ITEMID_REVIVE_MAX               8
 #define ITEMID_EVER_STONE               9
 #define ITEMID_HEART_SCALE              10
+#define ITEMID_OVAL_STONE               11
+#define ITEMID_LIGHT_CLAY               12
 
 #define ID_STONE_1x4                    250
 #define ID_STONE_4x1                    251

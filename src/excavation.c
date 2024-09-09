@@ -86,18 +86,22 @@ struct BuriedItem {
 };
 
 struct ExcavationState {
-  MainCallback leavingCallback;
-  u32 loadGameState;
-  bool8 mode;
-  u32 cursorSpriteIndex;
+  MainCallback leavingCallback; // Callback to leave the Ui
+  u32 loadGameState;            // ?
+  bool32 shouldShake;           // If set to true, shake gets executed every VBlank 
+  u32 shakeState;               // State of shaking steps
+  u32 ShakeHitTool;
+  u32 ShakeHitEffect;
+  bool32 mode;                  // Hammer or Pickaxe
+  u32 cursorSpriteIndex;        
   u32 bRedSpriteIndex;
   u32 bBlueSpriteIndex;
-  u32 crackCount;
-  u32 crackPos;
+  u32 crackCount;               // How many cracks in one 32x32 portion
+  u32 crackPos;                 // Which crack portion
   u32 cursorX;
   u32 cursorY;
-  u32 layerMap[96];
-  u32 itemMap[96];
+  u32 layerMap[96];             // Array representing the screen. Determines virtual layers
+  u32 itemMap[96];              // Determines where items are on the screen
   struct BuriedItem buriedItem[4];
 
   // Item 1
@@ -511,6 +515,12 @@ static const u16 gItemReviveMaxPal[] = INCBIN_U16("graphics/excavation/items/rev
 static const u32 gItemEverStoneGfx[] = INCBIN_U32("graphics/excavation/items/ever_stone.4bpp.lz");
 static const u16 gItemEverStonePal[] = INCBIN_U16("graphics/excavation/items/ever_stone.gbapal");
 
+static const u32 gItemOvalStoneGfx[] = INCBIN_U32("graphics/excavation/items/oval_stone.4bpp.lz");
+static const u16 gItemOvalStonePal[] = INCBIN_U16("graphics/excavation/items/oval_stone.gbapal");
+
+static const u32 gItemLightClayGfx[] = INCBIN_U32("graphics/excavation/items/light_clay.4bpp.lz");
+static const u16 gItemLightClayPal[] = INCBIN_U16("graphics/excavation/items/light_clay.gbapal");
+
 // Stone SpriteSheets and SpritePalettes
 static const struct CompressedSpriteSheet sSpriteSheet_Stone1x4[] = {
   {gStone1x4Gfx, 64*64/2, TAG_STONE_1X4},
@@ -637,6 +647,18 @@ static const struct CompressedSpriteSheet sSpriteSheet_ItemEverStone = {
   gItemEverStoneGfx,
   64*64/2,
   TAG_ITEM_EVER_STONE
+};
+
+static const struct CompressedSpriteSheet sSpriteSheet_ItemOvalStone = {
+  gItemOvalStoneGfx,
+  64*64/2,
+  TAG_ITEM_OVAL_STONE
+};
+
+static const struct CompressedSpriteSheet sSpriteSheet_ItemLightClay = {
+  gItemLightClayGfx,
+  64*64/2,
+  TAG_ITEM_LIGHT_CLAY
 };
 
 static const struct OamData gOamItem32x32 = {
@@ -856,6 +878,24 @@ static const struct ExcavationItem ExcavationItemList[] = {
     .tag = TAG_ITEM_HEARTSCALE,
     .sheet = &sSpriteSheet_ItemHeartScale,
   },
+  [ITEMID_OVAL_STONE] = {
+    .excItemId = ITEMID_OVAL_STONE,
+    .realItemId = ITEM_HEART_SCALE,
+    .top = 2,
+    .left = 2,
+    .totalTiles = 8,
+    .tag = TAG_ITEM_OVAL_STONE,
+    .sheet = &sSpriteSheet_ItemOvalStone,
+  },
+  [ITEMID_LIGHT_CLAY] = {
+    .excItemId = ITEMID_LIGHT_CLAY,
+    .realItemId = ITEM_HEART_SCALE,
+    .top = 3,
+    .left = 3,
+    .totalTiles = 10,
+    .tag = TAG_ITEM_LIGHT_CLAY,
+    .sheet = &sSpriteSheet_ItemLightClay,
+  },
 };
 
 static const struct ExcavationStone ExcavationStoneList[] = {
@@ -911,77 +951,6 @@ static void delay(unsigned int amount) {
   for (i = 0; i < amount * 10; i++) {};
 }
 
-static void UiShake_MoveScreen(int x, int y) {
-  gSprites[sExcavationUiState->bRedSpriteIndex].y += y;
-  gSprites[sExcavationUiState->bBlueSpriteIndex].y += y;
-  gSprites[sExcavationUiState->bRedSpriteIndex].x += x;
-  gSprites[sExcavationUiState->bBlueSpriteIndex].x += x;
-  BuildOamBuffer();
-  SetGpuReg(REG_OFFSET_BG3VOFS, y);
-  SetGpuReg(REG_OFFSET_BG2VOFS, y); 
-  SetGpuReg(REG_OFFSET_BG3HOFS, x);
-  SetGpuReg(REG_OFFSET_BG2HOFS, x);
-  delay(3000);
-}
-
-static void UiShake(void) {
-  u32 i;
-  u32 i2;
-
-  if (sExcavationUiState->mode == 1) {
-    i = CreateSprite(&gSpriteHitEffectHammer, (sExcavationUiState->cursorX*16)+8, (sExcavationUiState->cursorY*16)+8, 0);
-    i2 = CreateSprite(&gSpriteHitHammer, (sExcavationUiState->cursorX*16)+24, sExcavationUiState->cursorY*16, 0);
-  } else {
-    i = CreateSprite(&gSpriteHitEffectPickaxe, (sExcavationUiState->cursorX*16)+8, (sExcavationUiState->cursorY*16)+8, 0);
-    i2 = CreateSprite(&gSpriteHitPickaxe, (sExcavationUiState->cursorX*16)+24, sExcavationUiState->cursorY*16, 0);
-  }
-  MakeCursorInvisible();
-  SetGpuReg(REG_OFFSET_BG3HOFS, 1);
-  SetGpuReg(REG_OFFSET_BG2HOFS, 1);
-  delay(3000);
-  BuildOamBuffer();
-
-  UiShake_MoveScreen(0,1);
-  gSprites[i].invisible = 1;
-  gSprites[i2].invisible = 1;
-
-  UiShake_MoveScreen(-1,0);
-  gSprites[i].invisible = 0;
-  gSprites[i2].invisible = 0;
-
-  UiShake_MoveScreen(0, -1);
-  gSprites[i].invisible = 1;
-
-  UiShake_MoveScreen(1, 0);
-  gSprites[i].invisible = 0;
-  StartSpriteAnim(&gSprites[i2], 1);
-  gSprites[i2].x += 7;
-  AnimateSprites();
-
-  UiShake_MoveScreen(0, 1);
-  gSprites[i].invisible = 1;
-
-  UiShake_MoveScreen(-1, 0);
-  gSprites[i].invisible = 0;
-  gSprites[i2].invisible = 1;
-
-  UiShake_MoveScreen(0, -1);
-  gSprites[i].invisible = 1;
-  gSprites[i2].invisible = 0;
-
-  // Back to default offset
-  SetGpuReg(REG_OFFSET_BG3VOFS, 0);
-  SetGpuReg(REG_OFFSET_BG3HOFS, 0);
-  SetGpuReg(REG_OFFSET_BG2HOFS, 0);
-  SetGpuReg(REG_OFFSET_BG2VOFS, 0);
-  gSprites[sExcavationUiState->bRedSpriteIndex].x++;
-  gSprites[sExcavationUiState->bBlueSpriteIndex].x++;
-  gSprites[sExcavationUiState->cursorSpriteIndex].invisible = 0;
-  DestroySprite(&gSprites[i]);
-  delay(8000);
-  DestroySprite(&gSprites[i2]);
-}
-
 void Excavation_ItemUseCB(void) {
   Excavation_Init(CB2_ReturnToField);
 }
@@ -996,6 +965,8 @@ static void Excavation_Init(MainCallback callback) {
   }
 
   sExcavationUiState->leavingCallback = callback;
+  sExcavationUiState->shakeState = 0;
+  sExcavationUiState->shouldShake = FALSE;
   sExcavationUiState->loadGameState = 0;
   sExcavationUiState->crackCount = 0;
   sExcavationUiState->crackPos = 0;
@@ -1075,8 +1046,6 @@ enum {
 	CRACK_POS_7,
 	CRACK_POS_MAX,
 };
-
-
 
 static void Excavation_SetupCB(void) {
   u8 taskId;
@@ -1205,6 +1174,103 @@ static void Excavation_MainCB(void)
   DoScheduledBgTilemapCopiesToVram();
 }
 
+static void ExcavationUi_Shake(u8 taskId) {
+  switch(sExcavationUiState->shakeState) {
+    case 0:
+      MakeCursorInvisible();
+      //gSprites[sExcavationUiState->bRedSpriteIndex].x += 1;
+      //gSprites[sExcavationUiState->bBlueSpriteIndex].x += 1;
+      SetGpuReg(REG_OFFSET_BG3HOFS, 1);
+      SetGpuReg(REG_OFFSET_BG2HOFS, 1);
+      sExcavationUiState->shakeState++; 
+      break;
+    case 1:
+      //gSprites[sExcavationUiState->bRedSpriteIndex].y += 1;
+      //gSprites[sExcavationUiState->bBlueSpriteIndex].y += 1;
+      SetGpuReg(REG_OFFSET_BG3VOFS, 1);
+      SetGpuReg(REG_OFFSET_BG2VOFS, 1);
+      gSprites[sExcavationUiState->ShakeHitEffect].invisible = 1;
+      gSprites[sExcavationUiState->ShakeHitTool].invisible = 1;
+      sExcavationUiState->shakeState++;
+      break;
+    case 2:
+      //gSprites[sExcavationUiState->bRedSpriteIndex].x -= 2;
+      //gSprites[sExcavationUiState->bBlueSpriteIndex].x -= 2;
+      SetGpuReg(REG_OFFSET_BG3HOFS, -1);
+      SetGpuReg(REG_OFFSET_BG2HOFS, -1);
+      gSprites[sExcavationUiState->ShakeHitEffect].invisible = 0;
+      gSprites[sExcavationUiState->ShakeHitTool].invisible = 0;
+      sExcavationUiState->shakeState++;
+      break;
+    case 3:
+      //gSprites[sExcavationUiState->bRedSpriteIndex].y -= 2;
+      //gSprites[sExcavationUiState->bBlueSpriteIndex].y -= 2;
+      SetGpuReg(REG_OFFSET_BG3VOFS, -1);
+      SetGpuReg(REG_OFFSET_BG2VOFS, -1);
+      gSprites[sExcavationUiState->ShakeHitEffect].invisible = 1;
+      sExcavationUiState->shakeState++;
+      break;
+    case 4:
+      //gSprites[sExcavationUiState->bRedSpriteIndex].x += 2;
+      //gSprites[sExcavationUiState->bBlueSpriteIndex].x += 2;
+      SetGpuReg(REG_OFFSET_BG3HOFS, 1);
+      SetGpuReg(REG_OFFSET_BG2HOFS, 1);
+      gSprites[sExcavationUiState->ShakeHitEffect].invisible = 0;
+      gSprites[sExcavationUiState->ShakeHitTool].x += 7;
+      StartSpriteAnim(&gSprites[sExcavationUiState->ShakeHitTool], 1);
+      sExcavationUiState->shakeState++;
+      break;
+    case 5:
+      //gSprites[sExcavationUiState->bRedSpriteIndex].y += 2;
+      //gSprites[sExcavationUiState->bBlueSpriteIndex].y += 2;
+      SetGpuReg(REG_OFFSET_BG3VOFS, 1);
+      SetGpuReg(REG_OFFSET_BG2VOFS, 1);
+      gSprites[sExcavationUiState->ShakeHitEffect].invisible = 1;
+      sExcavationUiState->shakeState++;
+      VBlankIntrWait();
+      break;
+    case 6:
+      //gSprites[sExcavationUiState->bRedSpriteIndex].x -= 2;
+      //gSprites[sExcavationUiState->bBlueSpriteIndex].x -= 2;
+      SetGpuReg(REG_OFFSET_BG3HOFS, -1);
+      SetGpuReg(REG_OFFSET_BG2HOFS, -1);
+      gSprites[sExcavationUiState->ShakeHitEffect].invisible = 0;
+      gSprites[sExcavationUiState->ShakeHitTool].invisible = 1;
+      sExcavationUiState->shakeState++;
+      VBlankIntrWait();
+      break;
+    case 7:
+      //gSprites[sExcavationUiState->bRedSpriteIndex].y -= 2;
+      //gSprites[sExcavationUiState->bBlueSpriteIndex].y -= 2;
+      SetGpuReg(REG_OFFSET_BG3VOFS, -1);
+      SetGpuReg(REG_OFFSET_BG2VOFS, -1);
+      gSprites[sExcavationUiState->ShakeHitEffect].invisible = 1;
+      gSprites[sExcavationUiState->ShakeHitTool].invisible = 0;
+      sExcavationUiState->shakeState++;
+      VBlankIntrWait();
+      break;
+    case 8:
+      //gSprites[sExcavationUiState->bRedSpriteIndex].y += 1;
+      //gSprites[sExcavationUiState->bBlueSpriteIndex].y += 1;
+      //gSprites[sExcavationUiState->bRedSpriteIndex].x += 1;
+      //gSprites[sExcavationUiState->bBlueSpriteIndex].x += 1;
+      SetGpuReg(REG_OFFSET_BG3VOFS, 0);
+      SetGpuReg(REG_OFFSET_BG3HOFS, 0);
+      SetGpuReg(REG_OFFSET_BG2HOFS, 0);
+      SetGpuReg(REG_OFFSET_BG2VOFS, 0);
+      gSprites[sExcavationUiState->cursorSpriteIndex].invisible = 0;
+      sExcavationUiState->shakeState = 0;
+      sExcavationUiState->shouldShake = FALSE;
+      DestroySprite(&gSprites[sExcavationUiState->ShakeHitTool]);
+      DestroySprite(&gSprites[sExcavationUiState->ShakeHitEffect]);
+      DestroyTask(taskId);
+      VBlankIntrWait();
+      break;
+  }
+
+  BuildOamBuffer();
+}
+
 static void Excavation_VBlankCB(void)
 {
   // I discovered that the VBlankCB is actually ran every VBlank. There's no function that can halt it just because of a huge loop or smth
@@ -1213,6 +1279,7 @@ static void Excavation_VBlankCB(void)
   // effect on the items which got dug up, delay by a few `ms`! Because Vblank cannot be halted, we just do the checking, each vblank + there's no lag
   // because of this!
   Excavation_CheckItemFound();
+
   UpdatePaletteFade();
 
   LoadOam();
@@ -1297,6 +1364,8 @@ static const struct ItemRarity ItemRarityTable_Rare[] = {
   {ITEMID_STAR_PIECE, RARITY_RARE},
   {ITEMID_DAMP_ROCK, RARITY_RARE},
   {ITEMID_REVIVE_MAX, RARITY_RARE},
+  {ITEMID_OVAL_STONE, RARITY_RARE},
+  {ITEMID_LIGHT_CLAY, RARITY_RARE},
 };
 
 static u8 GetRandomItemId() {
@@ -1323,7 +1392,7 @@ static u8 GetRandomItemId() {
       return ItemRarityTable_Uncommon[index].itemId;
       break;
     case RARITY_RARE:
-      index = random(3);
+      index = random(5);
       return ItemRarityTable_Rare[index].itemId;
       break;
   }
@@ -1423,14 +1492,25 @@ static void Task_ExcavationMainInput(u8 taskId) {
 
   // Because the UiShake function does manual delays with for loops, we have to imediatly call the update functions for sprites and the schedule
   // functions for bgs. Otherwise we would notice the changes very late
-  if (gMain.newKeys & A_BUTTON /*&& sExcavationUiState->crackPos < 8 */)  {
+  if (gMain.newKeys & A_BUTTON && !sExcavationUiState->shouldShake /*&& sExcavationUiState->crackPos < 8 */)  {
     Excavation_UpdateTerrain();
     Excavation_UpdateCracks();
     ScheduleBgCopyTilemapToVram(2);
     DoScheduledBgTilemapCopiesToVram();
     BuildOamBuffer();
-    UiShake();
-    //delay(8000);
+    // Shake
+    //UiShake(10, 3);
+    //sExcavationUiState->shouldShake = TRUE;
+
+    if (sExcavationUiState->mode == 1) {
+      sExcavationUiState->ShakeHitEffect = CreateSprite(&gSpriteHitEffectHammer, (sExcavationUiState->cursorX*16)+8, (sExcavationUiState->cursorY*16)+8, 0);
+      sExcavationUiState->ShakeHitTool = CreateSprite(&gSpriteHitHammer, (sExcavationUiState->cursorX*16)+24, sExcavationUiState->cursorY*16, 0);
+    } else {
+      sExcavationUiState->ShakeHitEffect = CreateSprite(&gSpriteHitEffectPickaxe, (sExcavationUiState->cursorX*16)+8, (sExcavationUiState->cursorY*16)+8, 0);
+      sExcavationUiState->ShakeHitTool = CreateSprite(&gSpriteHitPickaxe, (sExcavationUiState->cursorX*16)+24, sExcavationUiState->cursorY*16, 0);
+    }
+    sExcavationUiState->shouldShake = TRUE;
+    CreateTask(ExcavationUi_Shake, 0);
   }
 
   else if (gMain.newAndRepeatedKeys & DPAD_LEFT && CURSOR_SPRITE.x > 8) {
@@ -1772,6 +1852,12 @@ static const u16* GetCorrectPalette(u32 TileTag) {
     case TAG_ITEM_STAR_PIECE:
       return gItemStarPiecePal;
       break;
+    case TAG_ITEM_OVAL_STONE:
+      return gItemOvalStonePal;
+      break;
+    case TAG_ITEM_LIGHT_CLAY:
+      return gItemLightClayPal;
+      break;
   }
 }
 
@@ -1965,6 +2051,22 @@ static void OverwriteItemMapData(u8 posX, u8 posY, u8 itemStateId, u8 itemId) {
       SetItemState(posX, posY, 2, 1, itemStateId);
       SetItemState(posX, posY, 3, 1, itemStateId);
       break;
+    case ITEMID_OVAL_STONE:
+      OIMD_3x3
+      break;
+    case ITEMID_LIGHT_CLAY:
+      SetItemState(posX, posY, 0, 0, itemStateId);
+      SetItemState(posX, posY, 0, 1, itemStateId);
+      SetItemState(posX, posY, 0, 2, itemStateId);
+      SetItemState(posX, posY, 1, 1, itemStateId);
+      SetItemState(posX, posY, 1, 2, itemStateId);
+      SetItemState(posX, posY, 1, 3, itemStateId);
+      SetItemState(posX, posY, 2, 0, itemStateId);
+      SetItemState(posX, posY, 2, 1, itemStateId);
+      SetItemState(posX, posY, 2, 2, itemStateId);
+      SetItemState(posX, posY, 3, 2, itemStateId);
+      SetItemState(posX, posY, 3, 3, itemStateId);
+      break;
   }
 }
 
@@ -2095,6 +2197,28 @@ static u8 CheckIfItemCanBePlaced(u8 itemId, u8 posX, u8 posY, u8 xBorder, u8 yBo
           ItemStateCondition(posX, posY, 3, 0, i) ||
           ItemStateCondition(posX, posY, 2, 1, i) ||
           ItemStateCondition(posX, posY, 3, 1, i) ||
+          BORDERCHECK_COND(itemId)
+        ) {return 0;}
+        break;
+      case ITEMID_OVAL_STONE:
+        if (
+          ItemPlaceable_Cond_3x3(posX, posY, i) ||
+          BORDERCHECK_COND(itemId)
+        ) {return 0;}
+        break;
+      case ITEMID_LIGHT_CLAY:
+        if (
+          ItemStateCondition(posX, posY, 0, 0, i) ||
+          ItemStateCondition(posX, posY, 0, 1, i) ||
+          ItemStateCondition(posX, posY, 0, 2, i) ||
+          ItemStateCondition(posX, posY, 1, 1, i) ||
+          ItemStateCondition(posX, posY, 1, 2, i) || 
+          ItemStateCondition(posX, posY, 1, 3, i) ||
+          ItemStateCondition(posX, posY, 2, 0, i) ||
+          ItemStateCondition(posX, posY, 2, 1, i) || 
+          ItemStateCondition(posX, posY, 2, 2, i) || 
+          ItemStateCondition(posX, posY, 3, 2, i) ||
+          ItemStateCondition(posX, posY, 3, 3, i) ||
           BORDERCHECK_COND(itemId)
         ) {return 0;}
         break;
