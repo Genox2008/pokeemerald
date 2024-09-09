@@ -521,6 +521,9 @@ static const u16 gItemOvalStonePal[] = INCBIN_U16("graphics/excavation/items/ova
 static const u32 gItemLightClayGfx[] = INCBIN_U32("graphics/excavation/items/light_clay.4bpp.lz");
 static const u16 gItemLightClayPal[] = INCBIN_U16("graphics/excavation/items/light_clay.gbapal");
 
+static const u32 gItemHeatRockGfx[] = INCBIN_U32("graphics/excavation/items/heat_rock.4bpp.lz");
+static const u16 gItemHeatRockPal[] = INCBIN_U16("graphics/excavation/items/heat_rock.gbapal");
+
 // Stone SpriteSheets and SpritePalettes
 static const struct CompressedSpriteSheet sSpriteSheet_Stone1x4[] = {
   {gStone1x4Gfx, 64*64/2, TAG_STONE_1X4},
@@ -659,6 +662,12 @@ static const struct CompressedSpriteSheet sSpriteSheet_ItemLightClay = {
   gItemLightClayGfx,
   64*64/2,
   TAG_ITEM_LIGHT_CLAY
+};
+
+static const struct CompressedSpriteSheet sSpriteSheet_ItemHeatRock = {
+  gItemHeatRockGfx,
+  64*64/2,
+  TAG_ITEM_HEAT_ROCK,
 };
 
 static const struct OamData gOamItem32x32 = {
@@ -896,6 +905,15 @@ static const struct ExcavationItem ExcavationItemList[] = {
     .tag = TAG_ITEM_LIGHT_CLAY,
     .sheet = &sSpriteSheet_ItemLightClay,
   },
+  [ITEMID_HEAT_ROCK] = {
+    .excItemId = ITEMID_HEAT_ROCK,
+    .realItemId = ITEM_WATER_STONE,
+    .top = 2,
+    .left = 3,
+    .totalTiles = 9,
+    .tag = TAG_ITEM_HEAT_ROCK,
+    .sheet = &sSpriteSheet_ItemHeatRock,
+  }, 
 };
 
 static const struct ExcavationStone ExcavationStoneList[] = {
@@ -1363,6 +1381,7 @@ static const struct ItemRarity ItemRarityTable_Uncommon[] = {
 static const struct ItemRarity ItemRarityTable_Rare[] = {
   {ITEMID_STAR_PIECE, RARITY_RARE},
   {ITEMID_DAMP_ROCK, RARITY_RARE},
+  {ITEMID_HEAT_ROCK, RARITY_RARE},
   {ITEMID_REVIVE_MAX, RARITY_RARE},
   {ITEMID_OVAL_STONE, RARITY_RARE},
   {ITEMID_LIGHT_CLAY, RARITY_RARE},
@@ -1392,7 +1411,7 @@ static u8 GetRandomItemId() {
       return ItemRarityTable_Uncommon[index].itemId;
       break;
     case RARITY_RARE:
-      index = random(5);
+      index = random(6);
       return ItemRarityTable_Rare[index].itemId;
       break;
   }
@@ -1858,6 +1877,9 @@ static const u16* GetCorrectPalette(u32 TileTag) {
     case TAG_ITEM_LIGHT_CLAY:
       return gItemLightClayPal;
       break;
+    case TAG_ITEM_HEAT_ROCK:
+      return gItemHeatRockPal;
+      break;
   }
 }
 
@@ -2067,6 +2089,18 @@ static void OverwriteItemMapData(u8 posX, u8 posY, u8 itemStateId, u8 itemId) {
       SetItemState(posX, posY, 3, 2, itemStateId);
       SetItemState(posX, posY, 3, 3, itemStateId);
       break;
+    case ITEMID_HEAT_ROCK:
+      SetItemState(posX, posY, 0, 0, itemStateId);
+      SetItemState(posX, posY, 0, 1, itemStateId);
+      SetItemState(posX, posY, 0, 2, itemStateId);
+      SetItemState(posX, posY, 1, 1, itemStateId);
+      SetItemState(posX, posY, 1, 2, itemStateId);
+      SetItemState(posX, posY, 2, 0, itemStateId);
+      SetItemState(posX, posY, 2, 1, itemStateId);
+      SetItemState(posX, posY, 2, 2, itemStateId);
+      SetItemState(posX, posY, 3, 1, itemStateId);
+      SetItemState(posX, posY, 3, 2, itemStateId);
+      break;
   }
 }
 
@@ -2220,6 +2254,21 @@ static u8 CheckIfItemCanBePlaced(u8 itemId, u8 posX, u8 posY, u8 xBorder, u8 yBo
           ItemStateCondition(posX, posY, 3, 2, i) ||
           ItemStateCondition(posX, posY, 3, 3, i) ||
           BORDERCHECK_COND(itemId)
+        ) {return 0;}
+        break;
+      case ITEMID_HEAT_ROCK:
+        if (
+          ItemStateCondition(posX, posY, 0, 0, i) ||
+          ItemStateCondition(posX, posY, 0, 1, i) ||
+          ItemStateCondition(posX, posY, 0, 2, i) ||
+          ItemStateCondition(posX, posY, 1, 1, i) ||
+          ItemStateCondition(posX, posY, 1, 2, i) ||
+          ItemStateCondition(posX, posY, 2, 0, i) ||
+          ItemStateCondition(posX, posY, 2, 1, i) ||
+          ItemStateCondition(posX, posY, 2, 2, i) ||
+          ItemStateCondition(posX, posY, 3, 1, i) ||
+          ItemStateCondition(posX, posY, 3, 2, i) ||
+          BORDERCHECK_COND(itemId) 
         ) {return 0;}
         break;
       }

@@ -17,6 +17,7 @@
 #define TAG_ITEM_EVER_STONE     23
 #define TAG_ITEM_OVAL_STONE     30
 #define TAG_ITEM_LIGHT_CLAY     31
+#define TAG_ITEM_HEAT_ROCK      32
 
 #define TAG_STONE_1X4           24
 #define TAG_STONE_4X1           25
@@ -48,6 +49,7 @@
 #define ITEMID_HEART_SCALE              10
 #define ITEMID_OVAL_STONE               11
 #define ITEMID_LIGHT_CLAY               12
+#define ITEMID_HEAT_ROCK                13
 
 #define ID_STONE_1x4                    250
 #define ID_STONE_4x1                    251
