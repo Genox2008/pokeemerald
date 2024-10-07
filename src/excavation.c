@@ -1065,6 +1065,56 @@ enum {
 	CRACK_POS_MAX,
 };
 
+// Uncompress some data idk bitch
+static void LZ77UnCompSprite(const u32* data, u32 output[512]) {
+  LZ77UnCompVram(data, output);
+}   
+
+static void split_sprite_into_pixels(u32 pixels[4096]) {
+  u32 i, j, element, slice;
+  u32 output[512];
+
+  LZ77UnCompSprite(gItemLightClayGfx, output);
+
+  for (i = 0; i < 512; i++) {
+    element = output[i];
+    for (j = 0; j < 8; j++) {
+      slice = (element >> (28 - j * 4)) & 0xF;
+      pixels[i * 8 + j] = slice;
+    }
+  } 
+}
+
+static void SpriteTesting(void) {
+  u32 x, y, i;
+  u32* pixels = AllocZeroed(4096 * sizeof(u32));
+  for(i=0;i<4096;i++) {
+    pixels[i] = 0;
+  }
+  split_sprite_into_pixels(pixels);
+  for (i=0;i<4096;i++) {
+    DebugPrintf("%u", pixels[i]);
+  }
+  /*for (x=0;x<64;x++) {
+    for (y=0;y<16;y++) {
+      if (pixels[y*64+x] != 0) {
+        DebugPrintf("#");
+        // Next Tile
+        for (i=x;i<64;i++) {
+          if (i%16==0) {
+            x = i;
+            break;
+          }
+        }
+        break;
+      } else if (pixels[y*64+x] == 0 && x%16==0){
+        DebugPrintf("_");
+      }
+    }
+  }
+*/
+}
+
 static void Excavation_SetupCB(void) {
   u8 taskId;
   switch(gMain.state) {
@@ -1127,6 +1177,7 @@ static void Excavation_SetupCB(void) {
 		  break;
 
 	  case STATE_SET_CALLBACKS:
+      SpriteTesting();
 		  SetVBlankCallback(Excavation_VBlankCB);
 		  SetMainCallback2(Excavation_MainCB);
 		  break;
