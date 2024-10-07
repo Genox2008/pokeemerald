@@ -32,6 +32,7 @@
 #include "field_message_box.h"
 #include "constants/items.h"
 #include "item.h"
+#include "comfy_anim.h"
 
 /* >> Callbacks << */
 static void Excavation_Init(MainCallback callback);
@@ -405,6 +406,28 @@ static const union AnimCmd *const gHitPickaxeAnim[] = {
   gAnimCmd_EffectPickaxeNotHit,
 };
 
+static void SpriteCB_Cursor(struct Sprite* sprite) {
+    u32 x;
+    u32 y;
+
+    x = ReadComfyAnimValueSmooth(&gComfyAnims[sprite->data[0]]); 
+    y = ReadComfyAnimValueSmooth(&gComfyAnims[sprite->data[1]]); 
+    //DebugPrintf("%u", ReadComfyAnimValueSmooth(&gComfyAnims[sprite->data[0]]));
+    
+    //DebugPrintf("ReadComfyAnimValueSmooth(...): x=%u y=%u", x, y);
+
+    sprite->x = x;
+    //sprite->x = 8 + 16 * sExcavationUiState->cursorX;
+    sprite->y = y;
+
+    gComfyAnims[gSprites[sExcavationUiState->cursorSpriteIndex].data[0]].config.data.spring.to = Q_24_8(8 + 16 * sExcavationUiState->cursorX);
+    gComfyAnims[gSprites[sExcavationUiState->cursorSpriteIndex].data[1]].config.data.spring.to = Q_24_8(8 + 16 * sExcavationUiState->cursorY);
+
+    //DebugPrintf("X=%u", gComfyAnims[gSprites[sExcavationUiState->cursorSpriteIndex].data[0]].config.data.spring.to);
+    //DebugPrintf("Y=%u", gComfyAnims[gSprites[sExcavationUiState->cursorSpriteIndex].data[1]].config.data.spring.to);
+
+}
+
 static const struct SpriteTemplate gSpriteCursor = {
     .tileTag = TAG_CURSOR,
     .paletteTag = TAG_CURSOR,
@@ -413,7 +436,7 @@ static const struct SpriteTemplate gSpriteCursor = {
     .images = NULL,
     // No rotating or scaling
     .affineAnims = gDummySpriteAffineAnimTable,
-    .callback = SpriteCallbackDummy,
+    .callback = SpriteCB_Cursor,
 };
 
 static const struct SpriteTemplate gSpriteButtonRed = {
@@ -1177,7 +1200,7 @@ static void Excavation_SetupCB(void) {
 		  break;
 
 	  case STATE_SET_CALLBACKS:
-      SpriteTesting();
+          //SpriteTesting();
 		  SetVBlankCallback(Excavation_VBlankCB);
 		  SetMainCallback2(Excavation_MainCB);
 		  break;
@@ -1238,6 +1261,7 @@ static void Task_Excavation_WaitFadeAndBail(u8 taskId)
 static void Excavation_MainCB(void)
 {
   RunTasks();
+  AdvanceComfyAnimations();
   AnimateSprites();
   BuildOamBuffer();
   DoScheduledBgTilemapCopiesToVram();
@@ -1471,10 +1495,30 @@ static u8 GetRandomItemId() {
   return 0;
 }
 
+#define COMFY_X 0
+#define COMFY_Y 1
+
 static void Excavation_LoadSpriteGraphics(void) {
   u8 i;
   u8 itemId1, itemId2, itemId3, itemId4;
   u16 rnd;
+  struct ComfyAnimSpringConfig animConfigX, animConfigY;  
+
+  animConfigX.from = Q_24_8(0 + 8);
+  animConfigX.to = Q_24_8(0 + 8);
+  animConfigX.mass = Q_24_8(50);
+  animConfigX.tension = Q_24_8(285);
+  animConfigX.friction = Q_24_8(1150);
+  animConfigX.clampAfter = 0;
+  animConfigX.delayFrames = 0;
+  animConfigY.from = Q_24_8(2 * 16 + 8);
+  animConfigY.to = Q_24_8(2 * 16 + 8);
+  animConfigY.mass = Q_24_8(50);
+  animConfigY.tension = Q_24_8(285);
+  animConfigY.friction = Q_24_8(1150);
+  animConfigY.clampAfter = 0;
+  animConfigY.delayFrames = 0;
+
   LoadSpritePalette(sSpritePal_Cursor);
   LoadCompressedSpriteSheet(sSpriteSheet_Cursor);
 
@@ -1535,6 +1579,9 @@ static void Excavation_LoadSpriteGraphics(void) {
   sExcavationUiState->cursorSpriteIndex = CreateSprite(&gSpriteCursor, 8, 40, 0);
   sExcavationUiState->cursorX = 0;
   sExcavationUiState->cursorY = 2;
+  gSprites[sExcavationUiState->cursorSpriteIndex].data[COMFY_X] = CreateComfyAnim_Spring(&animConfigX);
+  gSprites[sExcavationUiState->cursorSpriteIndex].data[COMFY_Y] = CreateComfyAnim_Spring(&animConfigY);
+
   sExcavationUiState->bRedSpriteIndex = CreateSprite(&gSpriteButtonRed, 217,78,0);
   sExcavationUiState->bBlueSpriteIndex = CreateSprite(&gSpriteButtonBlue, 217,138,1);
   sExcavationUiState->mode = 0;
@@ -1583,18 +1630,24 @@ static void Task_ExcavationMainInput(u8 taskId) {
     CreateTask(ExcavationUi_Shake, 0);
   }
 
-  else if (gMain.newAndRepeatedKeys & DPAD_LEFT && CURSOR_SPRITE.x > 8) {
-    CURSOR_SPRITE.x -= 16;
+  else if (gMain.newAndRepeatedKeys & DPAD_LEFT && sExcavationUiState->cursorX > 0) {
+    //CURSOR_SPRITE.x -= 16;
+    DebugPrintf("Pressed: L");
     sExcavationUiState->cursorX -= 1;
-  } else if (gMain.newAndRepeatedKeys & DPAD_RIGHT && CURSOR_SPRITE.x < 184) {
-    CURSOR_SPRITE.x += 16;
+    DebugPrintf("Pos: X=%u, Y=%u, StateX=%u, StateY=%u", CURSOR_SPRITE.x, CURSOR_SPRITE.y, sExcavationUiState->cursorX, sExcavationUiState->cursorY);
+  } else if (gMain.newAndRepeatedKeys & DPAD_RIGHT && sExcavationUiState->cursorX < 11) {
+    //CURSOR_SPRITE.x += 16;
+    DebugPrintf("R");
     sExcavationUiState->cursorX += 1;
-  } else if (gMain.newAndRepeatedKeys & DPAD_UP && CURSOR_SPRITE.y > 46) {
-    CURSOR_SPRITE.y -= 16;
+    DebugPrintf("Pos: X=%u, Y=%u, StateX=%u, StateY=%u", CURSOR_SPRITE.x, CURSOR_SPRITE.y, sExcavationUiState->cursorX, sExcavationUiState->cursorY);
+  } else if (gMain.newAndRepeatedKeys & DPAD_UP && sExcavationUiState->cursorY > 2) {
+    //CURSOR_SPRITE.y -= 16;
     sExcavationUiState->cursorY -= 1;
-  } else if (gMain.newAndRepeatedKeys & DPAD_DOWN && CURSOR_SPRITE.y < 151) {
-    CURSOR_SPRITE.y += 16;
+    DebugPrintf("Pos: X=%u, Y=%u, StateX=%u, StateY=%u", CURSOR_SPRITE.x, CURSOR_SPRITE.y, sExcavationUiState->cursorX, sExcavationUiState->cursorY);
+  } else if (gMain.newAndRepeatedKeys & DPAD_DOWN && sExcavationUiState->cursorY < 9) {
+    //CURSOR_SPRITE.y += 16;
     sExcavationUiState->cursorY += 1;
+    DebugPrintf("Pos: X=%u, Y=%u, StateX=%u, StateY=%u", CURSOR_SPRITE.x, CURSOR_SPRITE.y, sExcavationUiState->cursorX, sExcavationUiState->cursorY);
   }
 
   else if (gMain.newAndRepeatedKeys & R_BUTTON) {
@@ -2844,6 +2897,7 @@ static void Excavation_FreeResources(void) {
     }
     // Free all allocated tilemap and pixel buffers associated with the windows.
     FreeAllWindowBuffers();
+    ReleaseComfyAnims();
     // Reset all sprite data
     ResetSpriteData();
 }
