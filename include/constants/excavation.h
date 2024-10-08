@@ -27,7 +27,7 @@
 #define TAG_STONE_3X3           29
 
 /*********** DEBUG SWITCHES ************/
-#define DEBUG_ITEM_GEN
+// #define DEBUG_ITEM_GEN
 
 #define SELECTED          0
 #define DESELECTED        255

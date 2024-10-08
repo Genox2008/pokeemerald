@@ -406,26 +406,16 @@ static const union AnimCmd *const gHitPickaxeAnim[] = {
   gAnimCmd_EffectPickaxeNotHit,
 };
 
+#define COMFY_X 0
+#define COMFY_Y 1
+
 static void SpriteCB_Cursor(struct Sprite* sprite) {
-    u32 x;
-    u32 y;
+    sprite->x = ReadComfyAnimValueSmooth(&gComfyAnims[sprite->data[COMFY_X]]); 
+    sprite->y = ReadComfyAnimValueSmooth(&gComfyAnims[sprite->data[COMFY_Y]]); 
 
-    x = ReadComfyAnimValueSmooth(&gComfyAnims[sprite->data[0]]); 
-    y = ReadComfyAnimValueSmooth(&gComfyAnims[sprite->data[1]]); 
-    //DebugPrintf("%u", ReadComfyAnimValueSmooth(&gComfyAnims[sprite->data[0]]));
-    
-    //DebugPrintf("ReadComfyAnimValueSmooth(...): x=%u y=%u", x, y);
-
-    sprite->x = x;
-    //sprite->x = 8 + 16 * sExcavationUiState->cursorX;
-    sprite->y = y;
-
-    gComfyAnims[gSprites[sExcavationUiState->cursorSpriteIndex].data[0]].config.data.spring.to = Q_24_8(8 + 16 * sExcavationUiState->cursorX);
-    gComfyAnims[gSprites[sExcavationUiState->cursorSpriteIndex].data[1]].config.data.spring.to = Q_24_8(8 + 16 * sExcavationUiState->cursorY);
-
-    //DebugPrintf("X=%u", gComfyAnims[gSprites[sExcavationUiState->cursorSpriteIndex].data[0]].config.data.spring.to);
-    //DebugPrintf("Y=%u", gComfyAnims[gSprites[sExcavationUiState->cursorSpriteIndex].data[1]].config.data.spring.to);
-
+    // Update anim's X and Y pos
+    gComfyAnims[gSprites[sExcavationUiState->cursorSpriteIndex].data[COMFY_X]].config.data.spring.to = Q_24_8(8 + 16 * sExcavationUiState->cursorX);
+    gComfyAnims[gSprites[sExcavationUiState->cursorSpriteIndex].data[COMFY_Y]].config.data.spring.to = Q_24_8(8 + 16 * sExcavationUiState->cursorY);
 }
 
 static const struct SpriteTemplate gSpriteCursor = {
@@ -434,7 +424,6 @@ static const struct SpriteTemplate gSpriteCursor = {
     .oam = &gOamCursor,
     .anims = gCursorAnim,
     .images = NULL,
-    // No rotating or scaling
     .affineAnims = gDummySpriteAffineAnimTable,
     .callback = SpriteCB_Cursor,
 };
@@ -1140,6 +1129,7 @@ static void SpriteTesting(void) {
 
 static void Excavation_SetupCB(void) {
   u8 taskId;
+
   switch(gMain.state) {
 	  // Clear Screen
 	  case STATE_CLEAR_SCREEN:
@@ -1207,18 +1197,9 @@ static void Excavation_SetupCB(void) {
   }
 }
 
-static bool8 Excavation_InitBgs(void)
-{
-    /*
-     * 1 screenblock is 2 KiB, so that should be a good size for our tilemap buffer. We don't need more than one
-     * screenblock since BG1's size setting is 0, which tells the GBA we are using a 32x32 tile background:
-     *      (32 tile * 32 tile * 2 bytes/tile = 2048)
-     * For more info on tilemap entries and how they work:
-     * https://www.coranac.com/tonc/text/regbg.htm#sec-map
-     */
+static bool8 Excavation_InitBgs(void) {
     const u32 TILEMAP_BUFFER_SIZE = (1024 * 2);
 
-    // BG registers may have scroll values left over from the previous screen. Reset all scroll values to 0.
     ResetAllBgsCoordinates();
 
     sBg2TilemapBuffer = AllocZeroed(TILEMAP_BUFFER_SIZE);
@@ -1240,16 +1221,14 @@ static bool8 Excavation_InitBgs(void)
     ScheduleBgCopyTilemapToVram(2);
     ScheduleBgCopyTilemapToVram(3);
 
-	  ShowBg(0);
+	ShowBg(0);
     ShowBg(2);
     ShowBg(3);
 
     return TRUE;
 }
 
-static void Task_Excavation_WaitFadeAndBail(u8 taskId)
-{
-    // Wait until the screen fades to black before we start doing cleanup
+static void Task_Excavation_WaitFadeAndBail(u8 taskId) {
     if (!gPaletteFade.active)
     {
         SetMainCallback2(sExcavationUiState->leavingCallback);
@@ -1258,8 +1237,7 @@ static void Task_Excavation_WaitFadeAndBail(u8 taskId)
     }
 }
 
-static void Excavation_MainCB(void)
-{
+static void Excavation_MainCB(void) {
   RunTasks();
   AdvanceComfyAnimations();
   AnimateSprites();
@@ -1364,31 +1342,22 @@ static void ExcavationUi_Shake(u8 taskId) {
   BuildOamBuffer();
 }
 
-static void Excavation_VBlankCB(void)
-{
+static void Excavation_VBlankCB(void) {
   // I discovered that the VBlankCB is actually ran every VBlank. There's no function that can halt it just because of a huge loop or smth
   // However I discovered that the MainCB can be halted! And that's actually the case. UiShake() delays with huge loops to make the shake
   // effect visible! Because of this, other tasks cannot run (or other functions) in the same time as UiShake is ran. This makes the fade/flash
   // effect on the items which got dug up, delay by a few `ms`! Because Vblank cannot be halted, we just do the checking, each vblank + there's no lag
   // because of this!
   Excavation_CheckItemFound();
-
   UpdatePaletteFade();
-
   LoadOam();
   ProcessSpriteCopyRequests();
   TransferPlttBuffer();
 }
 
-static void Excavation_FadeAndBail(void)
-{
+static void Excavation_FadeAndBail(void) {
     BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);
     CreateTask(Task_Excavation_WaitFadeAndBail, 0);
-
-    /*
-     * Set callbacks to ours while we wait for the fade to finish, then our above task will cleanup and swap the
-     * callbacks back to the one we saved earlier (which should re-load the overworld)
-     */
     SetVBlankCallback(Excavation_VBlankCB);
     SetMainCallback2(Excavation_MainCB);
 }
@@ -1495,8 +1464,6 @@ static u8 GetRandomItemId() {
   return 0;
 }
 
-#define COMFY_X 0
-#define COMFY_Y 1
 
 static void Excavation_LoadSpriteGraphics(void) {
   u8 i;
@@ -1504,6 +1471,7 @@ static void Excavation_LoadSpriteGraphics(void) {
   u16 rnd;
   struct ComfyAnimSpringConfig animConfigX, animConfigY;  
 
+  // -- X values --
   animConfigX.from = Q_24_8(0 + 8);
   animConfigX.to = Q_24_8(0 + 8);
   animConfigX.mass = Q_24_8(50);
@@ -1511,6 +1479,8 @@ static void Excavation_LoadSpriteGraphics(void) {
   animConfigX.friction = Q_24_8(1150);
   animConfigX.clampAfter = 0;
   animConfigX.delayFrames = 0;
+
+  // -- Y values -- 
   animConfigY.from = Q_24_8(2 * 16 + 8);
   animConfigY.to = Q_24_8(2 * 16 + 8);
   animConfigY.mass = Q_24_8(50);
@@ -1606,59 +1576,43 @@ static void Task_ExcavationWaitFadeIn(u8 taskId) {
 #define RED_BUTTON 1
 
 static void Task_ExcavationMainInput(u8 taskId) {
+    if (gMain.newKeys & A_BUTTON && !sExcavationUiState->shouldShake /*&& sExcavationUiState->crackPos < 8 */)  {
+        Excavation_UpdateTerrain();
+        Excavation_UpdateCracks();
+        ScheduleBgCopyTilemapToVram(2);
+        DoScheduledBgTilemapCopiesToVram();
+        BuildOamBuffer();
 
-  // Because the UiShake function does manual delays with for loops, we have to imediatly call the update functions for sprites and the schedule
-  // functions for bgs. Otherwise we would notice the changes very late
-  if (gMain.newKeys & A_BUTTON && !sExcavationUiState->shouldShake /*&& sExcavationUiState->crackPos < 8 */)  {
-    Excavation_UpdateTerrain();
-    Excavation_UpdateCracks();
-    ScheduleBgCopyTilemapToVram(2);
-    DoScheduledBgTilemapCopiesToVram();
-    BuildOamBuffer();
-    // Shake
-    //UiShake(10, 3);
-    //sExcavationUiState->shouldShake = TRUE;
-
-    if (sExcavationUiState->mode == 1) {
-      sExcavationUiState->ShakeHitEffect = CreateSprite(&gSpriteHitEffectHammer, (sExcavationUiState->cursorX*16)+8, (sExcavationUiState->cursorY*16)+8, 0);
-      sExcavationUiState->ShakeHitTool = CreateSprite(&gSpriteHitHammer, (sExcavationUiState->cursorX*16)+24, sExcavationUiState->cursorY*16, 0);
-    } else {
-      sExcavationUiState->ShakeHitEffect = CreateSprite(&gSpriteHitEffectPickaxe, (sExcavationUiState->cursorX*16)+8, (sExcavationUiState->cursorY*16)+8, 0);
-      sExcavationUiState->ShakeHitTool = CreateSprite(&gSpriteHitPickaxe, (sExcavationUiState->cursorX*16)+24, sExcavationUiState->cursorY*16, 0);
+        if (sExcavationUiState->mode == 1) {
+            sExcavationUiState->ShakeHitEffect = CreateSprite(&gSpriteHitEffectHammer, (sExcavationUiState->cursorX*16)+8, (sExcavationUiState->cursorY*16)+8, 0);
+            sExcavationUiState->ShakeHitTool = CreateSprite(&gSpriteHitHammer, (sExcavationUiState->cursorX*16)+24, sExcavationUiState->cursorY*16, 0);
+        } else {
+            sExcavationUiState->ShakeHitEffect = CreateSprite(&gSpriteHitEffectPickaxe, (sExcavationUiState->cursorX*16)+8, (sExcavationUiState->cursorY*16)+8, 0);
+            sExcavationUiState->ShakeHitTool = CreateSprite(&gSpriteHitPickaxe, (sExcavationUiState->cursorX*16)+24, sExcavationUiState->cursorY*16, 0);
+        }
+        sExcavationUiState->shouldShake = TRUE;
+        CreateTask(ExcavationUi_Shake, 0);
     }
-    sExcavationUiState->shouldShake = TRUE;
-    CreateTask(ExcavationUi_Shake, 0);
-  }
 
-  else if (gMain.newAndRepeatedKeys & DPAD_LEFT && sExcavationUiState->cursorX > 0) {
-    //CURSOR_SPRITE.x -= 16;
-    DebugPrintf("Pressed: L");
-    sExcavationUiState->cursorX -= 1;
-    DebugPrintf("Pos: X=%u, Y=%u, StateX=%u, StateY=%u", CURSOR_SPRITE.x, CURSOR_SPRITE.y, sExcavationUiState->cursorX, sExcavationUiState->cursorY);
-  } else if (gMain.newAndRepeatedKeys & DPAD_RIGHT && sExcavationUiState->cursorX < 11) {
-    //CURSOR_SPRITE.x += 16;
-    DebugPrintf("R");
-    sExcavationUiState->cursorX += 1;
-    DebugPrintf("Pos: X=%u, Y=%u, StateX=%u, StateY=%u", CURSOR_SPRITE.x, CURSOR_SPRITE.y, sExcavationUiState->cursorX, sExcavationUiState->cursorY);
-  } else if (gMain.newAndRepeatedKeys & DPAD_UP && sExcavationUiState->cursorY > 2) {
-    //CURSOR_SPRITE.y -= 16;
-    sExcavationUiState->cursorY -= 1;
-    DebugPrintf("Pos: X=%u, Y=%u, StateX=%u, StateY=%u", CURSOR_SPRITE.x, CURSOR_SPRITE.y, sExcavationUiState->cursorX, sExcavationUiState->cursorY);
-  } else if (gMain.newAndRepeatedKeys & DPAD_DOWN && sExcavationUiState->cursorY < 9) {
-    //CURSOR_SPRITE.y += 16;
-    sExcavationUiState->cursorY += 1;
-    DebugPrintf("Pos: X=%u, Y=%u, StateX=%u, StateY=%u", CURSOR_SPRITE.x, CURSOR_SPRITE.y, sExcavationUiState->cursorX, sExcavationUiState->cursorY);
-  }
+    else if (gMain.newAndRepeatedKeys & DPAD_LEFT && sExcavationUiState->cursorX > 0) {
+        sExcavationUiState->cursorX -= 1;
+    } else if (gMain.newAndRepeatedKeys & DPAD_RIGHT && sExcavationUiState->cursorX < 11) {
+        sExcavationUiState->cursorX += 1;
+    } else if (gMain.newAndRepeatedKeys & DPAD_UP && sExcavationUiState->cursorY > 2) {
+        sExcavationUiState->cursorY -= 1;
+    } else if (gMain.newAndRepeatedKeys & DPAD_DOWN && sExcavationUiState->cursorY < 9) {
+        sExcavationUiState->cursorY += 1;
+    }
 
-  else if (gMain.newAndRepeatedKeys & R_BUTTON) {
-    StartSpriteAnim(&gSprites[sExcavationUiState->bRedSpriteIndex], 1);
-    StartSpriteAnim(&gSprites[sExcavationUiState->bBlueSpriteIndex],1);
-    sExcavationUiState->mode = RED_BUTTON;
-  } else if (gMain.newAndRepeatedKeys & L_BUTTON) {
-    StartSpriteAnim(&gSprites[sExcavationUiState->bRedSpriteIndex], 0);
-    StartSpriteAnim(&gSprites[sExcavationUiState->bBlueSpriteIndex], 0);
-    sExcavationUiState->mode = BLUE_BUTTON;
-  }
+    else if (gMain.newAndRepeatedKeys & R_BUTTON) {
+        StartSpriteAnim(&gSprites[sExcavationUiState->bRedSpriteIndex], 1);
+        StartSpriteAnim(&gSprites[sExcavationUiState->bBlueSpriteIndex],1);
+        sExcavationUiState->mode = RED_BUTTON;
+    } else if (gMain.newAndRepeatedKeys & L_BUTTON) {
+      StartSpriteAnim(&gSprites[sExcavationUiState->bRedSpriteIndex], 0);
+        StartSpriteAnim(&gSprites[sExcavationUiState->bBlueSpriteIndex], 0);
+        sExcavationUiState->mode = BLUE_BUTTON;
+    }
 
 	if (AreAllItemsFound())
 		EndMining(taskId);
@@ -1678,7 +1632,7 @@ static void OverwriteTileDataInTilemapBuffer(u8 tile, u8 x, u8 y, u16* tilemapBu
 // DO NOT TOUCH ANY OF THE CRACK UPDATE FUNCTIONS!!!!! GENERATION IS TOO COMPLICATED TO GET FIXED! (most likely will forget everything lmao (thats why)! )!
 //
 // Each function represent one frame of a crack, but why are there two offset vars?????
-// Well there's `ofs` for telling how much to the left the next crack goes, (cracks are splite up by seven of these 32x32 `sprites`) (Cracks start at the end, so 23 is the first tile.);
+// Well there's `ofs` for telling how much to the left the next crack goes, (cracks are split up by seven of these 32x32 `sprites`) (Cracks start at the end, so 23 is the first tile.);
 //
 // `ofs2` tells how far the tile should move to the right side. Thats because the cracks dont really line up each other.
 // So you cant put one 32x32 `sprite` (calling them sprites) right next to another 32x32 `sprite`. To align the next `sprite` so it looks right, we have to offset the next `sprite` by 8 pixels or 1 tile.
@@ -1888,7 +1842,7 @@ static void Terrain_DrawLayerTileToScreen(u8 x, u8 y, u8 layer, u16* ptr) {
   u8 tileY = y;
 
   // Idk why tf I am doing the checking
-  // TODO: Change this \/
+  // TODO: Change this
   if (x == 0) {
     tileX = 0;
   } else {
