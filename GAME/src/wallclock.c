@@ -20,6 +20,7 @@
 #include "window.h"
 #include "constants/rgb.h"
 #include "constants/songs.h"
+#include "constants/flags.h"
 
 static void CB2_WallClock(void);
 static void Task_SetClock_WaitFadeIn(u8 taskId);
@@ -660,7 +661,7 @@ static void LoadWallClockGraphics(void)
     LoadUserWindowBorderGfx(0, 0x250, BG_PLTT_ID(13));
     ClearScheduledBgCopiesToVram();
     ScanlineEffect_Stop();
-    ResetTasks();
+    //ResetTasks();
     ResetSpriteData();
     ResetPaletteFade();
     FreeAllSpritePalettes();
@@ -861,6 +862,7 @@ static void Task_SetClock_HandleConfirmInput(u8 taskId)
 static void Task_SetClock_Confirmed(u8 taskId)
 {
     RtcInitLocalTimeOffset(gTasks[taskId].tHours, gTasks[taskId].tMinutes);
+    FlagSet(FLAG_SET_WALL_CLOCK);
     BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);
     gTasks[taskId].func = Task_SetClock_Exit;
 }
@@ -870,7 +872,8 @@ static void Task_SetClock_Exit(u8 taskId)
     if (!gPaletteFade.active)
     {
         FreeAllWindowBuffers();
-        SetMainCallback2(gMain.savedCallback);
+        //SetMainCallback2(gMain.savedCallback);
+        DestroyTask(taskId);
     }
 }
 
