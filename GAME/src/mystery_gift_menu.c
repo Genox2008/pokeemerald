@@ -471,6 +471,8 @@ void CB2_InitEReader(void)
     }
 }
 
+#include "heat_title_screen.h"
+
 void MainCB_FreeAllBuffersAndReturnToInitTitleScreen(void)
 {
     gGiftIsFromEReader = FALSE;
@@ -479,7 +481,7 @@ void MainCB_FreeAllBuffersAndReturnToInitTitleScreen(void)
     Free(GetBgTilemapBuffer(1));
     Free(GetBgTilemapBuffer(2));
     Free(GetBgTilemapBuffer(3));
-    SetMainCallback2(CB2_InitTitleScreen);
+    SetMainCallback2(Menu_Init);
 }
 
 // Print the text window at the top of the screen with the title and control instructions

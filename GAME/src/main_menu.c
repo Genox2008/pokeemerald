@@ -1114,6 +1114,8 @@ static void Task_HandleMainMenuAPressed(u8 taskId)
     }
 }
 
+#include "heat_title_screen.h"
+
 static void Task_HandleMainMenuBPressed(u8 taskId)
 {
     if (!gPaletteFade.active)
@@ -1122,7 +1124,7 @@ static void Task_HandleMainMenuBPressed(u8 taskId)
             RemoveScrollIndicatorArrowPair(gTasks[taskId].tScrollArrowTaskId);
         sCurrItemAndOptionMenuCheck = 0;
         FreeAllWindowBuffers();
-        SetMainCallback2(CB2_InitTitleScreen);
+        SetMainCallback2(Menu_Init);
         DestroyTask(taskId);
     }
 }

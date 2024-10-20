@@ -88,7 +88,6 @@ bool16 InitWindows(const struct WindowTemplate *templates)
                 Free(gWindowBgTilemapBuffers[bgLayer]);
                 gWindowBgTilemapBuffers[bgLayer] = allocatedTilemapBuffer;
             }
-
             return FALSE;
         }
 

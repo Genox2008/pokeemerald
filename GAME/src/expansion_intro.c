@@ -14,6 +14,7 @@
 #include "constants/rgb.h"
 #include "constants/songs.h"
 #include "title_screen.h"
+#include "heat_title_screen.h"
 
 #if EXPANSION_INTRO == TRUE
 
@@ -280,7 +281,7 @@ void Task_HandleExpansionIntro(u8 taskId)
             FreeAllSpritePalettes();
             DestroyTask(taskId);
             //CreateTask(Task_Scene1_Load, 0);
-            SetMainCallback2(CB2_InitTitleScreen);
+            SetMainCallback2(Menu_Init);
         }
         break;
     }

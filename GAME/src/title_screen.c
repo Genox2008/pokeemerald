@@ -3,6 +3,7 @@
 #include "title_screen.h"
 #include "sprite.h"
 #include "gba/m4a_internal.h"
+#include "gba/defines.h"
 #include "clear_save_data_menu.h"
 #include "decompress.h"
 #include "event_data.h"
@@ -23,6 +24,11 @@
 #include "constants/rgb.h"
 #include "constants/songs.h"
 #include "sound_check_menu.h"
+#include "window.h"
+#include "menu.h"
+#include "text.h"
+#include "malloc.h"
+#include "menu_helpers.h"
 
 enum {
     TAG_VERSION = 1000,
@@ -66,9 +72,7 @@ static const u16 sUnusedUnknownPal[] = INCBIN_U16("graphics/title_screen/unused.
 static const u32 sTitleScreenRayquazaGfx[] = INCBIN_U32("graphics/title_screen/rayquaza.4bpp.lz");
 static const u32 sTitleScreenRayquazaTilemap[] = INCBIN_U32("graphics/title_screen/rayquaza.bin.lz");
 static const u32 sTitleScreenLogoShineGfx[] = INCBIN_U32("graphics/title_screen/logo_shine.4bpp.lz");
-static const u32 sTitleScreenCloudsGfx[] = INCBIN_U32("graphics/title_screen/clouds.4bpp.lz");
-
-
+static const u32 sTitleScreenCloudsGfx[] = INCBIN_U32("graphics/title_screen/clouds.4bpp.lz"); 
 
 // Used to blend "Emerald Version" as it passes over over the Pokémon banner.
 // Also used by the intro to blend the Game Freak name/logo in and out as they appear and disappear
@@ -107,6 +111,23 @@ const u16 gTitleScreenAlphaBlend[64] =
     BLDALPHA_BLEND(1, 16),
     BLDALPHA_BLEND(0, 16),
     [32 ... 63] = BLDALPHA_BLEND(0, 16)
+};
+
+#define WIN_TEXT 0 
+
+static const struct WindowTemplate sWindowTemplates[] =
+{
+    [WIN_TEXT] =
+	{
+        .bg = 1,
+        .tilemapLeft = 2,
+        .tilemapTop = 2,
+        .width = 10,
+        .height = 4,
+        .paletteNum = 15,
+        .baseBlock = 0x01,
+    },
+    DUMMY_WIN_TEMPLATE
 };
 
 static const struct OamData sVersionBannerLeftOamData =
@@ -563,12 +584,41 @@ static void StartPokemonLogoShine(u8 mode)
 
 static void VBlankCB(void)
 {
-    ScanlineEffect_InitHBlankDmaTransfer();
+    //ScanlineEffect_InitHBlankDmaTransfer();
     LoadOam();
     ProcessSpriteCopyRequests();
     TransferPlttBuffer();
-    SetGpuReg(REG_OFFSET_BG1VOFS, gBattle_BG1_Y);
 }
+
+static const u8 sTextVersion[] = _("test");
+
+static void InitTextWindows(void) {
+	if (InitWindows(sWindowTemplates))
+	{
+		DeactivateAllTextPrinters();
+		ScheduleBgCopyTilemapToVram(1);
+
+        FillWindowPixelBuffer(WIN_TEXT, PIXEL_FILL(TEXT_COLOR_TRANSPARENT));
+		PutWindowTilemap(WIN_TEXT);
+        AddTextPrinterParameterized(WIN_TEXT, 1, sTextVersion, 1, 1, 0xFF, NULL);
+		CopyWindowToVram(WIN_TEXT, COPYWIN_FULL);
+        DoScheduledBgTilemapCopiesToVram();
+		//Menu_LoadStdPalAt(BG_PLTT_ID(15));
+	}
+}
+
+static void PrintVersionText(void) {
+
+    u8 txtColor[] = {TEXT_COLOR_TRANSPARENT, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_LIGHT_GRAY};
+    DebugPrintf("Hello");
+    FillWindowPixelBuffer(WIN_TEXT, PIXEL_FILL(TEXT_COLOR_TRANSPARENT));
+    //AddTextPrinterParameterized4(WIN_TEXT, FONT_NORMAL, 0, 0, 0, 1, txtColor, TEXT_SKIP_DRAW, sTextVersion);
+    AddTextPrinterParameterized3(WIN_TEXT, FONT_NORMAL, 1, 1, txtColor, TEXT_SKIP_DRAW, sTextVersion);
+    //PutWindowTilemap(WIN_TEXT);
+	CopyWindowToVram(WIN_TEXT, COPYWIN_GFX);
+    //ScheduleBgCopyTilemapToVram(1);
+}
+
 
 void CB2_InitTitleScreen(void)
 {
@@ -576,7 +626,11 @@ void CB2_InitTitleScreen(void)
     {
     default:
     case 0:
-        SetVBlankCallback(NULL);
+        //SetVBlankCallback(NULL);
+        DmaClearLarge16(3, (void *)VRAM, VRAM_SIZE, 0x1000);
+        SetVBlankHBlankCallbacksToNull();
+        ClearScheduledBgCopiesToVram();
+        ResetVramOamAndBgCntRegs();
         SetGpuReg(REG_OFFSET_BLDCNT, 0);
         SetGpuReg(REG_OFFSET_BLDALPHA, 0);
         SetGpuReg(REG_OFFSET_BLDY, 0);
@@ -594,10 +648,16 @@ void CB2_InitTitleScreen(void)
         DmaFill16(3, 0, (void *)VRAM, VRAM_SIZE);
         DmaFill32(3, 0, (void *)OAM, OAM_SIZE);
         DmaFill16(3, 0, (void *)(PLTT + 2), PLTT_SIZE - 2);
-        ResetPaletteFade();
+
         gMain.state = 1;
         break;
     case 1:
+        ScanlineEffect_Stop();
+        FreeAllSpritePalettes();
+        ResetPaletteFade();
+        ResetSpriteData();
+        ResetTasks();
+
         // bg2
         LZ77UnCompVram(gTitleScreenPokemonLogoGfx, (void *)(BG_CHAR_ADDR(0)));
         LZ77UnCompVram(gTitleScreenPokemonLogoTilemap, (void *)(BG_SCREEN_ADDR(9)));
@@ -605,19 +665,15 @@ void CB2_InitTitleScreen(void)
         // bg3
         LZ77UnCompVram(sTitleScreenRayquazaGfx, (void *)(BG_CHAR_ADDR(2)));
         LZ77UnCompVram(sTitleScreenRayquazaTilemap, (void *)(BG_SCREEN_ADDR(26)));
-        // bg1
-        //LZ77UnCompVram(sTitleScreenCloudsGfx, (void *)(BG_CHAR_ADDR(3)));
-        //LZ77UnCompVram(gTitleScreenCloudsTilemap, (void *)(BG_SCREEN_ADDR(27)));
-        ScanlineEffect_Stop();
-        ResetTasks();
-        ResetSpriteData();
-        FreeAllSpritePalettes();
+        ResetTempTileDataBuffers();
         gReservedSpritePaletteCount = 9;
         LoadCompressedSpriteSheet(&sSpriteSheet_EmeraldVersion[0]);
-        LoadCompressedSpriteSheet(&sSpriteSheet_PressStart[0]);
+        //LoadCompressedSpriteSheet(&sSpriteSheet_PressStart[0]);
         LoadCompressedSpriteSheet(&sPokemonLogoShineSpriteSheet[0]);
         LoadPalette(gTitleScreenEmeraldVersionPal, OBJ_PLTT_ID(0), PLTT_SIZE_4BPP);
-        LoadSpritePalette(&sSpritePalette_PressStart[0]);
+        //LoadSpritePalette(&sSpritePalette_PressStart[0]);
+        InitTextWindows();
+        //PrintVersionText();
         gMain.state = 2;
         break;
     case 2:
@@ -652,10 +708,11 @@ void CB2_InitTitleScreen(void)
         SetGpuReg(REG_OFFSET_BLDALPHA, 0);
         SetGpuReg(REG_OFFSET_BLDY, 12);
         SetGpuReg(REG_OFFSET_BG0CNT, BGCNT_PRIORITY(3) | BGCNT_CHARBASE(2) | BGCNT_SCREENBASE(26) | BGCNT_16COLOR | BGCNT_TXT256x256);
-        SetGpuReg(REG_OFFSET_BG1CNT, BGCNT_PRIORITY(2) | BGCNT_CHARBASE(3) | BGCNT_SCREENBASE(27) | BGCNT_16COLOR | BGCNT_TXT256x256);
+        SetGpuReg(REG_OFFSET_BG1CNT, BGCNT_PRIORITY(2) | BGCNT_CHARBASE(3) | BGCNT_SCREENBASE(31) | BGCNT_16COLOR | BGCNT_TXT256x256);
         SetGpuReg(REG_OFFSET_BG2CNT, BGCNT_PRIORITY(1) | BGCNT_CHARBASE(0) | BGCNT_SCREENBASE(9) | BGCNT_256COLOR | BGCNT_AFF256x256);
+        //SetGpuReg(REG_OFFSET_BG2CNT, BGCNT_PRIORITY(1) | BGCNT_CHARBASE(0) | BGCNT_SCREENBASE(9) | BGCNT_256COLOR | BGCNT_TXT256x256);
         EnableInterrupts(INTR_FLAG_VBLANK);
-        SetGpuReg(REG_OFFSET_DISPCNT, DISPCNT_MODE_1
+        SetGpuReg(REG_OFFSET_DISPCNT, DISPCNT_MODE_0
                                     | DISPCNT_OBJ_1D_MAP
                                     | DISPCNT_BG2_ON
                                     | DISPCNT_OBJ_ON
@@ -668,7 +725,7 @@ void CB2_InitTitleScreen(void)
         if (!UpdatePaletteFade())
         {
             StartPokemonLogoShine(SHINE_MODE_SINGLE_NO_BG_COLOR);
-            ScanlineEffect_InitWave(0, DISPLAY_HEIGHT, 4, 4, 0, SCANLINE_EFFECT_REG_BG1HOFS, TRUE);
+            //ScanlineEffect_InitWave(0, DISPLAY_HEIGHT, 4, 4, 0, SCANLINE_EFFECT_REG_BG1HOFS, TRUE);
             SetMainCallback2(MainCB2);
         }
         break;
@@ -680,6 +737,7 @@ static void MainCB2(void)
     RunTasks();
     AnimateSprites();
     BuildOamBuffer();
+    DoScheduledBgTilemapCopiesToVram();
     UpdatePaletteFade();
 }
 
@@ -759,9 +817,9 @@ static void Task_TitleScreenPhase2(u8 taskId)
                                     | DISPCNT_BG1_ON
                                     | DISPCNT_BG2_ON
                                     | DISPCNT_OBJ_ON);
-        CreatePressStartBanner(START_BANNER_X, 108);
-        CreateCopyrightBanner(START_BANNER_X, 148);
-        gTasks[taskId].tBg1Y = 0;
+        //CreatePressStartBanner(START_BANNER_X, 108);
+        //CreateCopyrightBanner(START_BANNER_X, 148);
+        //gTasks[taskId].tBg1Y = 0;
         gTasks[taskId].func = Task_TitleScreenPhase3;
     }
 
@@ -775,8 +833,8 @@ static void Task_TitleScreenPhase2(u8 taskId)
     SetGpuReg(REG_OFFSET_BG2Y_L, yPos);
     SetGpuReg(REG_OFFSET_BG2Y_H, yPos / 0x10000);
 
-    gTasks[taskId].data[5] = 15; // Unused
-    gTasks[taskId].data[6] = 6;  // Unused
+    //gTasks[taskId].data[5] = 15; // Unused
+    //gTasks[taskId].data[6] = 6;  // Unused
 }
 
 // Show Rayquaza silhouette and process main title screen input
@@ -821,7 +879,7 @@ static void Task_TitleScreenPhase3(u8 taskId)
         //    gBattle_BG1_Y = gTasks[taskId].tBg1Y / 2;
         //    gBattle_BG1_X = 0;
         //}
-        UpdateLegendaryMarkingColor(gTasks[taskId].tCounter);
+        //UpdateLegendaryMarkingColor(gTasks[taskId].tCounter);
         if ((gMPlayInfo_BGM.status & 0xFFFF) == 0)
         {
             BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_WHITEALPHA);
