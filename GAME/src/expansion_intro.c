@@ -281,7 +281,7 @@ void Task_HandleExpansionIntro(u8 taskId)
             FreeAllSpritePalettes();
             DestroyTask(taskId);
             //CreateTask(Task_Scene1_Load, 0);
-            SetMainCallback2(Menu_Init);
+            SetMainCallback2(HeatTitleScreen_Init);
         }
         break;
     }

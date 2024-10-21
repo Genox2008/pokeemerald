@@ -31,6 +31,7 @@
 #include "link_rfu.h"
 #include "wonder_news.h"
 #include "constants/cable_club.h"
+#include "heat_title_screen.h"
 
 enum {
     WIN_HEADER,
@@ -471,8 +472,6 @@ void CB2_InitEReader(void)
     }
 }
 
-#include "heat_title_screen.h"
-
 void MainCB_FreeAllBuffersAndReturnToInitTitleScreen(void)
 {
     gGiftIsFromEReader = FALSE;
@@ -481,7 +480,7 @@ void MainCB_FreeAllBuffersAndReturnToInitTitleScreen(void)
     Free(GetBgTilemapBuffer(1));
     Free(GetBgTilemapBuffer(2));
     Free(GetBgTilemapBuffer(3));
-    SetMainCallback2(Menu_Init);
+    SetMainCallback2(HeatTitleScreen_Init);
 }
 
 // Print the text window at the top of the screen with the title and control instructions

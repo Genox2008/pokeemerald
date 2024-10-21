@@ -41,6 +41,7 @@
 #include "window.h"
 #include "mystery_gift_menu.h"
 #include "wallclock.h"
+#include "heat_title_screen.h"
 
 /*
  * Main menu state machine
@@ -1114,8 +1115,6 @@ static void Task_HandleMainMenuAPressed(u8 taskId)
     }
 }
 
-#include "heat_title_screen.h"
-
 static void Task_HandleMainMenuBPressed(u8 taskId)
 {
     if (!gPaletteFade.active)
@@ -1124,7 +1123,7 @@ static void Task_HandleMainMenuBPressed(u8 taskId)
             RemoveScrollIndicatorArrowPair(gTasks[taskId].tScrollArrowTaskId);
         sCurrItemAndOptionMenuCheck = 0;
         FreeAllWindowBuffers();
-        SetMainCallback2(Menu_Init);
+        SetMainCallback2(HeatTitleScreen_Init);
         DestroyTask(taskId);
     }
 }

@@ -44,43 +44,69 @@
 #include "reset_rtc_screen.h"
 #include "sound_check_menu.h"
 #include "berry_fix_program.h"
-
-
-/*
- * 
- */
  
+//==========MACROS==========//
+#define try_free(ptr) ({        \
+    void ** ptr__ = (void **)&(ptr);   \
+    if (*ptr__ != NULL)                \
+        Free(*ptr__);                  \
+})
+
 //==========DEFINES==========//
-struct MenuResources
-{
+struct sTitleScreen {
     u32 gfxLoadState;
     u32 flickerCount;
+    u8 BG2Offset;
+    u32 BG2OfsCounter;
 };
 
-enum WindowIds
-{
+enum WindowIds {
     WIN_PRESS_START,
     WIN_VERSION,
 };
 
+enum Colors {
+    FONT_BLACK,
+    FONT_WHITE,
+    FONT_RED,
+    FONT_BLUE,
+};
+
 //==========EWRAM==========//
-static EWRAM_DATA struct MenuResources *sMenuDataPtr = NULL;
+static EWRAM_DATA struct sTitleScreen *sTitleScreenState = NULL;
 static EWRAM_DATA u8 *sBg1TilemapBuffer = NULL;
+static EWRAM_DATA u8 *sBg2TilemapBuffer = NULL;
+static EWRAM_DATA u8 *sBg3TilemapBuffer = NULL;
 
 //==========STATIC=DEFINES==========//
-static void Menu_RunSetup(void);
-static bool8 Menu_DoGfxSetup(void);
-static bool8 Menu_InitBgs(void);
-static void Menu_FadeAndBail(void);
-static bool8 Menu_LoadGraphics(void);
-static void Menu_InitWindows(void);
+static void HeatTitleScreen_RunSetup(void);
+static bool8 HeatTitleScreen_DoGfxSetup(void);
+static bool8 HeatTitleScreen_InitBgs(void);
+static bool8 HeatTitleScreen_LoadGraphics(void);
+static void HeatTitleScreen_InitWindows(void);
 static void PrintToWindow(u8 colorIdx);
-static void Task_MenuWaitFadeIn(u8 taskId);
-static void Task_MenuMain(u8 taskId);
+static void Task_HeatTitleScreen_WaitFadeIn(u8 taskId);
+static void Task_HeatTitleScreen_HandleInputs(u8 taskId);
+static void HeatTitleScreen_FadeAndBail(void);
 
 //==========CONST=DATA==========//
-static const struct BgTemplate sMenuBgTemplates[] =
-{
+static const u8 sText_PressA[] = _("Press Start");
+static const u8 sText_Version[] = _("PreAlpha");
+
+static const u32 sTitleScreenTiles[] = INCBIN_U32("graphics/heat_title_screen/bg.4bpp.lz");
+static const u32 sTitleScreenTilemap[] = INCBIN_U32("graphics/heat_title_screen/bg.bin.lz");
+static const u16 sTitleScreenPalette[] = INCBIN_U16("graphics/heat_title_screen/bg.gbapal");
+
+static const u32 sPokemonLogoTiles[] = INCBIN_U32("graphics/heat_title_screen/pokemon_logo.4bpp.lz");
+static const u32 sPokemonLogoTilemap[] = INCBIN_U32("graphics/heat_title_screen/pokemon_logo.bin.lz");
+static const u16 sPokemonLogoPalette[] = INCBIN_U16("graphics/heat_title_screen/pokemon_logo.gbapal");
+
+static const u32 sFogTiles[] = INCBIN_U32("graphics/heat_title_screen/fog.4bpp.lz");
+static const u32 sFogTilemap[] = INCBIN_U32("graphics/heat_title_screen/fog.bin.lz");
+static const u16 sFogPalette[] = INCBIN_U16("graphics/heat_title_screen/fog.gbapal");
+static const u16 sFogDarkPalette[] = INCBIN_U16("graphics/heat_title_screen/fog_dark.gbapal");
+
+static const struct BgTemplate sTitleScreenBgTemplates[] = {
     {
         .bg = 0,    // windows and text
         .charBaseIndex = 0,
@@ -95,20 +121,19 @@ static const struct BgTemplate sMenuBgTemplates[] =
     },
     {
         .bg = 2,    // fog bachground which blends to bg1
-        .charBaseIndex = 0,
-        .mapBaseIndex = 28,
+        .charBaseIndex = 2,
+        .mapBaseIndex = 29,
         .priority = 2
     },
     {
         .bg = 3,    // Pokemon Logo and edition logo
-        .charBaseIndex = 0,
+        .charBaseIndex = 1,
         .mapBaseIndex = 28,
         .priority = 1
     }
 };
 
-static const struct WindowTemplate sMenuWindowTemplates[] = 
-{
+static const struct WindowTemplate sTitleScreenWindowTemplates[] = {
     [WIN_PRESS_START] = 
     {
         .bg = 0,            // which bg to print text on
@@ -132,19 +157,8 @@ static const struct WindowTemplate sMenuWindowTemplates[] =
     DUMMY_WIN_TEMPLATE,
 };
 
-static const u32 sMenuTiles[] = INCBIN_U32("graphics/title_screen/rayquaza.4bpp.lz");
-static const u32 sMenuTilemap[] = INCBIN_U32("graphics/title_screen/rayquaza.bin.lz");
-static const u16 sMenuPalette[] = INCBIN_U16("graphics/title_screen/rayquaza_and_clouds.gbapal");
 
-enum Colors
-{
-    FONT_BLACK,
-    FONT_WHITE,
-    FONT_RED,
-    FONT_BLUE,
-};
-
-static const u8 sMenuWindowFontColors[][3] = 
+static const u8 sTitleScreenWindowFontColors[][3] = 
 {
     [FONT_BLACK]  = {TEXT_COLOR_TRANSPARENT,  TEXT_COLOR_DARK_GRAY,  TEXT_COLOR_LIGHT_GRAY},
     [FONT_WHITE]  = {TEXT_COLOR_TRANSPARENT,  TEXT_COLOR_WHITE,  TEXT_COLOR_DARK_GRAY},
@@ -153,42 +167,31 @@ static const u8 sMenuWindowFontColors[][3] =
 };
 
 //==========FUNCTIONS==========//
-// UI loader template
-void Task_OpenMenuFromStartMenu(u8 taskId)
+void HeatTitleScreen_Init(void)
 {
-    s16 *data = gTasks[taskId].data;
-    if (!gPaletteFade.active)
-    {
-        CleanupOverworldWindowsAndTilemaps();
-        Menu_Init();
-        DestroyTask(taskId);
-    }
-}
-
-// This is our main initialization function if you want to call the menu from elsewhere
-void Menu_Init(void)
-{
-    if ((sMenuDataPtr = AllocZeroed(sizeof(struct MenuResources))) == NULL)
+    if ((sTitleScreenState = AllocZeroed(sizeof(struct sTitleScreen))) == NULL)
     {
         return;
     }
     
     // initialize stuff
-    sMenuDataPtr->gfxLoadState = 0;
-    sMenuDataPtr->flickerCount = 0;
-    SetMainCallback2(Menu_RunSetup);
+    sTitleScreenState->gfxLoadState = 0;
+    sTitleScreenState->flickerCount = 0;
+    sTitleScreenState->BG2Offset = 0;
+    sTitleScreenState->BG2OfsCounter = 0;
+    SetMainCallback2(HeatTitleScreen_RunSetup);
 }
 
-static void Menu_RunSetup(void)
+static void HeatTitleScreen_RunSetup(void)
 {
     while (1)
     {
-        if (Menu_DoGfxSetup() == TRUE)
+        if (HeatTitleScreen_DoGfxSetup() == TRUE)
             break;
     }
 }
 
-static void Menu_MainCB(void)
+static void HeatTitleScreen_MainCB(void)
 {
     RunTasks();
     AnimateSprites();
@@ -197,14 +200,14 @@ static void Menu_MainCB(void)
     UpdatePaletteFade();
 }
 
-static void Menu_VBlankCB(void)
+static void HeatTitleScreen_VblankCB(void)
 {
     LoadOam();
     ProcessSpriteCopyRequests();
     TransferPlttBuffer();
 }
 
-static bool8 Menu_DoGfxSetup(void)
+static bool8 HeatTitleScreen_DoGfxSetup(void)
 {
     u8 taskId;
     switch (gMain.state)
@@ -214,6 +217,9 @@ static bool8 Menu_DoGfxSetup(void)
         SetVBlankHBlankCallbacksToNull();
         ClearScheduledBgCopiesToVram();
         ResetVramOamAndBgCntRegs();
+        SetGpuReg(REG_OFFSET_BLDCNT, 0);
+        SetGpuReg(REG_OFFSET_BLDALPHA, 0);
+        SetGpuReg(REG_OFFSET_BLDY, 0);
         gMain.state++;
         break;
     case 1:
@@ -225,29 +231,28 @@ static bool8 Menu_DoGfxSetup(void)
         gMain.state++;
         break;
     case 2:
-        if (Menu_InitBgs())
+        if (HeatTitleScreen_InitBgs())
         {
-            sMenuDataPtr->gfxLoadState = 0;
+            sTitleScreenState->gfxLoadState = 0;
             gMain.state++;
         }
         else
         {
-            Menu_FadeAndBail();
+            HeatTitleScreen_FadeAndBail();
             return TRUE;
         }
         break;
     case 3:
-        if (Menu_LoadGraphics() == TRUE)
+        if (HeatTitleScreen_LoadGraphics() == TRUE)
             gMain.state++;
         break;
     case 4:
-        LoadMessageBoxAndBorderGfx();
-        Menu_InitWindows();
+        HeatTitleScreen_InitWindows();
         gMain.state++;
         break;
     case 5:
         PrintToWindow(FONT_WHITE);
-        taskId = CreateTask(Task_MenuWaitFadeIn, 0);
+        taskId = CreateTask(Task_HeatTitleScreen_WaitFadeIn, 0);
         BlendPalettes(0xFFFFFFFF, 16, RGB_BLACK);
         gMain.state++;
         break;
@@ -257,94 +262,112 @@ static bool8 Menu_DoGfxSetup(void)
         break;
     default:
         m4aSongNumStart(MUS_DP_TITLE);
-        SetVBlankCallback(Menu_VBlankCB);
-        SetMainCallback2(Menu_MainCB);
+        SetVBlankCallback(HeatTitleScreen_VblankCB);
+        SetMainCallback2(HeatTitleScreen_MainCB);
         return TRUE;
     }
     return FALSE;
 }
 
-#define try_free(ptr) ({        \
-    void ** ptr__ = (void **)&(ptr);   \
-    if (*ptr__ != NULL)                \
-        Free(*ptr__);                  \
-})
-
-static void Menu_FreeResources(void)
+static void HeatTitleScreen_FreeResources(void)
 {
-    try_free(sMenuDataPtr);
+    try_free(sTitleScreenState);
     try_free(sBg1TilemapBuffer);
     FreeAllWindowBuffers();
 }
 
-static void Task_MenuWaitFadeAndBail(u8 taskId)
+static void Task_HeatTitleScreen_WaitFadeAndBail(u8 taskId)
 {
     if (!gPaletteFade.active)
     {
         SetMainCallback2(CB2_InitMainMenu);
-        Menu_FreeResources();
+        HeatTitleScreen_FreeResources();
         DestroyTask(taskId);
     }
 }
 
-static void Menu_FadeAndBail(void)
+static void HeatTitleScreen_FadeAndBail(void)
 {
     BeginNormalPaletteFade(0xFFFFFFFF, 0, 0, 16, RGB_BLACK);
-    CreateTask(Task_MenuWaitFadeAndBail, 0);
-    SetVBlankCallback(Menu_VBlankCB);
-    SetMainCallback2(Menu_MainCB);
+    CreateTask(Task_HeatTitleScreen_WaitFadeAndBail, 0);
+    SetVBlankCallback(HeatTitleScreen_VblankCB);
+    SetMainCallback2(HeatTitleScreen_MainCB);
 }
 
-static bool8 Menu_InitBgs(void)
+static bool8 HeatTitleScreen_InitBgs(void)
 {
     ResetAllBgsCoordinates();
     sBg1TilemapBuffer = Alloc(0x800);
+    sBg2TilemapBuffer = Alloc(0x800);
+    sBg3TilemapBuffer = Alloc(0x800);
     if (sBg1TilemapBuffer == NULL)
+        return FALSE;
+    if (sBg2TilemapBuffer == NULL)
+        return FALSE;
+    if (sBg3TilemapBuffer == NULL)
         return FALSE;
     
     memset(sBg1TilemapBuffer, 0, 0x800);
+    memset(sBg2TilemapBuffer, 0, 0x800);
+    memset(sBg3TilemapBuffer, 0, 0x800);
     ResetBgsAndClearDma3BusyFlags(0);
-    InitBgsFromTemplates(0, sMenuBgTemplates, NELEMS(sMenuBgTemplates));
+    InitBgsFromTemplates(0, sTitleScreenBgTemplates, NELEMS(sTitleScreenBgTemplates));
     SetBgTilemapBuffer(1, sBg1TilemapBuffer);
+    SetBgTilemapBuffer(2, sBg2TilemapBuffer);
+    SetBgTilemapBuffer(3, sBg3TilemapBuffer);
     ScheduleBgCopyTilemapToVram(1);
+    ScheduleBgCopyTilemapToVram(2);
+    ScheduleBgCopyTilemapToVram(3);
     ShowBg(0);
     ShowBg(1);
     ShowBg(2);
+    ShowBg(3);
     return TRUE;
 }
 
-static bool8 Menu_LoadGraphics(void)
+static bool8 HeatTitleScreen_LoadGraphics(void)
 {
-    switch (sMenuDataPtr->gfxLoadState)
+    switch (sTitleScreenState->gfxLoadState)
     {
     case 0:
         ResetTempTileDataBuffers();
-        DecompressAndCopyTileDataToVram(1, sMenuTiles, 0, 0, 0);
-        sMenuDataPtr->gfxLoadState++;
+        DecompressAndCopyTileDataToVram(1, sTitleScreenTiles, 0, 0, 0);
+        DecompressAndCopyTileDataToVram(2, sFogTiles, 0, 0, 0);
+        DecompressAndCopyTileDataToVram(3, sPokemonLogoTiles, 0, 0, 0);
+        sTitleScreenState->gfxLoadState++;
         break;
     case 1:
         if (FreeTempTileDataBuffersIfPossible() != TRUE)
         {
-            LZDecompressWram(sMenuTilemap, sBg1TilemapBuffer);
-            sMenuDataPtr->gfxLoadState++;
+            LZDecompressWram(sTitleScreenTilemap, sBg1TilemapBuffer);
+            LZDecompressWram(sFogTilemap, sBg2TilemapBuffer);
+            LZDecompressWram(sPokemonLogoTilemap, sBg3TilemapBuffer);
+            sTitleScreenState->gfxLoadState++;
         }
         break;
     case 2:
-        LoadPalette(sMenuPalette, BG_PLTT_ID(0), PLTT_SIZE_4BPP);
-        sMenuDataPtr->gfxLoadState++;
+        LoadPalette(sTitleScreenPalette, BG_PLTT_ID(0), PLTT_SIZE_4BPP);
+        LoadPalette(sFogPalette, BG_PLTT_ID(2), PLTT_SIZE_4BPP);
+        LoadPalette(sFogDarkPalette, BG_PLTT_ID(3), PLTT_SIZE_4BPP);
+        LoadPalette(sPokemonLogoPalette, BG_PLTT_ID(1), PLTT_SIZE_4BPP);
+        LoadPalette(gMessageBox_Pal, BG_PLTT_ID(15), PLTT_SIZE_4BPP);
+        sTitleScreenState->gfxLoadState++;
         break;
     default:
-        sMenuDataPtr->gfxLoadState = 0;
+        SetGpuReg(REG_OFFSET_BLDCNT, BLDCNT_TGT1_BG2 | BLDCNT_EFFECT_BLEND | BLDCNT_TGT2_BG1 | BLDCNT_TGT2_BD);
+        SetGpuReg(REG_OFFSET_BLDALPHA, BLDALPHA_BLEND(2, 14));
+        SetGpuReg(REG_OFFSET_BLDY, 0);
+        sTitleScreenState->gfxLoadState = 0;
         return TRUE;
     }
     return FALSE;
 }
 
-static void Menu_InitWindows(void)
+static void HeatTitleScreen_InitWindows(void)
 {
     u32 i;
 
-    InitWindows(sMenuWindowTemplates);
+    InitWindows(sTitleScreenWindowTemplates);
     DeactivateAllTextPrinters();
     ScheduleBgCopyTilemapToVram(0);
     
@@ -359,15 +382,12 @@ static void Menu_InitWindows(void)
     ScheduleBgCopyTilemapToVram(2);
 }
 
-static const u8 sText_PressA[] = _("Press Start");
-static const u8 sText_Version[] = _("PreAlpha");
-
 static void PrintToWindow(u8 colorIdx) {    
     FillWindowPixelBuffer(WIN_PRESS_START, PIXEL_FILL(TEXT_COLOR_TRANSPARENT));
     FillWindowPixelBuffer(WIN_VERSION, PIXEL_FILL(TEXT_COLOR_TRANSPARENT));
 
-    AddTextPrinterParameterized3(WIN_PRESS_START, FONT_NORMAL, 2, 1, sMenuWindowFontColors[colorIdx], 0xFF, sText_PressA);
-    AddTextPrinterParameterized3(WIN_VERSION, FONT_SMALL, 1, 2, sMenuWindowFontColors[colorIdx], 0xFF, sText_Version);
+    AddTextPrinterParameterized3(WIN_PRESS_START, FONT_NORMAL, 2, 1, sTitleScreenWindowFontColors[colorIdx], 0xFF, sText_PressA);
+    AddTextPrinterParameterized3(WIN_VERSION, FONT_SMALL, 1, 2, sTitleScreenWindowFontColors[colorIdx], 0xFF, sText_Version);
     
     PutWindowTilemap(WIN_PRESS_START);
     PutWindowTilemap(WIN_VERSION);
@@ -379,37 +399,44 @@ static void PrintToWindow(u8 colorIdx) {
 static void Task_DoPressStartFlickering(u8 taskId) {
     u32 t = 30;
 
-    if (sMenuDataPtr->flickerCount == t) {
+    if (sTitleScreenState->BG2OfsCounter == 0) {
+        SetGpuReg(REG_OFFSET_BG2HOFS, sTitleScreenState->BG2Offset++);
+        sTitleScreenState->BG2OfsCounter++;
+    } else {
+        sTitleScreenState->BG2OfsCounter = 0;
+    }
+
+    if (sTitleScreenState->flickerCount == t) {
         FillWindowPixelBuffer(WIN_PRESS_START, PIXEL_FILL(TEXT_COLOR_TRANSPARENT));
         PutWindowTilemap(WIN_PRESS_START);
         CopyWindowToVram(WIN_PRESS_START, 3);
-        sMenuDataPtr->flickerCount++;
-    } else if (sMenuDataPtr->flickerCount == (2*t)) {
-        AddTextPrinterParameterized3(WIN_PRESS_START, FONT_NORMAL, 2, 1, sMenuWindowFontColors[FONT_WHITE], 0xFF, sText_PressA);
+        sTitleScreenState->flickerCount++;
+    } else if (sTitleScreenState->flickerCount == (2*t)) {
+        AddTextPrinterParameterized3(WIN_PRESS_START, FONT_NORMAL, 2, 1, sTitleScreenWindowFontColors[FONT_WHITE], 0xFF, sText_PressA);
         PutWindowTilemap(WIN_PRESS_START);
         CopyWindowToVram(WIN_PRESS_START, 3);
-        sMenuDataPtr->flickerCount = 0;
+        sTitleScreenState->flickerCount = 0;
     } else {
-        sMenuDataPtr->flickerCount++;
+        sTitleScreenState->flickerCount++;
     }
 }
 
-static void Task_MenuWaitFadeIn(u8 taskId)
+static void Task_HeatTitleScreen_WaitFadeIn(u8 taskId)
 {
     if (!gPaletteFade.active) {
-        gTasks[taskId].func = Task_MenuMain;
+        gTasks[taskId].func = Task_HeatTitleScreen_HandleInputs;
         CreateTask(Task_DoPressStartFlickering, 0);
     }
 }
 
-static void Task_MenuTurnOff(u8 taskId)
+static void Task_HeatTitleScreen_Exit(u8 taskId)
 {
     s16 *data = gTasks[taskId].data;
 
     if (!gPaletteFade.active)
     {
         SetMainCallback2(CB2_InitMainMenu);
-        Menu_FreeResources();
+        HeatTitleScreen_FreeResources();
         DestroyTask(taskId);
     }
 }
@@ -462,12 +489,12 @@ static void CB2_GoToBerryFixScreen(void)
 }
 
 /* This is the meat of the UI. This is where you wait for player inputs and can branch to other tasks accordingly */
-static void Task_MenuMain(u8 taskId) {
+static void Task_HeatTitleScreen_HandleInputs(u8 taskId) {
     if (JOY_NEW(A_BUTTON) || JOY_NEW(START_BUTTON)) {
         FadeOutBGM(4);
         BeginNormalPaletteFade(0xFFFFFFFF, 0, 0, 16, RGB_WHITEALPHA);
         PlayCry_Normal(CRY_HEATRAN, 0);
-        gTasks[taskId].func = Task_MenuTurnOff;
+        gTasks[taskId].func = Task_HeatTitleScreen_Exit;
     } else if (JOY_HELD(CLEAR_SAVE_BUTTON_COMBO) == CLEAR_SAVE_BUTTON_COMBO) {
         SetMainCallback2(CB2_GoToClearSaveDataScreen);
     } else if (JOY_HELD(RESET_RTC_BUTTON_COMBO) == RESET_RTC_BUTTON_COMBO && CanResetRTC() == TRUE) {
