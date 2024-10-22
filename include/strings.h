@@ -526,14 +526,16 @@ extern const u8 gText_Speed[];
 extern const u8 gText_Dash[];
 extern const u8 gText_Plus[];
 
-//pokedex text
+//Pokédex text
 extern const u8 gText_CryOf[];
 extern const u8 gText_SizeComparedTo[];
 extern const u8 gText_PokedexRegistration[];
 extern const u8 gText_NumberClear01[];
 extern const u8 gText_5MarksPokemon[];
 extern const u8 gText_UnkHeight[];
+extern const u8 gText_UnkHeightMetric[];
 extern const u8 gText_UnkWeight[];
+extern const u8 gText_UnkWeightMetric[];
 extern const u8 gText_HTHeight[];
 extern const u8 gText_WTWeight[];
 extern const u8 gText_SearchingPleaseWait[];
@@ -1026,6 +1028,7 @@ extern const u8 gText_ThankYouIllSendItHome[];
 extern const u8 gText_ThanksIllSendItHome[];
 extern const u8 gText_SpaceForVar1Full[];
 extern const u8 gText_ThrowInPremierBall[];
+extern const u8 gText_ThrowInPremierBalls[];
 extern const u8 gText_ShopBuy[];
 extern const u8 gText_ShopSell[];
 extern const u8 gText_ShopQuit[];
@@ -1132,7 +1135,7 @@ extern const u8 gTrickHouse_Mechadoll_Six2[];
 extern const u8 gTrickHouse_Mechadoll_Seven2[];
 extern const u8 gTrickHouse_Mechadoll_Eight2[];
 
-// Pokedex strings
+// Pokédex strings
 extern const u8 gText_SearchForPkmnBasedOnParameters[];
 extern const u8 gText_SwitchPokedexListings[];
 extern const u8 gText_ReturnToPokedex[];
@@ -2899,7 +2902,7 @@ extern const u8 gText_WantToPlayAgain[];
 extern const u8 gText_CommunicationStandby3[];
 extern const u8 gText_SomeoneDroppedOut[];
 
-// Pokemon jump
+// Pokémon jump
 extern const u8 gText_WantToPlayAgain2[];
 extern const u8 gText_SomeoneDroppedOut2[];
 extern const u8 gText_CommunicationStandby4[];
@@ -2949,32 +2952,13 @@ extern const u8 gText_NeatnessRankings[];
 extern const u8 gText_CoopRankings[];
 extern const u8 gText_PressingPowerRankings[];
 
-// Lilycove Lady
-extern const u8 gText_ContestLady_Handsome[];
-extern const u8 gText_ContestLady_Vinny[];
-extern const u8 gText_ContestLady_Moreme[];
-extern const u8 gText_ContestLady_Ironhard[];
-extern const u8 gText_ContestLady_Muscle[];
-extern const u8 gText_ContestLady_Coolness[];
-extern const u8 gText_ContestLady_Beauty[];
-extern const u8 gText_ContestLady_Cuteness[];
-extern const u8 gText_ContestLady_Smartness[];
-extern const u8 gText_ContestLady_Toughness[];
-extern const u8 gText_QuizLady_Lady[];
-extern const u8 gText_FavorLady_Slippery[];
-extern const u8 gText_FavorLady_Roundish[];
-extern const u8 gText_FavorLady_Whamish[];
-extern const u8 gText_FavorLady_Shiny[];
-extern const u8 gText_FavorLady_Sticky[];
-extern const u8 gText_FavorLady_Pointy[];
-
 extern const u8 gText_CoolnessContest[];
 extern const u8 gText_BeautyContest[];
 extern const u8 gText_CutenessContest[];
 extern const u8 gText_SmartnessContest[];
 extern const u8 gText_ToughnessContest[];
 
-// Pokenav Match Call
+// PokéNav Match Call
 extern const u8 gText_CallCantBeMadeHere[];
 extern const u8 gText_NumberRegistered[];
 extern const u8 gText_NumberOfBattles[];
@@ -2984,7 +2968,7 @@ extern const u8 gText_Call[];
 extern const u8 gText_Check[];
 extern const u8 gText_Cancel6[];
 
-// Pokenav Menu Handler
+// PokéNav Menu Handler
 extern const u8 gText_CheckMapOfHoenn[];
 extern const u8 gText_CheckPokemonInDetail[];
 extern const u8 gText_CallRegisteredTrainer[];
@@ -3001,7 +2985,7 @@ extern const u8 gText_FindToughPokemon[];
 extern const u8 gText_ReturnToConditionMenu[];
 extern const u8 gText_NoRibbonWinners[];
 
-// Pokenav
+// PokéNav
 extern const u8 gText_NumberIndex[];
 extern const u8 gText_RibbonsF700[];
 
@@ -3063,5 +3047,12 @@ extern const u8 gText_ExpShareOn[];
 extern const u8 gText_ExpShareOff[];
 
 extern const u8 gText_BasePointsResetToZero[];
+
+extern const u8 gText_Fertilize[];
+extern const u8 gText_PlantBerry[];
+
+// Map name pop-up
+extern const u8 gText_AM[];
+extern const u8 gText_PM[];
 
 #endif // GUARD_STRINGS_H

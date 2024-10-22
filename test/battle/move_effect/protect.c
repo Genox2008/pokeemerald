@@ -3,23 +3,24 @@
 
 ASSUMPTIONS
 {
-    ASSUME(gBattleMoves[MOVE_PROTECT].effect == EFFECT_PROTECT);
-    ASSUME(gBattleMoves[MOVE_DETECT].effect == EFFECT_PROTECT);
-    ASSUME(gBattleMoves[MOVE_KINGS_SHIELD].effect == EFFECT_PROTECT);
-    ASSUME(gBattleMoves[MOVE_SILK_TRAP].effect == EFFECT_PROTECT);
-    ASSUME(gBattleMoves[MOVE_SPIKY_SHIELD].effect == EFFECT_PROTECT);
-    ASSUME(gBattleMoves[MOVE_WIDE_GUARD].effect == EFFECT_PROTECT);
-    ASSUME(gBattleMoves[MOVE_QUICK_GUARD].effect == EFFECT_PROTECT);
-    ASSUME(gBattleMoves[MOVE_CRAFTY_SHIELD].effect == EFFECT_PROTECT);
-    ASSUME(gBattleMoves[MOVE_BANEFUL_BUNKER].effect == EFFECT_PROTECT);
-    ASSUME(gBattleMoves[MOVE_TACKLE].split == SPLIT_PHYSICAL);
-    ASSUME(gBattleMoves[MOVE_TACKLE].makesContact);
-    ASSUME(gBattleMoves[MOVE_LEER].split == SPLIT_STATUS);
-    ASSUME(gBattleMoves[MOVE_WATER_GUN].split == SPLIT_SPECIAL);
-    ASSUME(!(gBattleMoves[MOVE_WATER_GUN].makesContact));
+    ASSUME(gMovesInfo[MOVE_PROTECT].effect == EFFECT_PROTECT);
+    ASSUME(gMovesInfo[MOVE_DETECT].effect == EFFECT_PROTECT);
+    ASSUME(gMovesInfo[MOVE_KINGS_SHIELD].effect == EFFECT_PROTECT);
+    ASSUME(gMovesInfo[MOVE_SILK_TRAP].effect == EFFECT_PROTECT);
+    ASSUME(gMovesInfo[MOVE_SPIKY_SHIELD].effect == EFFECT_PROTECT);
+    ASSUME(gMovesInfo[MOVE_WIDE_GUARD].effect == EFFECT_PROTECT);
+    ASSUME(gMovesInfo[MOVE_QUICK_GUARD].effect == EFFECT_PROTECT);
+    ASSUME(gMovesInfo[MOVE_CRAFTY_SHIELD].effect == EFFECT_PROTECT);
+    ASSUME(gMovesInfo[MOVE_BANEFUL_BUNKER].effect == EFFECT_PROTECT);
+    ASSUME(gMovesInfo[MOVE_BURNING_BULWARK].effect == EFFECT_PROTECT);
+    ASSUME(gMovesInfo[MOVE_TACKLE].category == DAMAGE_CATEGORY_PHYSICAL);
+    ASSUME(gMovesInfo[MOVE_TACKLE].makesContact);
+    ASSUME(gMovesInfo[MOVE_LEER].category == DAMAGE_CATEGORY_STATUS);
+    ASSUME(gMovesInfo[MOVE_WATER_GUN].category == DAMAGE_CATEGORY_SPECIAL);
+    ASSUME(!(gMovesInfo[MOVE_WATER_GUN].makesContact));
 }
 
-SINGLE_BATTLE_TEST("Protect, Detect, Spiky Shield and Baneful Bunker protect from all moves")
+SINGLE_BATTLE_TEST("Protect, Detect, Spiky Shield, Baneful Bunker and Burning Bulwark protect from all moves")
 {
     u32 j;
     static const u16 protectMoves[] = {
@@ -27,6 +28,7 @@ SINGLE_BATTLE_TEST("Protect, Detect, Spiky Shield and Baneful Bunker protect fro
         MOVE_DETECT,
         MOVE_SPIKY_SHIELD,
         MOVE_BANEFUL_BUNKER,
+        MOVE_BURNING_BULWARK,
     };
     u16 protectMove = MOVE_NONE;
     u16 usedMove = MOVE_NONE;
@@ -150,7 +152,7 @@ SINGLE_BATTLE_TEST("Spiky Shield does 1/8 dmg of max hp of attackers making cont
             HP_BAR(player, maxHp / 8);
             if (hp == 1) {
                 MESSAGE("Wobbuffet fainted!");
-                MESSAGE("Go! Wobbuffet!");
+                SEND_IN_MESSAGE("Wobbuffet");
             }
         }
     }
@@ -188,6 +190,38 @@ SINGLE_BATTLE_TEST("Baneful Bunker poisons pokemon for moves making contact")
     }
 }
 
+SINGLE_BATTLE_TEST("Burning Bulwark burns pokemon for moves making contact")
+{
+    u16 usedMove = MOVE_NONE;
+
+    PARAMETRIZE {usedMove = MOVE_TACKLE; }
+    PARAMETRIZE {usedMove = MOVE_LEER; }
+    PARAMETRIZE {usedMove = MOVE_WATER_GUN; }
+
+    GIVEN {
+        PLAYER(SPECIES_WOBBUFFET);
+        PLAYER(SPECIES_WOBBUFFET);
+        OPPONENT(SPECIES_WOBBUFFET);
+    } WHEN {
+        TURN { MOVE(opponent, MOVE_BURNING_BULWARK); MOVE(player, usedMove); }
+        TURN {}
+    } SCENE {
+        ANIMATION(ANIM_TYPE_MOVE, MOVE_BURNING_BULWARK, opponent);
+        MESSAGE("Foe Wobbuffet protected itself!");
+        NOT ANIMATION(ANIM_TYPE_MOVE, usedMove, player);
+        MESSAGE("Foe Wobbuffet protected itself!");
+        if (usedMove == MOVE_TACKLE) {
+            NOT HP_BAR(opponent);
+            STATUS_ICON(player, STATUS1_BURN);
+        } else {
+            NONE_OF {
+                HP_BAR(opponent);
+                STATUS_ICON(player, STATUS1_BURN);
+            }
+        }
+    }
+}
+
 SINGLE_BATTLE_TEST("Recoil damage is not applied if target was protected")
 {
     u32 j, k;
@@ -206,10 +240,10 @@ SINGLE_BATTLE_TEST("Recoil damage is not applied if target was protected")
 
 
     GIVEN {
-        ASSUME(gBattleMoves[MOVE_VOLT_TACKLE].effect == EFFECT_RECOIL_33_STATUS);
-        ASSUME(gBattleMoves[MOVE_HEAD_SMASH].effect == EFFECT_RECOIL_50);
-        ASSUME(gBattleMoves[MOVE_TAKE_DOWN].effect == EFFECT_RECOIL_25);
-        ASSUME(gBattleMoves[MOVE_DOUBLE_EDGE].effect == EFFECT_RECOIL_33);
+        ASSUME(gMovesInfo[MOVE_VOLT_TACKLE].recoil > 0);
+        ASSUME(gMovesInfo[MOVE_HEAD_SMASH].recoil > 0);
+        ASSUME(gMovesInfo[MOVE_TAKE_DOWN].recoil > 0);
+        ASSUME(gMovesInfo[MOVE_DOUBLE_EDGE].recoil > 0);
         PLAYER(SPECIES_RAPIDASH);
         OPPONENT(SPECIES_BEAUTIFLY);
     } WHEN {
@@ -244,7 +278,7 @@ SINGLE_BATTLE_TEST("Multi-hit moves don't hit a protected target and fail only o
     PARAMETRIZE { move = MOVE_SPIKY_SHIELD; }
 
     GIVEN {
-        ASSUME(gBattleMoves[MOVE_ARM_THRUST].effect == EFFECT_MULTI_HIT);
+        ASSUME(gMovesInfo[MOVE_ARM_THRUST].effect == EFFECT_MULTI_HIT);
         PLAYER(SPECIES_RAPIDASH);
         OPPONENT(SPECIES_BEAUTIFLY);
     } WHEN {
@@ -287,9 +321,9 @@ DOUBLE_BATTLE_TEST("Wide Guard protects self and ally from multi-target moves")
     PARAMETRIZE { move = MOVE_HYPER_VOICE; } // 2 foes
 
     GIVEN {
-        ASSUME(gBattleMoves[MOVE_TACKLE].target == MOVE_TARGET_SELECTED);
-        ASSUME(gBattleMoves[MOVE_SURF].target == MOVE_TARGET_FOES_AND_ALLY);
-        ASSUME(gBattleMoves[MOVE_HYPER_VOICE].target == MOVE_TARGET_BOTH);
+        ASSUME(gMovesInfo[MOVE_TACKLE].target == MOVE_TARGET_SELECTED);
+        ASSUME(gMovesInfo[MOVE_SURF].target == MOVE_TARGET_FOES_AND_ALLY);
+        ASSUME(gMovesInfo[MOVE_HYPER_VOICE].target == MOVE_TARGET_BOTH);
         PLAYER(SPECIES_WOBBUFFET);
         PLAYER(SPECIES_WOBBUFFET);
         OPPONENT(SPECIES_WOBBUFFET);
@@ -326,7 +360,7 @@ DOUBLE_BATTLE_TEST("Wide Guard can not fail on consecutive turns")
 
     PASSES_RANDOMLY(2, 2);
     GIVEN {
-        ASSUME(gBattleMoves[MOVE_HYPER_VOICE].target == MOVE_TARGET_BOTH);
+        ASSUME(gMovesInfo[MOVE_HYPER_VOICE].target == MOVE_TARGET_BOTH);
         PLAYER(SPECIES_WOBBUFFET);
         PLAYER(SPECIES_WOBBUFFET);
         OPPONENT(SPECIES_WOBBUFFET);
@@ -359,8 +393,8 @@ DOUBLE_BATTLE_TEST("Quick Guard protects self and ally from priority moves")
     PARAMETRIZE { move = MOVE_QUICK_ATTACK; targetOpponent = opponentRight; }
 
     GIVEN {
-        ASSUME(gBattleMoves[MOVE_TACKLE].priority == 0);
-        ASSUME(gBattleMoves[MOVE_QUICK_ATTACK].priority == 1);
+        ASSUME(gMovesInfo[MOVE_TACKLE].priority == 0);
+        ASSUME(gMovesInfo[MOVE_QUICK_ATTACK].priority == 1);
         PLAYER(SPECIES_WOBBUFFET);
         PLAYER(SPECIES_WOBBUFFET);
         OPPONENT(SPECIES_WOBBUFFET);
@@ -389,7 +423,7 @@ DOUBLE_BATTLE_TEST("Quick Guard can not fail on consecutive turns")
 
     PASSES_RANDOMLY(2, 2);
     GIVEN {
-        ASSUME(gBattleMoves[MOVE_QUICK_ATTACK].priority == 1);
+        ASSUME(gMovesInfo[MOVE_QUICK_ATTACK].priority == 1);
         PLAYER(SPECIES_WOBBUFFET);
         PLAYER(SPECIES_WOBBUFFET);
         OPPONENT(SPECIES_WOBBUFFET);
@@ -419,9 +453,9 @@ DOUBLE_BATTLE_TEST("Crafty Shield protects self and ally from status moves")
     PARAMETRIZE { move = MOVE_TACKLE; targetOpponent = opponentRight; }
 
     GIVEN {
-        ASSUME(gBattleMoves[MOVE_LEER].target == MOVE_TARGET_BOTH);
-        ASSUME(gBattleMoves[MOVE_HYPER_VOICE].target == MOVE_TARGET_BOTH);
-        ASSUME(gBattleMoves[MOVE_HYPER_VOICE].split == SPLIT_SPECIAL);
+        ASSUME(gMovesInfo[MOVE_LEER].target == MOVE_TARGET_BOTH);
+        ASSUME(gMovesInfo[MOVE_HYPER_VOICE].target == MOVE_TARGET_BOTH);
+        ASSUME(gMovesInfo[MOVE_HYPER_VOICE].category == DAMAGE_CATEGORY_SPECIAL);
         PLAYER(SPECIES_WOBBUFFET);
         PLAYER(SPECIES_WOBBUFFET);
         OPPONENT(SPECIES_WOBBUFFET);
@@ -445,6 +479,90 @@ DOUBLE_BATTLE_TEST("Crafty Shield protects self and ally from status moves")
                 NOT MESSAGE("Foe Wobbuffet protected itself!");
                 HP_BAR(opponentRight);
             }
+        }
+    }
+}
+
+SINGLE_BATTLE_TEST("Protect does not block Confide")
+{
+    GIVEN {
+        ASSUME(gMovesInfo[MOVE_CONFIDE].effect == EFFECT_SPECIAL_ATTACK_DOWN);
+        PLAYER(SPECIES_WOBBUFFET);
+        OPPONENT(SPECIES_WOBBUFFET);
+    } WHEN {
+        TURN { MOVE(opponent, MOVE_PROTECT); MOVE(player, MOVE_CONFIDE); }
+    } SCENE {
+        MESSAGE("Wobbuffet used Confide!");
+        ANIMATION(ANIM_TYPE_MOVE, MOVE_CONFIDE, player);
+        ANIMATION(ANIM_TYPE_GENERAL, B_ANIM_STATS_CHANGE, opponent);
+        NOT MESSAGE("Foe Wobbuffet protected itself!");
+    }
+}
+
+DOUBLE_BATTLE_TEST("Crafty Shield protects self and ally from Confide")
+{
+    GIVEN {
+        ASSUME(gMovesInfo[MOVE_CONFIDE].effect == EFFECT_SPECIAL_ATTACK_DOWN);
+        PLAYER(SPECIES_WOBBUFFET);
+        PLAYER(SPECIES_WYNAUT);
+        OPPONENT(SPECIES_WOBBUFFET);
+        OPPONENT(SPECIES_WYNAUT);
+    } WHEN {
+        TURN { MOVE(opponentLeft, MOVE_CRAFTY_SHIELD); MOVE(playerLeft, MOVE_CONFIDE, target: opponentLeft); MOVE(playerRight, MOVE_CONFIDE, target: opponentRight); }
+    } SCENE {
+        MESSAGE("Wobbuffet used Confide!");
+        MESSAGE("Foe Wobbuffet protected itself!");
+        MESSAGE("Wynaut used Confide!");
+        MESSAGE("Foe Wynaut protected itself!");
+    }
+}
+
+DOUBLE_BATTLE_TEST("Crafty Shield does not protect against moves that target all battlers")
+{
+    GIVEN {
+        ASSUME(gMovesInfo[MOVE_FLOWER_SHIELD].target == MOVE_TARGET_ALL_BATTLERS);
+        ASSUME(gSpeciesInfo[SPECIES_TANGELA].types[0] == TYPE_GRASS);
+        ASSUME(gSpeciesInfo[SPECIES_TANGROWTH].types[0] == TYPE_GRASS);
+        ASSUME(gSpeciesInfo[SPECIES_SUNKERN].types[0] == TYPE_GRASS);
+        ASSUME(gSpeciesInfo[SPECIES_SUNFLORA].types[0] == TYPE_GRASS);
+        PLAYER(SPECIES_TANGELA);
+        PLAYER(SPECIES_TANGROWTH);
+        OPPONENT(SPECIES_SUNKERN);
+        OPPONENT(SPECIES_SUNFLORA);
+    } WHEN {
+        TURN { MOVE(opponentLeft, MOVE_CRAFTY_SHIELD); MOVE(opponentRight, MOVE_CELEBRATE); MOVE(playerLeft, MOVE_FLOWER_SHIELD); MOVE(playerRight, MOVE_CELEBRATE); }
+    } SCENE {
+        MESSAGE("Tangela used Flower Shield!");
+        ANIMATION(ANIM_TYPE_MOVE, MOVE_FLOWER_SHIELD, playerLeft);
+        ANIMATION(ANIM_TYPE_GENERAL, B_ANIM_STATS_CHANGE, playerLeft);
+        MESSAGE("Tangela's Defense rose!");
+        ANIMATION(ANIM_TYPE_MOVE, MOVE_FLOWER_SHIELD, playerLeft);
+        ANIMATION(ANIM_TYPE_GENERAL, B_ANIM_STATS_CHANGE, opponentLeft);
+        MESSAGE("Foe Sunkern's Defense rose!");
+        ANIMATION(ANIM_TYPE_MOVE, MOVE_FLOWER_SHIELD, playerLeft);
+        ANIMATION(ANIM_TYPE_GENERAL, B_ANIM_STATS_CHANGE, playerRight);
+        MESSAGE("Tangrowth's Defense rose!");
+        ANIMATION(ANIM_TYPE_MOVE, MOVE_FLOWER_SHIELD, playerLeft);
+        ANIMATION(ANIM_TYPE_GENERAL, B_ANIM_STATS_CHANGE, opponentRight);
+        MESSAGE("Foe Sunflora's Defense rose!");
+    }
+}
+
+SINGLE_BATTLE_TEST("Spiky Shield does not damage users on Counter or Mirror Coat")
+{
+    u32 move;
+    PARAMETRIZE { move = MOVE_MIRROR_COAT; }
+    PARAMETRIZE { move = MOVE_COUNTER; }
+    GIVEN {
+        PLAYER(SPECIES_WOBBUFFET);
+        OPPONENT(SPECIES_WOBBUFFET);
+    } WHEN {
+        TURN { MOVE(player, MOVE_SPIKY_SHIELD); MOVE(opponent, move); }
+    } SCENE {
+        ANIMATION(ANIM_TYPE_MOVE, MOVE_SPIKY_SHIELD, player);
+        NONE_OF {
+            ANIMATION(ANIM_TYPE_MOVE, move, opponent);
+            HP_BAR(opponent);
         }
     }
 }

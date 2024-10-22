@@ -17,6 +17,8 @@ SINGLE_BATTLE_TEST("Flower Gift transforms Cherrim in harsh sunlight")
     }
 }
 
+TO_DO_BATTLE_TEST("Flower Gift doesn't transform Cherrim if Cloud Nine/Air Lock is on the field");
+
 SINGLE_BATTLE_TEST("Flower Gift transforms Cherrim back to normal when weather changes")
 {
     GIVEN {
@@ -61,12 +63,15 @@ SINGLE_BATTLE_TEST("Flower Gift transforms Cherrim back to normal when its abili
     }
 }
 
+TO_DO_BATTLE_TEST("Forecast transforms Castform back to normal under Cloud Nine/Air Lock");
+
 DOUBLE_BATTLE_TEST("Flower Gift increases the attack of Cherrim and its allies by 1.5x", s16 damageL, s16 damageR)
 {
     bool32 sunny;
     PARAMETRIZE { sunny = FALSE; }
     PARAMETRIZE { sunny = TRUE; }
     GIVEN {
+        ASSUME(gMovesInfo[MOVE_TACKLE].category == DAMAGE_CATEGORY_PHYSICAL);
         PLAYER(SPECIES_CHERRIM_OVERCAST) { Ability(ABILITY_FLOWER_GIFT); }
         PLAYER(SPECIES_WOBBUFFET);
         OPPONENT(SPECIES_WOBBUFFET);
@@ -101,6 +106,7 @@ DOUBLE_BATTLE_TEST("Flower Gift increases the Sp. Def of Cherrim and its allies 
     PARAMETRIZE { sunny = FALSE; }
     PARAMETRIZE { sunny = TRUE; }
     GIVEN {
+        ASSUME(gMovesInfo[MOVE_HYPER_VOICE].category == DAMAGE_CATEGORY_SPECIAL);
         PLAYER(SPECIES_CHERRIM_OVERCAST) { Ability(ABILITY_FLOWER_GIFT); }
         PLAYER(SPECIES_WOBBUFFET);
         OPPONENT(SPECIES_WOBBUFFET);
@@ -141,7 +147,7 @@ SINGLE_BATTLE_TEST("Flower Gift transforms Cherrim back when it switches out")
         ABILITY_POPUP(player, ABILITY_FLOWER_GIFT);
         ANIMATION(ANIM_TYPE_GENERAL, B_ANIM_FORM_CHANGE, player);
         MESSAGE("Cherrim transformed!");
-        MESSAGE("Cherrim, that's enough! Come back!");
+        SWITCH_OUT_MESSAGE("Cherrim");
     } THEN {
         EXPECT_EQ(GetMonData(&gPlayerParty[0], MON_DATA_SPECIES), SPECIES_CHERRIM);
     }

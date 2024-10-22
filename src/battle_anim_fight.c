@@ -403,24 +403,24 @@ const struct SpriteTemplate gFocusPunchFistSpriteTemplate =
 
 const struct SpriteTemplate gPalmSpriteTemplate =
 {
-	.tileTag = ANIM_TAG_PURPLE_HAND_OUTLINE,
-	.paletteTag = ANIM_TAG_PURPLE_HAND_OUTLINE,
-	.oam = &gOamData_AffineOff_ObjNormal_32x32,
-	.anims = gAnims_HandsAndFeet,
-	.images = NULL,
-	.affineAnims = gDummySpriteAffineAnimTable,
-	.callback = AnimBasicFistOrFoot,
+    .tileTag = ANIM_TAG_PURPLE_HAND_OUTLINE,
+    .paletteTag = ANIM_TAG_PURPLE_HAND_OUTLINE,
+    .oam = &gOamData_AffineOff_ObjNormal_32x32,
+    .anims = gAnims_HandsAndFeet,
+    .images = NULL,
+    .affineAnims = gDummySpriteAffineAnimTable,
+    .callback = AnimBasicFistOrFoot,
 };
 
 const struct SpriteTemplate gAuraSphereBlast =
 {
-	.tileTag = ANIM_TAG_CIRCLE_OF_LIGHT,
-	.paletteTag = ANIM_TAG_CIRCLE_OF_LIGHT,
-	.oam = &gOamData_AffineOff_ObjNormal_64x64,
-	.anims = gDummySpriteAnimTable,
-	.images = NULL,
-	.affineAnims = gDummySpriteAffineAnimTable,
-	.callback = AnimSuperpowerFireball,
+    .tileTag = ANIM_TAG_CIRCLE_OF_LIGHT,
+    .paletteTag = ANIM_TAG_CIRCLE_OF_LIGHT,
+    .oam = &gOamData_AffineOff_ObjNormal_64x64,
+    .anims = gDummySpriteAnimTable,
+    .images = NULL,
+    .affineAnims = gDummySpriteAffineAnimTable,
+    .callback = AnimSuperpowerFireball,
 };
 
 const union AffineAnimCmd gForcePalmAffineAnimCmd_1[] =
@@ -565,7 +565,7 @@ static void AnimFistOrFootRandomPos(struct Sprite *sprite)
         y *= -1;
 
     if (GetBattlerSide(battler) == B_SIDE_PLAYER)
-        y += 0xFFF0;
+        y -= 16;
 
     sprite->x += x;
     sprite->y += y;

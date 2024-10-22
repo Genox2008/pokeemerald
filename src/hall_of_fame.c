@@ -42,7 +42,8 @@ struct HallofFameMon
 {
     u32 tid;
     u32 personality;
-    u16 species;
+    u16 isShiny:1;
+    u16 species:15;
     u8 lvl;
     u8 nickname[POKEMON_NAME_LENGTH];
 };
@@ -336,6 +337,7 @@ static const struct HallofFameMon sDummyFameMon =
 {
     .tid = 0x3EA03EA,
     .personality = 0,
+    .isShiny = FALSE,
     .species = SPECIES_NONE,
     .lvl = 0,
     .nickname = {0}
@@ -447,6 +449,7 @@ static void Task_Hof_InitMonData(u8 taskId)
         {
             sHofMonPtr->mon[i].species = GetMonData(&gPlayerParty[i], MON_DATA_SPECIES_OR_EGG);
             sHofMonPtr->mon[i].tid = GetMonData(&gPlayerParty[i], MON_DATA_OT_ID);
+            sHofMonPtr->mon[i].isShiny = GetMonData(&gPlayerParty[i], MON_DATA_IS_SHINY);
             sHofMonPtr->mon[i].personality = GetMonData(&gPlayerParty[i], MON_DATA_PERSONALITY);
             sHofMonPtr->mon[i].lvl = GetMonData(&gPlayerParty[i], MON_DATA_LEVEL);
             GetMonData(&gPlayerParty[i], MON_DATA_NICKNAME, nickname);
@@ -458,6 +461,7 @@ static void Task_Hof_InitMonData(u8 taskId)
         {
             sHofMonPtr->mon[i].species = SPECIES_NONE;
             sHofMonPtr->mon[i].tid = 0;
+            sHofMonPtr->mon[i].isShiny = FALSE;
             sHofMonPtr->mon[i].personality = 0;
             sHofMonPtr->mon[i].lvl = 0;
             sHofMonPtr->mon[i].nickname[0] = EOS;
@@ -583,7 +587,7 @@ static void Task_Hof_DisplayMon(u8 taskId)
     if (currMon->species == SPECIES_EGG)
         destY += 10;
 
-    spriteId = CreateMonPicSprite_Affine(currMon->species, currMon->tid, currMon->personality, MON_PIC_AFFINE_FRONT, startX, startY, currMonId, TAG_NONE);
+    spriteId = CreateMonPicSprite_Affine(currMon->species, currMon->isShiny, currMon->personality, MON_PIC_AFFINE_FRONT, startX, startY, currMonId, TAG_NONE);
     gSprites[spriteId].tDestinationX = destX;
     gSprites[spriteId].tDestinationY = destY;
     gSprites[spriteId].data[0] = 0;
@@ -621,7 +625,7 @@ static void Task_Hof_TryDisplayAnotherMon(u8 taskId)
     else
     {
         sHofFadePalettes |= (0x10000 << gSprites[gTasks[taskId].tMonSpriteId(currPokeID)].oam.paletteNum);
-        if (gTasks[taskId].tDisplayedMonId < PARTY_SIZE - 1 && currMon[1].species != SPECIES_NONE) // there is another pokemon to display
+        if (gTasks[taskId].tDisplayedMonId < PARTY_SIZE - 1 && currMon[1].species != SPECIES_NONE) // there is another Pokémon to display
         {
             gTasks[taskId].tDisplayedMonId++;
             BeginNormalPaletteFade(sHofFadePalettes, 0, 12, 12, RGB(16, 29, 24));
@@ -929,7 +933,7 @@ static void Task_HofPC_DrawSpritesPrintText(u8 taskId)
             if (currMon->species == SPECIES_EGG)
                 posY += 10;
 
-            spriteId = CreateMonPicSprite(currMon->species, currMon->tid, currMon->personality, TRUE, posX, posY, i, TAG_NONE);
+            spriteId = CreateMonPicSprite(currMon->species, currMon->isShiny, currMon->personality, TRUE, posX, posY, i, TAG_NONE);
             gSprites[spriteId].oam.priority = 1;
             gTasks[taskId].tMonSpriteId(i) = spriteId;
         }
@@ -1163,11 +1167,15 @@ static void HallOfFame_PrintMonInfo(struct HallofFameMon* currMon, u8 unused1, u
     }
     else
     {
-        width = GetStringRightAlignXOffset(FONT_NORMAL, text, 0x80);
-        AddTextPrinterParameterized3(0, FONT_NORMAL, width, 1, sMonInfoTextColors, TEXT_SKIP_DRAW, text);
+        u32 fontId = GetFontIdToFit(text, FONT_NORMAL, 0, 66);
+        width = GetStringRightAlignXOffset(fontId, text, 0x80);
+        AddTextPrinterParameterized3(0, fontId, width, 1, sMonInfoTextColors, TEXT_SKIP_DRAW, text);
 
         text[0] = CHAR_SLASH;
-        stringPtr = StringCopy(text + 1, GetSpeciesName(currMon->species));
+        text[1] = EXT_CTRL_CODE_BEGIN;
+        text[2] = EXT_CTRL_CODE_FONT;
+        text[3] = fontId;
+        stringPtr = StringCopy(text + 4, GetSpeciesName(currMon->species));
 
         if (currMon->species != SPECIES_NIDORAN_M && currMon->species != SPECIES_NIDORAN_F)
         {

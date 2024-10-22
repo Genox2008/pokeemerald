@@ -2,6 +2,7 @@
 #include "battle_pyramid.h"
 #include "battle_pyramid_bag.h"
 #include "event_data.h"
+#include "frontier_util.h"
 #include "battle.h"
 #include "battle_setup.h"
 #include "battle_tower.h"
@@ -936,6 +937,7 @@ static void SetBattlePyramidData(void)
 
 static void SavePyramidChallenge(void)
 {
+    ClearEnemyPartyAfterChallenge();
     gSaveBlock2Ptr->frontier.challengeStatus = gSpecialVar_0x8005;
     VarSet(VAR_TEMP_CHALLENGE_STATUS, 0);
     gSaveBlock2Ptr->frontier.challengePaused = TRUE;
@@ -1401,27 +1403,32 @@ void GenerateBattlePyramidWildMon(void)
 
     if (reqs->nMoves != 0)
         moves = AllocZeroed(sizeof(u16) * reqs->nMoves);
-    
+
     if (reqs->nAbilities != 0)
         abilities = AllocZeroed(sizeof(u16) * reqs->nAbilities);
 
     if (round >= TOTAL_PYRAMID_ROUNDS)
         round = TOTAL_PYRAMID_ROUNDS - 1;
-    
+
     id = GetMonData(&gEnemyParty[0], MON_DATA_SPECIES, NULL) - 1;   // index in table (0-11) -> higher index is lower probability
     bstLim = 450 + (25*round) + (5*id);                             // higher BST limit for 'rarer' wild mon rolls
 
     while (1)
     {
-        species = Random() % FORMS_START;
+        species = Random() % NUM_SPECIES;
+
+        // check if base species
+        if (GET_BASE_SPECIES_ID(species) != species)
+            continue;
+
         // check type
         if (reqs->type != TYPE_MYSTERY && gSpeciesInfo[species].types[0] != reqs->type && gSpeciesInfo[species].types[1] != reqs->type)
             continue;
-        
+
         // check base stat total
         if (GetTotalBaseStat(species) > bstLim)
             continue;
-        
+
         // check moves
         if (reqs->nMoves != 0)
         {
@@ -1438,7 +1445,7 @@ void GenerateBattlePyramidWildMon(void)
             if (moveCount == 0)
                 continue;
         }
-        
+
         // check abilities
         if (reqs->nAbilities != 0)
         {
@@ -1460,9 +1467,9 @@ void GenerateBattlePyramidWildMon(void)
                 continue;
         }
         // check evos
-        if (reqs->evoItems[0] != 0 && !CheckBattlePyramidEvoRequirement(species, reqs->evoItems, reqs->nEvoItems))
+        if (reqs->evoItems != NULL && !CheckBattlePyramidEvoRequirement(species, reqs->evoItems, reqs->nEvoItems))
             continue;
-        
+
         // we found a species we can use!
         break;
     }
@@ -1471,7 +1478,7 @@ void GenerateBattlePyramidWildMon(void)
     SetMonData(&gEnemyParty[0], MON_DATA_SPECIES, &species);
     StringCopy(name, GetSpeciesName(species));
     SetMonData(&gEnemyParty[0], MON_DATA_NICKNAME, &name);
-    
+
     // set level
     if (lvl != FRONTIER_LVL_50)
     {
@@ -1507,7 +1514,7 @@ void GenerateBattlePyramidWildMon(void)
         }
         Free(moves);
     }
-    
+
     // Initialize a random ability num
     if (gSpeciesInfo[species].abilities[1])
     {
@@ -1519,7 +1526,7 @@ void GenerateBattlePyramidWildMon(void)
         i = 0;
         SetMonData(&gEnemyParty[0], MON_DATA_ABILITY_NUM, &i);
     }
-    
+
     // Try to replace with desired ability
     if (abilities != NULL)
     {
@@ -1533,12 +1540,15 @@ void GenerateBattlePyramidWildMon(void)
                 {
                     // Set this ability num
                     SetMonData(&gEnemyParty[0], MON_DATA_ABILITY_NUM, &id);
+                    break;
                 }
             }
+            if (id >= NUM_ABILITY_SLOTS - 1)
+                break;
         }
         Free(abilities);
     }
-    
+
     if (gSaveBlock2Ptr->frontier.pyramidWinStreaks[gSaveBlock2Ptr->frontier.lvlMode] >= 140)
     {
         id = (Random() % 17) + 15;

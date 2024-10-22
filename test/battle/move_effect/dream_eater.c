@@ -3,7 +3,7 @@
 
 ASSUMPTIONS
 {
-    ASSUME(gBattleMoves[MOVE_DREAM_EATER].effect == EFFECT_DREAM_EATER);
+    ASSUME(gMovesInfo[MOVE_DREAM_EATER].effect == EFFECT_DREAM_EATER);
 }
 
 SINGLE_BATTLE_TEST("Dream Eater recovers 50% of the damage dealt")
@@ -39,8 +39,8 @@ SINGLE_BATTLE_TEST("Dream Eater fails on awake targets")
 
 SINGLE_BATTLE_TEST("Dream Eater fails if Heal Block applies")
 {
-    ASSUME(B_HEAL_BLOCKING >= GEN_6);
     GIVEN {
+        ASSUME(B_HEAL_BLOCKING >= GEN_6);
         PLAYER(SPECIES_WOBBUFFET) { HP(1); }
         OPPONENT(SPECIES_WOBBUFFET);
     } WHEN {
