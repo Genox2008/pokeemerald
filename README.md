@@ -25,12 +25,11 @@ If I forgot to credit you, dm me on discord `.voluptua` or file an issue on this
 ## Direct Contributers:
 - Voluptua (me)
 - PCG
-
-## One-time Contributers (Helped me on small things before):
-- Eva/PurrfectDoodle
-- Mudskip
-
-## Story Writers
+If you use pokeemerald-expansion in your hack, please add RHH (Rom Hacking Hideout) to your credits list. Optionally, you can list the version used, so it can help players know what features to expect.
+You can phrase it as the following:
+```
+Based off RHH's pokeemerald-expansion 1.9.3 https://github.com/rh-hideout/pokeemerald-expansion/
+```
 - Voluptua
 
 ## Design 

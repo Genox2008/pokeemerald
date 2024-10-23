@@ -6,8 +6,12 @@
 - Once you have your remote set up, run the command `git pull RHH expansion/1.Y.Z`.
 ```
 
-## 🌋 *IMPORTANT CHANGES* 🌋
-* We deleted the whole repo LOL by @AsparagusEduardo in https://github.com/rh-hideout/pokeemerald-expansion/pull/3367
+## 🌋 *REFACTORS* 🌋
+📜 = Uses a migration script.
+* N/A
+
+## 💥 *Hardlock/Softlock/Crash/Compiling fixes* 💥
+* N/A
 
 ## 🧬 General 🧬
 ### Added
@@ -15,6 +19,43 @@
 ### Changed
 * N/A
 ### Fixed
+* N/A
+
+## ✨ Feature Branches ✨
+### ***TheXaman's Debug Menu***:
+#### Added
+* N/A
+#### Changed
+* N/A
+#### Fixed
+* N/A
+### ***TheXaman's HGSS Pokédex Plus***:
+#### Added
+* N/A
+#### Changed
+* N/A
+#### Fixed
+* N/A
+### ***SBird/Karathan's Dynamic Multichoices***:
+#### Added
+* N/A
+#### Changed
+* N/A
+#### Fixed
+* N/A
+### ***ghoulslash's Saveblock Cleansing***:
+#### Added
+* N/A
+#### Changed
+* N/A
+#### Fixed
+* N/A
+### ***merrp/aarant's Followers***
+#### Added
+* N/A
+#### Changed
+* N/A
+#### Fixed
 * N/A
 
 ## 🐉 Pokémon 🐉
@@ -81,13 +122,25 @@
 ### Fixed
 * N/A
 
-## 📦 Pret merges 📦
+## 📚 Documentation 📚
+### Added
+* N/A
+### Changed
+* N/A
+### Fixed
+* N/A
+
+## 📦 Branch Synchronisation 📦
+### pret's base pokeemerald
+* N/A
+### merrp/aarant's followers
 * N/A
 
 
 ## New Contributors
-* Tony
+* N/A
 
 **Full Changelog**: https://github.com/rh-hideout/pokeemerald-expansion/compare/expansion/1.Y.Z...expansion/1.Y.Z
 
 <!--Last PR: ____-->
+<!--Used to keep track of the last PR merged in case new ones come in before the changelog is done.-->

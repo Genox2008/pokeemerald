@@ -5,16 +5,16 @@ Std_ObtainItem::
 	copyvar VAR_0x8006, ITEMID
 	additem ITEMID, AMOUNT
 	copyvar VAR_0x8007, VAR_RESULT
-	call EventScript_ObtainItemMessage
+	@call EventScript_ObtainItemMessage
 	return
 
-EventScript_ObtainItemMessage::
-	bufferitemnameplural STR_VAR_2, ITEMID, AMOUNT
-	checkitemtype ITEMID
-	call EventScript_BufferPocketNameAndTryFanfare
-	call_if_eq VAR_0x8007, TRUE, EventScript_ObtainedItem
-	call_if_eq VAR_0x8007, FALSE, EventScript_NoRoomForItem
-	return
+@EventScript_ObtainItemMessage::
+@	bufferitemnameplural STR_VAR_2, ITEMID, AMOUNT
+@	checkitemtype ITEMID
+@	call EventScript_BufferPocketNameAndTryFanfare
+@	call_if_eq VAR_0x8007, TRUE, EventScript_ObtainedItem
+@	call_if_eq VAR_0x8007, FALSE, EventScript_NoRoomForItem
+@	return
 
 EventScript_BufferPocketNameAndTryFanfare::
 	switch VAR_RESULT
@@ -50,7 +50,14 @@ EventScript_BufferBerriesPocket::
 	call_if_eq VAR_0x8007, TRUE, EventScript_PlayFanfareObtainedItem
 	return
 
-EventScript_ObtainedItem::
+@EventScript_ObtainedItem::
+@	compare VAR_0x8001, TRUE
+@	goto_if_eq EventScript_ObtainedItemMessage
+@	buffernumberstring 0, VAR_0x8001
+@	message gText_ObtainedTheItems
+@	goto EventScript_ContinueObtainedItem
+
+EventScript_ObtainedItemMessage:
 	message gText_ObtainedTheItem
 	delay 10
 	showitemdesc
@@ -139,10 +146,23 @@ EventScript_PutBattlePyramidItemInBag::
 
 EventScript_FoundTMHM::
 	bufferitemnameplural STR_VAR_1, VAR_0x8004, VAR_0x8005
+	compare VAR_0x8005, 2
+	goto_if_lt EventScript_FoundTMHMMessage
+	buffernumberstring STR_VAR_3, VAR_0x8005
+	message gText_PlayerFoundTMHMs
+	goto EventScript_BufferTMHMsPocket
+	return
+EventScript_FoundTMHMMessage::
 	message gText_PlayerFoundOneTMHM
 	return
 
 EventScript_FoundItem::
+	compare VAR_0x8001, TRUE
+	goto_if_eq EventScript_FoundItemMessage
+	buffernumberstring 0, VAR_0x8001
+	message gText_PlayerFoundItems
+	return
+EventScript_FoundItemMessage::
 	message gText_PlayerFoundOneItem
 	return
 
