@@ -172,7 +172,7 @@ static const union AnimCmd sVersionBannerLeftAnimSequence[] =
 
 static const union AnimCmd sVersionBannerRightAnimSequence[] =
 {
-    ANIMCMD_FRAME(VERSION_BANNER_RIGHT_TILEOFFSET, 30),
+    ANIMCMD_FRAME(64, 30),
     ANIMCMD_END,
 };
 

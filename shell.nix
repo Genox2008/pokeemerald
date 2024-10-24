@@ -11,7 +11,7 @@ pkgs.mkShell {
     pkgs.git
     pkgs.pkg-config
     pkgs.libpng
-    pkgsCross.arm-embedded.stdenv.cc
+    pkgs.python3
   ];
 }
 

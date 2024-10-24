@@ -482,6 +482,7 @@ static u8 TryLoadSaveSlot(u16 sectorId, struct SaveSectorLocation *locations)
     else
     {
         status = GetSaveValidStatus(locations);
+        DebugPrintf("its here");
         CopySaveSlotData(FULL_SAVE_SLOT, locations);
     }
 

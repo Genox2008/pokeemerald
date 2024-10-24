@@ -44,13 +44,16 @@
 #include "reset_rtc_screen.h"
 #include "sound_check_menu.h"
 #include "berry_fix_program.h"
- 
+#include "sprite.h"
+
 //==========MACROS==========//
 #define try_free(ptr) ({        \
     void ** ptr__ = (void **)&(ptr);   \
     if (*ptr__ != NULL)                \
         Free(*ptr__);                  \
 })
+
+#define TAG_VERSION 1000
 
 //==========DEFINES==========//
 struct sTitleScreen {
@@ -82,7 +85,8 @@ static EWRAM_DATA u8 *sBg3TilemapBuffer = NULL;
 static void HeatTitleScreen_RunSetup(void);
 static bool8 HeatTitleScreen_DoGfxSetup(void);
 static bool8 HeatTitleScreen_InitBgs(void);
-static bool8 HeatTitleScreen_LoadGraphics(void);
+static bool8 HeatTitleScreen_LoadBG(void);
+static void HeatTitleScreen_LoadSprites(void);
 static void HeatTitleScreen_InitWindows(void);
 static void PrintToWindow(u8 colorIdx);
 static void Task_HeatTitleScreen_WaitFadeIn(u8 taskId);
@@ -93,18 +97,21 @@ static void HeatTitleScreen_FadeAndBail(void);
 static const u8 sText_PressA[] = _("Press Start");
 static const u8 sText_Version[] = _("PreAlpha");
 
-static const u32 sTitleScreenTiles[] = INCBIN_U32("graphics/heat_title_screen/bg.4bpp.lz");
-static const u32 sTitleScreenTilemap[] = INCBIN_U32("graphics/heat_title_screen/bg.bin.lz");
-static const u16 sTitleScreenPalette[] = INCBIN_U16("graphics/heat_title_screen/bg.gbapal");
+static const u32 gTitleScreenTiles[] = INCBIN_U32("graphics/heat_title_screen/bg.4bpp.lz");
+static const u32 gTitleScreenTilemap[] = INCBIN_U32("graphics/heat_title_screen/bg.bin.lz");
+static const u16 gTitleScreenPalette[] = INCBIN_U16("graphics/heat_title_screen/bg.gbapal");
 
-static const u32 sPokemonLogoTiles[] = INCBIN_U32("graphics/heat_title_screen/pokemon_logo.4bpp.lz");
-static const u32 sPokemonLogoTilemap[] = INCBIN_U32("graphics/heat_title_screen/pokemon_logo.bin.lz");
-static const u16 sPokemonLogoPalette[] = INCBIN_U16("graphics/heat_title_screen/pokemon_logo.gbapal");
+static const u32 gPokemonLogoTiles[] = INCBIN_U32("graphics/heat_title_screen/pokemon_logo.4bpp.lz");
+static const u32 gPokemonLogoTilemap[] = INCBIN_U32("graphics/heat_title_screen/pokemon_logo.bin.lz");
+static const u16 gPokemonLogoPalette[] = INCBIN_U16("graphics/heat_title_screen/pokemon_logo.gbapal");
 
-static const u32 sFogTiles[] = INCBIN_U32("graphics/heat_title_screen/fog.4bpp.lz");
-static const u32 sFogTilemap[] = INCBIN_U32("graphics/heat_title_screen/fog.bin.lz");
-static const u16 sFogPalette[] = INCBIN_U16("graphics/heat_title_screen/fog.gbapal");
-static const u16 sFogDarkPalette[] = INCBIN_U16("graphics/heat_title_screen/fog_dark.gbapal");
+static const u32 gFogTiles[] = INCBIN_U32("graphics/heat_title_screen/fog.4bpp.lz");
+static const u32 gFogTilemap[] = INCBIN_U32("graphics/heat_title_screen/fog.bin.lz");
+static const u16 gFogPalette[] = INCBIN_U16("graphics/heat_title_screen/fog.gbapal");
+static const u16 gFogDarkPalette[] = INCBIN_U16("graphics/heat_title_screen/fog_dark.gbapal");
+
+static const u32 gPokemonMagmaVersionBannerGfx[] = INCBIN_U32("graphics/heat_title_screen/magma_version.4bpp.lz");
+static const u16 gPokemonMagmaVersionBannerPal[] = INCBIN_U16("graphics/heat_title_screen/magma_version.gbapal");
 
 static const struct BgTemplate sTitleScreenBgTemplates[] = {
     {
@@ -166,6 +173,75 @@ static const u8 sTitleScreenWindowFontColors[][3] =
     [FONT_BLUE]  = {TEXT_COLOR_TRANSPARENT,  TEXT_COLOR_BLUE,       TEXT_COLOR_LIGHT_GRAY},
 };
 
+static const struct OamData gOamVersionBanner = {
+    .y = 0,
+    .affineMode = 0,
+    .objMode = 0,
+    .bpp = ST_OAM_4BPP,
+    .shape = SPRITE_SHAPE(64x32),
+    .x = 0,
+    .matrixNum = 0,
+    .size = SPRITE_SIZE(64x32),
+    .tileNum = 0,
+    .priority = 0,
+    .paletteNum = 0,
+};
+
+static const union AnimCmd sVersionBannerLeftAnimSequence[] =
+{
+    ANIMCMD_FRAME(0, 0),
+    ANIMCMD_JUMP(0),
+};
+
+static const union AnimCmd sVersionBannerRightAnimSequence[] =
+{
+    ANIMCMD_FRAME(32, 0),
+    ANIMCMD_JUMP(0),
+};
+
+static const union AnimCmd *const sVersionBannerLeftAnimTable[] =
+{
+    sVersionBannerLeftAnimSequence,
+};
+
+static const union AnimCmd *const sVersionBannerRightAnimTable[] =
+{
+    sVersionBannerRightAnimSequence,
+};
+
+static const struct SpriteTemplate sVersionBannerLeftSpriteTemplate =
+{
+    .tileTag = TAG_VERSION,
+    .paletteTag = TAG_VERSION,
+    .oam = &gOamVersionBanner,
+    .anims = sVersionBannerLeftAnimTable,
+    .images = NULL,
+    .affineAnims = gDummySpriteAffineAnimTable,
+    .callback = SpriteCallbackDummy,
+};
+
+static const struct SpriteTemplate sVersionBannerRightSpriteTemplate =
+{
+    .tileTag = TAG_VERSION,
+    .paletteTag = TAG_VERSION,
+    .oam = &gOamVersionBanner,
+    .anims = sVersionBannerRightAnimTable,
+    .images = NULL,
+    .affineAnims = gDummySpriteAffineAnimTable,
+    .callback = SpriteCallbackDummy,
+};
+
+static const struct CompressedSpriteSheet sSpriteSheet_MagmaVersion = {
+    .data = gPokemonMagmaVersionBannerGfx,
+    .size = 2048,
+    .tag = TAG_VERSION
+};
+
+static const struct SpritePalette sSpritePalette_MagmaVersion = {
+    gPokemonMagmaVersionBannerPal, 
+    TAG_VERSION
+};
+
 //==========FUNCTIONS==========//
 void HeatTitleScreen_Init(void)
 {
@@ -202,6 +278,14 @@ static void HeatTitleScreen_MainCB(void)
 
 static void HeatTitleScreen_VblankCB(void)
 {
+
+    if (sTitleScreenState->BG2OfsCounter == 0) {
+        SetGpuReg(REG_OFFSET_BG2HOFS, sTitleScreenState->BG2Offset++);
+        sTitleScreenState->BG2OfsCounter++;
+    } else {
+        sTitleScreenState->BG2OfsCounter = 0;
+    }
+
     LoadOam();
     ProcessSpriteCopyRequests();
     TransferPlttBuffer();
@@ -220,6 +304,7 @@ static bool8 HeatTitleScreen_DoGfxSetup(void)
         SetGpuReg(REG_OFFSET_BLDCNT, 0);
         SetGpuReg(REG_OFFSET_BLDALPHA, 0);
         SetGpuReg(REG_OFFSET_BLDY, 0);
+        SetGpuReg(REG_OFFSET_DISPCNT, DISPCNT_OBJ_ON | DISPCNT_OBJ_1D_MAP );
         gMain.state++;
         break;
     case 1:
@@ -243,8 +328,10 @@ static bool8 HeatTitleScreen_DoGfxSetup(void)
         }
         break;
     case 3:
-        if (HeatTitleScreen_LoadGraphics() == TRUE)
+        if (HeatTitleScreen_LoadBG() == TRUE) {
+            HeatTitleScreen_LoadSprites();
             gMain.state++;
+        }
         break;
     case 4:
         HeatTitleScreen_InitWindows();
@@ -257,7 +344,7 @@ static bool8 HeatTitleScreen_DoGfxSetup(void)
         gMain.state++;
         break;
     case 6:
-        BeginNormalPaletteFade(0xFFFFFFFF, 0, 16, 0, RGB_BLACK);
+        BeginNormalPaletteFade(0xFFFFFFFF, 10, 16, 0, RGB_BLACK);
         gMain.state++;
         break;
     default:
@@ -325,31 +412,31 @@ static bool8 HeatTitleScreen_InitBgs(void)
     return TRUE;
 }
 
-static bool8 HeatTitleScreen_LoadGraphics(void)
+static bool8 HeatTitleScreen_LoadBG(void)
 {
     switch (sTitleScreenState->gfxLoadState)
     {
     case 0:
         ResetTempTileDataBuffers();
-        DecompressAndCopyTileDataToVram(1, sTitleScreenTiles, 0, 0, 0);
-        DecompressAndCopyTileDataToVram(2, sFogTiles, 0, 0, 0);
-        DecompressAndCopyTileDataToVram(3, sPokemonLogoTiles, 0, 0, 0);
+        DecompressAndCopyTileDataToVram(1, gTitleScreenTiles, 0, 0, 0);
+        DecompressAndCopyTileDataToVram(2, gFogTiles, 0, 0, 0);
+        DecompressAndCopyTileDataToVram(3, gPokemonLogoTiles, 0, 0, 0);
         sTitleScreenState->gfxLoadState++;
         break;
     case 1:
         if (FreeTempTileDataBuffersIfPossible() != TRUE)
         {
-            LZDecompressWram(sTitleScreenTilemap, sBg1TilemapBuffer);
-            LZDecompressWram(sFogTilemap, sBg2TilemapBuffer);
-            LZDecompressWram(sPokemonLogoTilemap, sBg3TilemapBuffer);
+            LZDecompressWram(gTitleScreenTilemap, sBg1TilemapBuffer);
+            LZDecompressWram(gFogTilemap, sBg2TilemapBuffer);
+            LZDecompressWram(gPokemonLogoTilemap, sBg3TilemapBuffer);
             sTitleScreenState->gfxLoadState++;
         }
         break;
     case 2:
-        LoadPalette(sTitleScreenPalette, BG_PLTT_ID(0), PLTT_SIZE_4BPP);
-        LoadPalette(sFogPalette, BG_PLTT_ID(2), PLTT_SIZE_4BPP);
-        LoadPalette(sFogDarkPalette, BG_PLTT_ID(3), PLTT_SIZE_4BPP);
-        LoadPalette(sPokemonLogoPalette, BG_PLTT_ID(1), PLTT_SIZE_4BPP);
+        LoadPalette(gTitleScreenPalette, BG_PLTT_ID(0), PLTT_SIZE_4BPP);
+        LoadPalette(gFogPalette, BG_PLTT_ID(2), PLTT_SIZE_4BPP);
+        LoadPalette(gFogDarkPalette, BG_PLTT_ID(3), PLTT_SIZE_4BPP);
+        LoadPalette(gPokemonLogoPalette, BG_PLTT_ID(1), PLTT_SIZE_4BPP);
         LoadPalette(gMessageBox_Pal, BG_PLTT_ID(15), PLTT_SIZE_4BPP);
         sTitleScreenState->gfxLoadState++;
         break;
@@ -361,6 +448,14 @@ static bool8 HeatTitleScreen_LoadGraphics(void)
         return TRUE;
     }
     return FALSE;
+}
+
+static void HeatTitleScreen_LoadSprites(void) {
+    LoadSpritePalette(&sSpritePalette_MagmaVersion);
+    LoadCompressedSpriteSheet(&sSpriteSheet_MagmaVersion);
+
+    CreateSprite(&sVersionBannerLeftSpriteTemplate, 88, 68, 0);
+    CreateSprite(&sVersionBannerRightSpriteTemplate, 152, 68, 0);
 }
 
 static void HeatTitleScreen_InitWindows(void)
@@ -398,13 +493,6 @@ static void PrintToWindow(u8 colorIdx) {
 
 static void Task_DoPressStartFlickering(u8 taskId) {
     u32 t = 30;
-
-    if (sTitleScreenState->BG2OfsCounter == 0) {
-        SetGpuReg(REG_OFFSET_BG2HOFS, sTitleScreenState->BG2Offset++);
-        sTitleScreenState->BG2OfsCounter++;
-    } else {
-        sTitleScreenState->BG2OfsCounter = 0;
-    }
 
     if (sTitleScreenState->flickerCount == t) {
         FillWindowPixelBuffer(WIN_PRESS_START, PIXEL_FILL(TEXT_COLOR_TRANSPARENT));

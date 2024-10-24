@@ -17,6 +17,7 @@
 #include "data.h"
 #include "daycare.h"
 #include "debug.h"
+#include "config/debug.h"
 #include "event_data.h"
 #include "event_object_movement.h"
 #include "event_scripts.h"
