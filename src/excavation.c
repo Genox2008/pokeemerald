@@ -1077,7 +1077,9 @@ enum {
 	CRACK_POS_MAX,
 };
 
-// Uncompress some data idk bitch
+// IGNORE THIS PSF
+//
+// Uncompress some data idk 
 static void LZ77UnCompSprite(const u32* data, u32 output[512]) {
   LZ77UnCompVram(data, output);
 }   
@@ -1133,14 +1135,20 @@ static void Excavation_SetupCB(void) {
   switch(gMain.state) {
 	  // Clear Screen
 	  case STATE_CLEAR_SCREEN:
-		  SetVBlankHBlankCallbacksToNull();
-		  ClearScheduledBgCopiesToVram();
-		  ScanlineEffect_Stop();
-		  DmaClearLarge16(3, (void *)VRAM, VRAM_SIZE, 0x1000);
-		  gMain.state++;
-		  break;
+		SetVBlankHBlankCallbacksToNull();
+		ClearScheduledBgCopiesToVram();
+		ScanlineEffect_Stop();
+        SetGpuReg(REG_OFFSET_WIN0H, 0);
+        SetGpuReg(REG_OFFSET_WIN0V, 0);
+        SetGpuReg(REG_OFFSET_WIN1H, 0);
+        SetGpuReg(REG_OFFSET_WIN1V, 0);
+        SetGpuReg(REG_OFFSET_WININ, 0);
+        SetGpuReg(REG_OFFSET_WINOUT, 0);
+		DmaClearLarge16(3, (void *)VRAM, VRAM_SIZE, 0x1000);
+		gMain.state++;
+		break;
 
-		  // Reset data
+		// Reset data
 	  case STATE_RESET_DATA:
 		  FreeAllSpritePalettes();
 		  ResetPaletteFade();
@@ -1204,8 +1212,7 @@ static bool8 Excavation_InitBgs(void) {
 
     sBg2TilemapBuffer = AllocZeroed(TILEMAP_BUFFER_SIZE);
     sBg3TilemapBuffer = AllocZeroed(TILEMAP_BUFFER_SIZE);
-    if (sBg3TilemapBuffer == NULL)
-    {
+    if (sBg3TilemapBuffer == NULL) {
         return FALSE;
     } else if (sBg2TilemapBuffer == NULL) {
         return FALSE;
@@ -1344,7 +1351,7 @@ static void ExcavationUi_Shake(u8 taskId) {
 
 static void Excavation_VBlankCB(void) {
   // I discovered that the VBlankCB is actually ran every VBlank. There's no function that can halt it just because of a huge loop or smth
-  // However I discovered that the MainCB can be halted! And that's actually the case. UiShake() delays with huge loops to make the shake
+  // However I discovered that the MainCB can be halted! UiShake() delays with huge loops to make the shake
   // effect visible! Because of this, other tasks cannot run (or other functions) in the same time as UiShake is ran. This makes the fade/flash
   // effect on the items which got dug up, delay by a few `ms`! Because Vblank cannot be halted, we just do the checking, each vblank + there's no lag
   // because of this!
@@ -1435,7 +1442,6 @@ static u8 GetRandomItemId() {
   u32 rarity;
   u32 index;
   u32 rnd = random(7);
-
 
   if (rnd < 4) {
     rarity = RARITY_COMMON;
@@ -1896,7 +1902,7 @@ static void Terrain_DrawLayerTileToScreen(u8 x, u8 y, u8 layer, u16* ptr) {
   }
 }
 
-// Turn this into a table
+// TODO: Turn this into a table
 static const u16* GetCorrectPalette(u32 TileTag) {
   switch (TileTag) {
     case TAG_ITEM_REVIVE:
@@ -2440,8 +2446,7 @@ static void DoDrawRandomItem(u8 itemStateId, u8 itemId) {
 
 // TODO: Fill this function with the rest of the stones
 static void DoDrawRandomStone(u8 itemId) {
-  u8 x;
-  u8 y;
+  u8 x, y;
   u8 stoneIsPlaced = 0;
 
   for(y=0;y<8;y++) {
@@ -2854,6 +2859,12 @@ static void Excavation_FreeResources(void) {
     ReleaseComfyAnims();
     // Reset all sprite data
     ResetSpriteData();
+    SetGpuReg(REG_OFFSET_WIN0H, 0);
+    SetGpuReg(REG_OFFSET_WIN0V, 0);
+    SetGpuReg(REG_OFFSET_WIN1H, 0);
+    SetGpuReg(REG_OFFSET_WIN1V, 0);
+    SetGpuReg(REG_OFFSET_WININ, 0);
+    SetGpuReg(REG_OFFSET_WINOUT, 0);
 }
 
 static void InitMiningWindows(void) {
@@ -3016,8 +3027,33 @@ static void MakeCursorInvisible(void) {
 	  gSprites[sExcavationUiState->cursorSpriteIndex].invisible = 1;
 }
 
+struct HighlightWindowCoords {
+    u8 left;
+    u8 right;
+};
+
+struct HWWindowPosition {
+    struct HighlightWindowCoords winh;
+    struct HighlightWindowCoords winv;
+};
+
+static const struct HWWindowPosition HWinCoords[1] = {
+  {
+    {7, 233},
+    {7, 89}
+  },
+};
+
 static void HandleGameFinish(u8 taskId) {
-	MakeCursorInvisible();
+  MakeCursorInvisible();
+
+  // Ignore PSF
+  //
+  //SetGpuReg(REG_OFFSET_DISPCNT, DISPCNT_WIN0_ON);
+  //SetGpuReg(REG_OFFSET_WIN0H, WIN_RANGE(HWinCoords[0].winh.left, HWinCoords[0].winh.right));
+  //SetGpuReg(REG_OFFSET_WIN0V, WIN_RANGE(HWinCoords[0].winv.left, HWinCoords[0].winv.right));
+  //SetGpuReg(REG_OFFSET_WININ, WININ_WIN0_BG1);
+  //SetGpuReg(REG_OFFSET_WINOUT, WINOUT_WIN01_ALL);  
 
 	if (IsCrackMax())
 		PrintMessage(sText_TheWall);
