@@ -1,100 +1,64 @@
-#define SELECTED   0
-#define DESELECTED 255
+#include "constants/items.h"
+#include "gba/types.h"
+#include "gba/defines.h"
+#include "main.h"
+#include "sprite.h"
+
+/*********** ITEM SPRITE TAGS ************/
+#define TAG_ITEM_HEARTSCALE     14
+#define TAG_ITEM_HARDSTONE      15
+#define TAG_ITEM_REVIVE         16
+#define TAG_ITEM_STAR_PIECE     17
+#define TAG_ITEM_DAMP_ROCK      18
+#define TAG_ITEM_RED_SHARD      19
+#define TAG_ITEM_BLUE_SHARD     20
+#define TAG_ITEM_IRON_BALL      21
+#define TAG_ITEM_REVIVE_MAX     22
+#define TAG_ITEM_EVER_STONE     23
+#define TAG_ITEM_OVAL_STONE     30
+#define TAG_ITEM_LIGHT_CLAY     31
+#define TAG_ITEM_HEAT_ROCK      32
+
+#define TAG_STONE_1X4           24
+#define TAG_STONE_4X1           25
+#define TAG_STONE_2X4           26
+#define TAG_STONE_4X2           27
+#define TAG_STONE_2X2           28
+#define TAG_STONE_3X3           29
+
+/*********** DEBUG SWITCHES ************/
+// #define DEBUG_ITEM_GEN
+
+#define SELECTED          0
+#define DESELECTED        255
 #define ITEM_TILE_NONE    0
 #define ITEM_TILE_DUG_UP  5
-
-#define WIN_MSG 0
-
 #define MAX_NUM_BURIED_ITEMS 4
+#define COUNT_MAX_NUMBER_STONES 2
 
-/*          --Stones--                  */
-#define ID_STONE_1x4                    250
-#define STONE_1x4_TILE_AMOUNT_RIGHT     0
-#define STONE_1x4_TILE_AMOUNT_BOTTOM    4
-#define STONE_1x4_THRESHOLD             10922
-
-#define ID_STONE_4x1                    251
-#define STONE_4x1_TILE_AMOUNT_RIGHT     4
-#define STONE_4x1_TILE_AMOUNT_BOTTOM    0
-#define STONE_4x1_THRESHOLD             21844
-
-#define ID_STONE_2x4                    252
-#define STONE_2x4_TILE_AMOUNT_RIGHT     1
-#define STONE_2x4_TILE_AMOUNT_BOTTOM    4
-#define STONE_2x4_THRESHOLD             32766
-
-#define ID_STONE_4x2                    253
-#define STONE_4x2_TILE_AMOUNT_RIGHT     4
-#define STONE_4x2_TILE_AMOUNT_BOTTOM    1
-#define STONE_4x2_THRESHOLD             43688
-
-#define ID_STONE_2x2                    254
-#define STONE_2x2_TILE_AMOUNT_RIGHT     1
-#define STONE_2x2_TILE_AMOUNT_BOTTOM    1
-#define STONE_2x2_THRESHOLD             54610
-
-#define ID_STONE_3x3                    255
-#define STONE_3x3_TILE_AMOUNT_RIGHT     2
-#define STONE_3x3_TILE_AMOUNT_BOTTOM    2
-#define STONE_3x3_THRESHOLD             65535
-
-#define COUNT_ID_STONE                  6
-#define COUNT_MAX_NUMBER_STONES         2
-
-
-/*          --Items--                   */
-
-#define ITEMID_NONE 0
-
+/*********** ITEM/STONE IDS ************/
+#define ITEMID_NONE                     0
 #define ITEMID_HARD_STONE               1
-#define HARD_STONE_TOTAL_TILES          4
-#define HARD_STONE_TILE_AMOUNT_RIGHT    1
-#define HARD_STONE_TILE_AMOUNT_BOTTOM   1
-
 #define ITEMID_REVIVE                   2
-#define REVIVE_TOTAL_TILES              5
-#define REVIVE_TILE_AMOUNT_RIGHT        2
-#define REVIVE_TILE_AMOUNT_BOTTOM       2
-
 #define ITEMID_STAR_PIECE               3
-#define STAR_PIECE_TOTAL_TILES          5
-#define STAR_PIECE_TILE_AMOUNT_RIGHT    2
-#define STAR_PIECE_TILE_AMOUNT_BOTTOM   2
-
 #define ITEMID_DAMP_ROCK                4
-#define DAMP_ROCK_TOTAL_TILES           8
-#define DAMP_ROCK_TILE_AMOUNT_RIGHT     2
-#define DAMP_ROCK_TILE_AMOUNT_BOTTOM    2
-
 #define ITEMID_RED_SHARD                5
-#define RED_SHARD_TOTAL_TILES           8
-#define RED_SHARD_TILE_AMOUNT_RIGHT     2
-#define RED_SHARD_TILE_AMOUNT_BOTTOM    2
-
 #define ITEMID_BLUE_SHARD               6
-#define BLUE_SHARD_TOTAL_TILES          8
-#define BLUE_SHARD_TILE_AMOUNT_RIGHT    2
-#define BLUE_SHARD_TILE_AMOUNT_BOTTOM   2
-
 #define ITEMID_IRON_BALL                7
-#define IRON_BALL_TOTAL_TILES           9
-#define IRON_BALL_TILE_AMOUNT_RIGHT     2
-#define IRON_BALL_TILE_AMOUNT_BOTTOM    2
-
 #define ITEMID_REVIVE_MAX               8
-#define REVIVE_MAX_TOTAL_TILES          9
-#define REVIVE_MAX_TILE_AMOUNT_RIGHT    2
-#define REVIVE_MAX_TILE_AMOUNT_BOTTOM   2
-
 #define ITEMID_EVER_STONE               9
-#define EVER_STONE_TOTAL_TILES          8
-#define EVER_STONE_TILE_AMOUNT_RIGHT    3
-#define EVER_STONE_TILE_AMOUNT_BOTTOM   1
-
 #define ITEMID_HEART_SCALE              10
-#define HEART_SCALE_TOTAL_TILES         3
-#define HEART_SCALE_TILE_AMOUNT_RIGHT   1
-#define HEART_SCALE_TILE_AMOUNT_BOTTOM  1
+#define ITEMID_OVAL_STONE               11
+#define ITEMID_LIGHT_CLAY               12
+#define ITEMID_HEAT_ROCK                13
+
+#define ID_STONE_1x4                    250
+#define ID_STONE_4x1                    251
+#define ID_STONE_2x4                    252
+#define ID_STONE_4x2                    253
+#define ID_STONE_2x2                    254
+#define ID_STONE_3x3                    255
+#define COUNT_ID_STONE                  256
 
 #define GRID_WIDTH 12
 #define GRID_HEIGHT 8

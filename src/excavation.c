@@ -1,6 +1,4 @@
-// I have to credit grunt-lucas because I am stealing a bit of code from him ;). Check out his sample_ui branch as well!
 #include "excavation.h"
-
 #include "gba/types.h"
 #include "gba/defines.h"
 #include "global.h"
@@ -34,13 +32,24 @@
 #include "field_message_box.h"
 #include "constants/items.h"
 #include "item.h"
+#include "comfy_anim.h"
 
+/* >> Callbacks << */
 static void Excavation_Init(MainCallback callback);
 static void Excavation_SetupCB(void);
 static bool8 Excavation_InitBgs(void);
-static void Task_Excavation_WaitFadeAndBail(u8 taskId);
 static void Excavation_MainCB(void);
 static void Excavation_VBlankCB(void);
+
+/* >> Tasks << */
+static void Task_Excavation_WaitFadeAndBail(u8 taskId);
+static void Task_ExcavationWaitFadeIn(u8 taskId);
+static void Task_WaitButtonPressOpening(u8 taskId);
+static void Task_ExcavationMainInput(u8 taskId);
+static void Task_ExcavationFadeAndExitMenu(u8 taskId);
+static void Task_ExcavationPrintResult(u8 taskId);
+
+// >> Others <<
 static void Excavation_FadeAndBail(void);
 static bool8 Excavation_LoadBgGraphics(void);
 static void Excavation_LoadSpriteGraphics(void);
@@ -51,17 +60,12 @@ static void Excavation_DrawRandomTerrain(void);
 static void DoDrawRandomItem(u8 itemStateId, u8 itemId);
 static void DoDrawRandomStone(u8 itemId);
 static void Excavation_CheckItemFound(void);
-static void Task_ExcavationWaitFadeIn(u8 taskId);
-static void Task_WaitButtonPressOpening(u8 taskId);
-static void Task_ExcavationMainInput(u8 taskId);
-static void Task_ExcavationFadeAndExitMenu(u8 taskId);
 static void PrintMessage(const u8 *string);
 static void InitMiningWindows(void);
 static u32 GetCrackPosition(void);
 static bool32 IsCrackMax(void);
 static void EndMining(u8 taskId);
 static u32 ConvertLoadGameStateToItemIndex(void);
-static void Task_ExcavationPrintResult(u8 taskId);
 static void GetItemOrPrintError(u8 taskId, u32 itemIndex, u32 itemId);
 static void CheckItemAndPrint(u8 taskId, u32 itemIndex, u32 itemId);
 static void MakeCursorInvisible(void);
@@ -90,18 +94,22 @@ struct BuriedItem {
 };
 
 struct ExcavationState {
-  MainCallback leavingCallback;
-  u32 loadGameState;
-  bool8 mode;
+  MainCallback leavingCallback; // Callback to leave the Ui
+  u32 loadGameState;            // ?
+  bool32 shouldShake;           // If set to true, shake gets executed every VBlank
+  u32 shakeState;               // State of shaking steps
+  u32 ShakeHitTool;
+  u32 ShakeHitEffect;
+  bool32 mode;                  // Hammer or Pickaxe
   u32 cursorSpriteIndex;
   u32 bRedSpriteIndex;
   u32 bBlueSpriteIndex;
-  u32 crackCount;
-  u32 crackPos;
+  u32 crackCount;               // How many cracks in one 32x32 portion
+  u32 crackPos;                 // Which crack portion
   u32 cursorX;
   u32 cursorY;
-  u32 layerMap[96];
-  u32 itemMap[96];
+  u32 layerMap[96];             // Array representing the screen. Determines virtual layers
+  u32 itemMap[96];              // Determines where items are on the screen
   struct BuriedItem buriedItem[4];
 
   // Item 1
@@ -127,19 +135,26 @@ struct ExcavationState {
   u32 state_stone2;
 };
 
-static const u32 excavationIdItemIdMap[] = {
-	ITEM_NONE,
-	ITEM_HARD_STONE,
-	ITEM_REVIVE,
-	ITEM_STAR_PIECE,
-	ITEM_WATER_STONE,
-	ITEM_RED_SHARD,
-	ITEM_BLUE_SHARD,
-	ITEM_ULTRA_BALL,
-	ITEM_MAX_REVIVE,
-	ITEM_EVERSTONE,
-	ITEM_HEART_SCALE,
-};
+// Win IDs
+#define WIN_MSG         0
+
+// Other Sprite Tags
+#define TAG_CURSOR      1
+#define TAG_BUTTONS     2
+
+#define TAG_BLANK1              3
+#define TAG_BLANK2              4
+
+#define TAG_PAL_ITEM1           5
+#define TAG_PAL_ITEM2           6
+#define TAG_PAL_ITEM3           7
+#define TAG_PAL_ITEM4           8
+
+#define TAG_PAL_HIT_EFFECTS     9
+#define TAG_HIT_EFFECT_HAMMER   10
+#define TAG_HIT_EFFECT_PICKAXE  11
+#define TAG_HIT_HAMMER          12
+#define TAG_HIT_PICKAXE         13
 
 static EWRAM_DATA struct ExcavationState *sExcavationUiState = NULL;
 static EWRAM_DATA u8 *sBg2TilemapBuffer = NULL;
@@ -194,10 +209,6 @@ static const u32 gCracksAndTerrainTiles[] = INCBIN_U32("graphics/excavation/crac
 static const u32 gCracksAndTerrainTilemap[] = INCBIN_U32("graphics/excavation/cracks_terrain.bin.lz");
 static const u16 gCracksAndTerrainPalette[] = INCBIN_U16("graphics/excavation/cracks_terrain.gbapal");
 
-// Other Sprite Tags
-#define TAG_CURSOR 1
-#define TAG_BUTTONS 2
-
 // Sprite data
 const u32 gCursorGfx[] = INCBIN_U32("graphics/pokenav/region_map/cursor_small.4bpp.lz");
 const u16 gCursorPal[] = INCBIN_U16("graphics/pokenav/region_map/cursor.gbapal");
@@ -210,85 +221,6 @@ const u32 gHitEffectPickaxeGfx[] = INCBIN_U32("graphics/excavation/hit_effect_pi
 const u32 gHitHammerGfx[] = INCBIN_U32("graphics/excavation/hit_hammer.4bpp.lz");
 const u32 gHitPickaxeGfx[] = INCBIN_U32("graphics/excavation/hit_pickaxe.4bpp.lz");
 const u16 gHitEffectPal[] = INCBIN_U16("graphics/excavation/hit_effects.gbapal");
-
-static const u8 sText_SomethingPinged[] = _("Something pinged in the wall!\n{STR_VAR_1} confirmed!");
-static const u8 sText_EverythingWas[] = _("Everything was dug up!");
-static const u8 sText_WasObtained[] = _("{STR_VAR_1}\nwas obtained!");
-static const u8 sText_TooBad[] = _("Too bad!\nYour Bag is full!");
-static const u8 sText_TheWall[] = _("The wall collapsed!");
-
-// Item Sprite Tags
-#define TAG_ITEM_HEARTSCALE 3
-#define TAG_ITEM_HARDSTONE  4
-#define TAG_ITEM_REVIVE     5
-#define TAG_ITEM_STAR_PIECE 6
-#define TAG_ITEM_DAMP_ROCK  7
-#define TAG_ITEM_RED_SHARD  8
-#define TAG_ITEM_BLUE_SHARD 9
-#define TAG_ITEM_IRON_BALL  10
-#define TAG_ITEM_REVIVE_MAX 11
-#define TAG_ITEM_EVER_STONE 12
-
-#define TAG_STONE_1X4       13
-#define TAG_STONE_4X1       14
-#define TAG_STONE_2X4       15
-#define TAG_STONE_4X2       16
-#define TAG_STONE_2X2       17
-#define TAG_STONE_3X3       18
-
-#define TAG_BLANK1          19
-#define TAG_BLANK2          20
-
-#define TAG_PAL_ITEM1       21
-#define TAG_PAL_ITEM2       22
-#define TAG_PAL_ITEM3       23
-#define TAG_PAL_ITEM4       24
-
-#define TAG_PAL_HIT_EFFECTS     25
-#define TAG_HIT_EFFECT_HAMMER   26
-#define TAG_HIT_EFFECT_PICKAXE  27
-#define TAG_HIT_HAMMER          28
-#define TAG_HIT_PICKAXE         29
-
-// Item sprite & palette data
-const u16 gStonePal[] = INCBIN_U16("graphics/excavation/stones/stones.gbapal");
-
-const u32 gStone1x4Gfx[] = INCBIN_U32("graphics/excavation/stones/stone_1x4.4bpp.lz");
-const u32 gStone4x1Gfx[] = INCBIN_U32("graphics/excavation/stones/stone_4x1.4bpp.lz");
-const u32 gStone2x4Gfx[] = INCBIN_U32("graphics/excavation/stones/stone_2x4.4bpp.lz");
-const u32 gStone4x2Gfx[] = INCBIN_U32("graphics/excavation/stones/stone_4x2.4bpp.lz");
-const u32 gStone2x2Gfx[] = INCBIN_U32("graphics/excavation/stones/stone_2x2.4bpp.lz");
-const u32 gStone3x3Gfx[] = INCBIN_U32("graphics/excavation/stones/stone_3x3.4bpp.lz");
-
-const u32 gItemHeartScaleGfx[] = INCBIN_U32("graphics/excavation/items/heart_scale.4bpp.lz");
-const u16 gItemHeartScalePal[] = INCBIN_U16("graphics/excavation/items/heart_scale.gbapal");
-
-const u32 gItemHardStoneGfx[] = INCBIN_U32("graphics/excavation/items/hard_stone.4bpp.lz");
-const u16 gItemHardStonePal[] = INCBIN_U16("graphics/excavation/items/hard_stone.gbapal");
-
-const u32 gItemReviveGfx[] = INCBIN_U32("graphics/excavation/items/revive.4bpp.lz");
-const u16 gItemRevivePal[] = INCBIN_U16("graphics/excavation/items/revive.gbapal");
-
-const u32 gItemStarPieceGfx[] = INCBIN_U32("graphics/excavation/items/star_piece.4bpp.lz");
-const u16 gItemStarPiecePal[] = INCBIN_U16("graphics/excavation/items/star_piece.gbapal");
-
-const u32 gItemDampRockGfx[] = INCBIN_U32("graphics/excavation/items/damp_rock.4bpp.lz");
-const u16 gItemDampRockPal[] = INCBIN_U16("graphics/excavation/items/damp_rock.gbapal");
-
-const u32 gItemRedShardGfx[] = INCBIN_U32("graphics/excavation/items/red_shard.4bpp.lz");
-const u16 gItemRedShardPal[] = INCBIN_U16("graphics/excavation/items/red_shard.gbapal");
-
-const u32 gItemBlueShardGfx[] = INCBIN_U32("graphics/excavation/items/blue_shard.4bpp.lz");
-const u16 gItemBlueShardPal[] = INCBIN_U16("graphics/excavation/items/blue_shard.gbapal");
-
-const u32 gItemIronBallGfx[] = INCBIN_U32("graphics/excavation/items/iron_ball.4bpp.lz");
-const u16 gItemIronBallPal[] = INCBIN_U16("graphics/excavation/items/iron_ball.gbapal");
-
-const u32 gItemReviveMaxGfx[] = INCBIN_U32("graphics/excavation/items/revive_max.4bpp.lz");
-const u16 gItemReviveMaxPal[] = INCBIN_U16("graphics/excavation/items/revive_max.gbapal");
-
-const u32 gItemEverStoneGfx[] = INCBIN_U32("graphics/excavation/items/ever_stone.4bpp.lz");
-const u16 gItemEverStonePal[] = INCBIN_U16("graphics/excavation/items/ever_stone.gbapal");
 
 static const struct SpritePalette sSpritePal_Blank1[] =
 {
@@ -353,124 +285,6 @@ static const struct CompressedSpriteSheet sSpriteSheet_HitPickaxe[] =
 static const struct SpritePalette sSpritePal_HitEffect[] =
 {
   {gHitEffectPal, TAG_PAL_HIT_EFFECTS},
-  {NULL},
-};
-
-// Stone SpriteSheets and SpritePalettes
-static const struct CompressedSpriteSheet sSpriteSheet_Stone1x4[] = {
-  {gStone1x4Gfx, 64*64/2, TAG_STONE_1X4},
-  {NULL},
-};
-
-static const struct SpritePalette sSpritePal_Stone1x4[] =
-{
-  {gStonePal, TAG_STONE_1X4},
-  {NULL},
-};
-
-static const struct CompressedSpriteSheet sSpriteSheet_Stone4x1[] = {
-  {gStone4x1Gfx, 64*64/2, TAG_STONE_4X1},
-  {NULL},
-};
-
-static const struct SpritePalette sSpritePal_Stone4x1[] =
-{
-  {gStonePal, TAG_STONE_4X1},
-  {NULL},
-};
-
-static const struct CompressedSpriteSheet sSpriteSheet_Stone2x4[] = {
-  {gStone2x4Gfx, 64*64/2, TAG_STONE_2X4},
-  {NULL},
-};
-
-static const struct SpritePalette sSpritePal_Stone2x4[] =
-{
-  {gStonePal, TAG_STONE_2X4},
-  {NULL},
-};
-
-static const struct CompressedSpriteSheet sSpriteSheet_Stone4x2[] = {
-  {gStone4x2Gfx, 64*64/2, TAG_STONE_4X2},
-  {NULL},
-};
-
-static const struct SpritePalette sSpritePal_Stone4x2[] =
-{
-  {gStonePal, TAG_STONE_4X2},
-  {NULL},
-};
-
-static const struct CompressedSpriteSheet sSpriteSheet_Stone2x2[] = {
-  {gStone2x2Gfx, 64*64/2, TAG_STONE_2X2},
-  {NULL},
-};
-
-static const struct SpritePalette sSpritePal_Stone2x2[] =
-{
-  {gStonePal, TAG_STONE_2X2},
-  {NULL},
-};
-
-static const struct CompressedSpriteSheet sSpriteSheet_Stone3x3[] = {
-  {gStone3x3Gfx, 64*64/2, TAG_STONE_3X3},
-  {NULL},
-};
-
-static const struct SpritePalette sSpritePal_Stone3x3[] =
-{
-  {gStonePal, TAG_STONE_3X3},
-  {NULL},
-};
-
-// Item SpriteSheets and SpritePalettes
-static const struct CompressedSpriteSheet sSpriteSheet_ItemHeartScale[] = {
-  {gItemHeartScaleGfx, 64*64/2, TAG_ITEM_HEARTSCALE},
-  {NULL},
-};
-
-static const struct CompressedSpriteSheet sSpriteSheet_ItemHardStone[] = {
-  {gItemHardStoneGfx, 64*64/2, TAG_ITEM_HARDSTONE},
-  {NULL},
-};
-
-static const struct CompressedSpriteSheet sSpriteSheet_ItemRevive[] = {
-  {gItemReviveGfx, 64*64/2, TAG_ITEM_REVIVE},
-  {NULL},
-};
-
-static const struct CompressedSpriteSheet sSpriteSheet_ItemStarPiece[] = {
-  {gItemStarPieceGfx, 64*64/2, TAG_ITEM_STAR_PIECE},
-  {NULL},
-};
-
-static const struct CompressedSpriteSheet sSpriteSheet_ItemDampRock[] = {
-  {gItemDampRockGfx, 64*64/2, TAG_ITEM_DAMP_ROCK},
-  {NULL},
-};
-
-static const struct CompressedSpriteSheet sSpriteSheet_ItemRedShard[] = {
-  {gItemRedShardGfx, 64*64/2, TAG_ITEM_RED_SHARD},
-  {NULL},
-};
-
-static const struct CompressedSpriteSheet sSpriteSheet_ItemBlueShard[] = {
-  {gItemBlueShardGfx, 64*64/2, TAG_ITEM_BLUE_SHARD},
-  {NULL},
-};
-
-static const struct CompressedSpriteSheet sSpriteSheet_ItemIronBall[] = {
-  {gItemIronBallGfx, 64*64/2, TAG_ITEM_IRON_BALL},
-  {NULL},
-};
-
-static const struct CompressedSpriteSheet sSpriteSheet_ItemReviveMax[] = {
-  {gItemReviveMaxGfx, 64*64/2, TAG_ITEM_REVIVE_MAX},
-  {NULL},
-};
-
-static const struct CompressedSpriteSheet sSpriteSheet_ItemEverStone[] = {
-  {gItemEverStoneGfx, 64*64/2, TAG_ITEM_EVER_STONE},
   {NULL},
 };
 
@@ -638,6 +452,17 @@ static const union AnimCmd *const gHitPickaxeAnim[] = {
   gAnimCmd_EffectPickaxeNotHit,
 };
 
+#define COMFY_X 0
+#define COMFY_Y 1
+
+static void SpriteCB_Cursor(struct Sprite* sprite) {
+    sprite->x = ReadComfyAnimValueSmooth(&gComfyAnims[sprite->data[COMFY_X]]);
+    sprite->y = ReadComfyAnimValueSmooth(&gComfyAnims[sprite->data[COMFY_Y]]);
+
+    // Update anim's X and Y pos
+    gComfyAnims[gSprites[sExcavationUiState->cursorSpriteIndex].data[COMFY_X]].config.data.spring.to = Q_24_8(8 + 16 * sExcavationUiState->cursorX);
+    gComfyAnims[gSprites[sExcavationUiState->cursorSpriteIndex].data[COMFY_Y]].config.data.spring.to = Q_24_8(8 + 16 * sExcavationUiState->cursorY);
+}
 
 static const struct SpriteTemplate gSpriteCursor = {
     .tileTag = TAG_CURSOR,
@@ -645,9 +470,8 @@ static const struct SpriteTemplate gSpriteCursor = {
     .oam = &gOamCursor,
     .anims = gCursorAnim,
     .images = NULL,
-    // No rotating or scaling
     .affineAnims = gDummySpriteAffineAnimTable,
-    .callback = SpriteCallbackDummy,
+    .callback = SpriteCB_Cursor,
 };
 
 static const struct SpriteTemplate gSpriteButtonRed = {
@@ -710,7 +534,200 @@ static const struct SpriteTemplate gSpriteHitPickaxe = {
   .callback = SpriteCallbackDummy,
 };
 
-// Stone SpriteTemplates
+static const u16 gStonePal[] = INCBIN_U16("graphics/excavation/stones/stones.gbapal");
+
+static const u32 gStone1x4Gfx[] = INCBIN_U32("graphics/excavation/stones/stone_1x4.4bpp.lz");
+static const u32 gStone4x1Gfx[] = INCBIN_U32("graphics/excavation/stones/stone_4x1.4bpp.lz");
+static const u32 gStone2x4Gfx[] = INCBIN_U32("graphics/excavation/stones/stone_2x4.4bpp.lz");
+static const u32 gStone4x2Gfx[] = INCBIN_U32("graphics/excavation/stones/stone_4x2.4bpp.lz");
+static const u32 gStone2x2Gfx[] = INCBIN_U32("graphics/excavation/stones/stone_2x2.4bpp.lz");
+static const u32 gStone3x3Gfx[] = INCBIN_U32("graphics/excavation/stones/stone_3x3.4bpp.lz");
+
+static const u32 gItemHeartScaleGfx[] = INCBIN_U32("graphics/excavation/items/heart_scale.4bpp.lz");
+static const u16 gItemHeartScalePal[] = INCBIN_U16("graphics/excavation/items/heart_scale.gbapal");
+
+static const u32 gItemHardStoneGfx[] = INCBIN_U32("graphics/excavation/items/hard_stone.4bpp.lz");
+static const u16 gItemHardStonePal[] = INCBIN_U16("graphics/excavation/items/hard_stone.gbapal");
+
+static const u32 gItemReviveGfx[] = INCBIN_U32("graphics/excavation/items/revive.4bpp.lz");
+static const u16 gItemRevivePal[] = INCBIN_U16("graphics/excavation/items/revive.gbapal");
+
+static const u32 gItemStarPieceGfx[] = INCBIN_U32("graphics/excavation/items/star_piece.4bpp.lz");
+static const u16 gItemStarPiecePal[] = INCBIN_U16("graphics/excavation/items/star_piece.gbapal");
+
+static const u32 gItemDampRockGfx[] = INCBIN_U32("graphics/excavation/items/damp_rock.4bpp.lz");
+static const u16 gItemDampRockPal[] = INCBIN_U16("graphics/excavation/items/damp_rock.gbapal");
+
+static const u32 gItemRedShardGfx[] = INCBIN_U32("graphics/excavation/items/red_shard.4bpp.lz");
+static const u16 gItemRedShardPal[] = INCBIN_U16("graphics/excavation/items/red_shard.gbapal");
+
+static const u32 gItemBlueShardGfx[] = INCBIN_U32("graphics/excavation/items/blue_shard.4bpp.lz");
+static const u16 gItemBlueShardPal[] = INCBIN_U16("graphics/excavation/items/blue_shard.gbapal");
+
+static const u32 gItemIronBallGfx[] = INCBIN_U32("graphics/excavation/items/iron_ball.4bpp.lz");
+static const u16 gItemIronBallPal[] = INCBIN_U16("graphics/excavation/items/iron_ball.gbapal");
+
+static const u32 gItemReviveMaxGfx[] = INCBIN_U32("graphics/excavation/items/revive_max.4bpp.lz");
+static const u16 gItemReviveMaxPal[] = INCBIN_U16("graphics/excavation/items/revive_max.gbapal");
+
+static const u32 gItemEverStoneGfx[] = INCBIN_U32("graphics/excavation/items/ever_stone.4bpp.lz");
+static const u16 gItemEverStonePal[] = INCBIN_U16("graphics/excavation/items/ever_stone.gbapal");
+
+static const u32 gItemOvalStoneGfx[] = INCBIN_U32("graphics/excavation/items/oval_stone.4bpp.lz");
+static const u16 gItemOvalStonePal[] = INCBIN_U16("graphics/excavation/items/oval_stone.gbapal");
+
+static const u32 gItemLightClayGfx[] = INCBIN_U32("graphics/excavation/items/light_clay.4bpp.lz");
+static const u16 gItemLightClayPal[] = INCBIN_U16("graphics/excavation/items/light_clay.gbapal");
+
+static const u32 gItemHeatRockGfx[] = INCBIN_U32("graphics/excavation/items/heat_rock.4bpp.lz");
+static const u16 gItemHeatRockPal[] = INCBIN_U16("graphics/excavation/items/heat_rock.gbapal");
+
+// Stone SpriteSheets and SpritePalettes
+static const struct CompressedSpriteSheet sSpriteSheet_Stone1x4[] = {
+  {gStone1x4Gfx, 64*64/2, TAG_STONE_1X4},
+  {NULL},
+};
+
+static const struct SpritePalette sSpritePal_Stone1x4[] =
+{
+  {gStonePal, TAG_STONE_1X4},
+  {NULL},
+};
+
+static const struct CompressedSpriteSheet sSpriteSheet_Stone4x1[] = {
+  {gStone4x1Gfx, 64*64/2, TAG_STONE_4X1},
+  {NULL},
+};
+
+static const struct SpritePalette sSpritePal_Stone4x1[] =
+{
+  {gStonePal, TAG_STONE_4X1},
+  {NULL},
+};
+
+static const struct CompressedSpriteSheet sSpriteSheet_Stone2x4[] = {
+  {gStone2x4Gfx, 64*64/2, TAG_STONE_2X4},
+  {NULL},
+};
+
+static const struct SpritePalette sSpritePal_Stone2x4[] =
+{
+  {gStonePal, TAG_STONE_2X4},
+  {NULL},
+};
+
+static const struct CompressedSpriteSheet sSpriteSheet_Stone4x2[] = {
+  {gStone4x2Gfx, 64*64/2, TAG_STONE_4X2},
+  {NULL},
+};
+
+static const struct SpritePalette sSpritePal_Stone4x2[] =
+{
+  {gStonePal, TAG_STONE_4X2},
+  {NULL},
+};
+
+static const struct CompressedSpriteSheet sSpriteSheet_Stone2x2[] = {
+  {gStone2x2Gfx, 64*64/2, TAG_STONE_2X2},
+  {NULL},
+};
+
+static const struct SpritePalette sSpritePal_Stone2x2[] =
+{
+  {gStonePal, TAG_STONE_2X2},
+  {NULL},
+};
+
+static const struct CompressedSpriteSheet sSpriteSheet_Stone3x3[] = {
+  {gStone3x3Gfx, 64*64/2, TAG_STONE_3X3},
+  {NULL},
+};
+
+static const struct SpritePalette sSpritePal_Stone3x3[] =
+{
+  {gStonePal, TAG_STONE_3X3},
+  {NULL},
+};
+
+// Item SpriteSheets and SpritePalettes
+static const struct CompressedSpriteSheet sSpriteSheet_ItemHeartScale = {
+  gItemHeartScaleGfx,
+  64*64/2,
+  TAG_ITEM_HEARTSCALE,
+};
+
+static const struct CompressedSpriteSheet sSpriteSheet_ItemHardStone = {
+  gItemHardStoneGfx,
+  64*64/2,
+  TAG_ITEM_HARDSTONE,
+};
+
+static const struct CompressedSpriteSheet sSpriteSheet_ItemRevive = {
+  gItemReviveGfx,
+  64*64/2,
+  TAG_ITEM_REVIVE,
+};
+
+static const struct CompressedSpriteSheet sSpriteSheet_ItemStarPiece = {
+  gItemStarPieceGfx,
+  64*64/2,
+  TAG_ITEM_STAR_PIECE,
+};
+
+static const struct CompressedSpriteSheet sSpriteSheet_ItemDampRock = {
+  gItemDampRockGfx,
+  64*64/2,
+  TAG_ITEM_DAMP_ROCK,
+};
+
+static const struct CompressedSpriteSheet sSpriteSheet_ItemRedShard = {
+  gItemRedShardGfx,
+  64*64/2,
+  TAG_ITEM_RED_SHARD
+};
+
+static const struct CompressedSpriteSheet sSpriteSheet_ItemBlueShard = {
+  gItemBlueShardGfx,
+  64*64/2,
+  TAG_ITEM_BLUE_SHARD
+};
+
+static const struct CompressedSpriteSheet sSpriteSheet_ItemIronBall = {
+  gItemIronBallGfx,
+  64*64/2,
+  TAG_ITEM_IRON_BALL
+};
+
+static const struct CompressedSpriteSheet sSpriteSheet_ItemReviveMax = {
+  gItemReviveMaxGfx,
+  64*64/2,
+  TAG_ITEM_REVIVE_MAX
+};
+
+static const struct CompressedSpriteSheet sSpriteSheet_ItemEverStone = {
+  gItemEverStoneGfx,
+  64*64/2,
+  TAG_ITEM_EVER_STONE
+};
+
+static const struct CompressedSpriteSheet sSpriteSheet_ItemOvalStone = {
+  gItemOvalStoneGfx,
+  64*64/2,
+  TAG_ITEM_OVAL_STONE
+};
+
+static const struct CompressedSpriteSheet sSpriteSheet_ItemLightClay = {
+  gItemLightClayGfx,
+  64*64/2,
+  TAG_ITEM_LIGHT_CLAY
+};
+
+static const struct CompressedSpriteSheet sSpriteSheet_ItemHeatRock = {
+  gItemHeatRockGfx,
+  64*64/2,
+  TAG_ITEM_HEAT_ROCK,
+};
+
 static const struct SpriteTemplate gSpriteStone1x4 = {
     .tileTag = TAG_STONE_1X4,
     .paletteTag = TAG_STONE_1X4,
@@ -771,43 +788,204 @@ static const struct SpriteTemplate gSpriteStone3x3 = {
     .callback = SpriteCallbackDummy,
 };
 
+struct ExcavationItem {
+  u32 excItemId;
+  u32 realItemId;
+  u32 top; // starts with 0
+  u32 left; // starts with 0
+  u32 totalTiles; // starts with 0
+  u32 tag;
+  const struct CompressedSpriteSheet* sheet;
+};
 
-static u8 ExcavationUtil_GetTotalTileAmount(u8 itemId) {
-  switch(itemId) {
-    case ITEMID_HEART_SCALE:
-      return HEART_SCALE_TOTAL_TILES;
-      break;
-    case ITEMID_HARD_STONE:
-      return HARD_STONE_TOTAL_TILES;
-      break;
-    case ITEMID_REVIVE:
-      return REVIVE_TOTAL_TILES;
-      break;
-    case ITEMID_STAR_PIECE:
-      return STAR_PIECE_TOTAL_TILES;
-      break;
-    case ITEMID_DAMP_ROCK:
-      return DAMP_ROCK_TOTAL_TILES;
-      break;
-    case ITEMID_RED_SHARD:
-      return RED_SHARD_TOTAL_TILES;
-      break;
-    case ITEMID_BLUE_SHARD:
-      return BLUE_SHARD_TOTAL_TILES;
-      break;
-    case ITEMID_IRON_BALL:
-      return IRON_BALL_TOTAL_TILES;
-      break;
-    case ITEMID_REVIVE_MAX:
-      return REVIVE_MAX_TOTAL_TILES;
-      break;
-    case ITEMID_EVER_STONE:
-      return EVER_STONE_TOTAL_TILES;
-      break;
-    default:
-      return 0;
-      break;
-  }
+struct ExcavationStone {
+  u32 excStoneId;
+  u32 top; // starts with 0
+  u32 left; // starts with 0
+  u32 threshold;
+};
+
+static const struct ExcavationItem ExcavationItemList[] = {
+  [ITEMID_NONE] = {
+    .excItemId = ITEMID_NONE,
+    .realItemId = 0,
+    .top = 0,
+    .left = 0,
+    .totalTiles = 0,
+    .tag = 0,
+    .sheet = NULL,
+  },
+  [ITEMID_HARD_STONE] = {
+    .excItemId = ITEMID_HARD_STONE,
+    .realItemId = ITEM_HARD_STONE,
+    .top = 1,
+    .left = 1,
+    .totalTiles = 3,
+    .tag = TAG_ITEM_HARDSTONE,
+    .sheet = &sSpriteSheet_ItemHardStone,
+  },
+  [ITEMID_REVIVE] = {
+    .excItemId = ITEMID_REVIVE,
+    .realItemId = ITEM_REVIVE,
+    .top = 2,
+    .left = 2,
+    .totalTiles = 4,
+    .tag = TAG_ITEM_REVIVE,
+    .sheet = &sSpriteSheet_ItemRevive,
+  },
+  [ITEMID_STAR_PIECE] = {
+    .excItemId = ITEMID_STAR_PIECE,
+    .realItemId = ITEM_STAR_PIECE,
+    .top = 2,
+    .left = 2,
+    .totalTiles = 4,
+    .tag = TAG_ITEM_STAR_PIECE,
+    .sheet = &sSpriteSheet_ItemStarPiece,
+  },
+  [ITEMID_DAMP_ROCK] = {
+    .excItemId = ITEMID_DAMP_ROCK,
+    // Change this
+    .realItemId = ITEM_WATER_STONE,
+    .top = 2,
+    .left = 2,
+    .totalTiles = 7,
+    .tag = TAG_ITEM_DAMP_ROCK,
+    .sheet = &sSpriteSheet_ItemDampRock,
+  },
+  [ITEMID_RED_SHARD] = {
+    .excItemId = ITEMID_RED_SHARD,
+    .realItemId = ITEM_RED_SHARD,
+    .top = 2,
+    .left = 2,
+    .totalTiles = 7,
+    .tag = TAG_ITEM_RED_SHARD,
+    .sheet = &sSpriteSheet_ItemRedShard,
+
+  },
+  [ITEMID_BLUE_SHARD] = {
+    .excItemId = ITEMID_BLUE_SHARD,
+    .realItemId = ITEM_BLUE_SHARD,
+    .top = 2,
+    .left = 2,
+    .totalTiles = 7,
+    .tag = TAG_ITEM_BLUE_SHARD,
+    .sheet = &sSpriteSheet_ItemBlueShard,
+  },
+  [ITEMID_IRON_BALL] = {
+    .excItemId = ITEMID_IRON_BALL,
+    // Change this
+    .realItemId = ITEM_ULTRA_BALL,
+    .top = 2,
+    .left = 2,
+    .totalTiles = 8,
+    .tag = TAG_ITEM_IRON_BALL,
+    .sheet = &sSpriteSheet_ItemIronBall,
+  },
+  [ITEMID_REVIVE_MAX] = {
+    .excItemId = ITEMID_REVIVE_MAX,
+    // Change this
+    .realItemId = ITEM_MAX_REVIVE,
+    .top = 2,
+    .left = 2,
+    .totalTiles = 8,
+    .tag = TAG_ITEM_REVIVE_MAX,
+    .sheet = &sSpriteSheet_ItemReviveMax,
+  },
+  [ITEMID_EVER_STONE] = {
+    .excItemId = ITEMID_EVER_STONE,
+    // Change this
+    .realItemId = ITEM_EVERSTONE,
+    .top = 1,
+    .left = 3,
+    .totalTiles = 7,
+    .tag = TAG_ITEM_EVER_STONE,
+    .sheet = &sSpriteSheet_ItemEverStone,
+  },
+  [ITEMID_HEART_SCALE] = {
+    .excItemId = ITEMID_HEART_SCALE,
+    .realItemId = ITEM_HEART_SCALE,
+    .top = 1,
+    .left = 1,
+    .totalTiles = 2,
+    .tag = TAG_ITEM_HEARTSCALE,
+    .sheet = &sSpriteSheet_ItemHeartScale,
+  },
+  [ITEMID_OVAL_STONE] = {
+    .excItemId = ITEMID_OVAL_STONE,
+    .realItemId = ITEM_HEART_SCALE,
+    .top = 2,
+    .left = 2,
+    .totalTiles = 8,
+    .tag = TAG_ITEM_OVAL_STONE,
+    .sheet = &sSpriteSheet_ItemOvalStone,
+  },
+  [ITEMID_LIGHT_CLAY] = {
+    .excItemId = ITEMID_LIGHT_CLAY,
+    .realItemId = ITEM_HEART_SCALE,
+    .top = 3,
+    .left = 3,
+    .totalTiles = 10,
+    .tag = TAG_ITEM_LIGHT_CLAY,
+    .sheet = &sSpriteSheet_ItemLightClay,
+  },
+  [ITEMID_HEAT_ROCK] = {
+    .excItemId = ITEMID_HEAT_ROCK,
+    .realItemId = ITEM_WATER_STONE,
+    .top = 2,
+    .left = 3,
+    .totalTiles = 9,
+    .tag = TAG_ITEM_HEAT_ROCK,
+    .sheet = &sSpriteSheet_ItemHeatRock,
+  },
+};
+
+static const struct ExcavationStone ExcavationStoneList[] = {
+  [ID_STONE_1x4] = {
+    .excStoneId = ID_STONE_1x4,
+    .top = 3,
+    .left = 0,
+    .threshold = 10922,
+  },
+  [ID_STONE_4x1] = {
+    .excStoneId = ID_STONE_4x1,
+    .top = 0,
+    .left = 3,
+    .threshold = 21844,
+  },
+  [ID_STONE_2x4] = {
+    .excStoneId = ID_STONE_2x4,
+    .top = 3,
+    .left = 1,
+    .threshold = 32766,
+  },
+  [ID_STONE_4x2] = {
+    .excStoneId = ID_STONE_4x2,
+    .top = 1,
+    .left = 3,
+    .threshold = 54610,
+  },
+  [ID_STONE_2x2] = {
+    .excStoneId = ID_STONE_2x2,
+    .top = 1,
+    .left = 1,
+    .threshold = 54610,
+  },
+  [ID_STONE_3x3] = {
+    .excStoneId = ID_STONE_3x3,
+    .top = 2,
+    .threshold = 65535,
+    .left = 2,
+  },
+};
+
+static const u8 sText_SomethingPinged[] = _("Something pinged in the wall!\n{STR_VAR_1} confirmed!");
+static const u8 sText_EverythingWas[] = _("Everything was dug up!");
+static const u8 sText_WasObtained[] = _("{STR_VAR_1}\nwas obtained!");
+static const u8 sText_TooBad[] = _("Too bad!\nYour Bag is full!");
+static const u8 sText_TheWall[] = _("The wall collapsed!");
+
+static u32 ExcavationUtil_GetTotalTileAmount(u8 itemId) {
+ return ExcavationItemList[itemId].totalTiles + 1;
 }
 
 // It will create a random number between 0 and amount-1
@@ -818,76 +996,6 @@ static u32 random(u32 amount) {
 static void delay(unsigned int amount) {
   u32 i;
   for (i = 0; i < amount * 10; i++) {};
-}
-
-static void UiShake(void) {
-  u32 i;
-  u32 i2;
-
-  if (sExcavationUiState->mode == 1) {
-    i = CreateSprite(&gSpriteHitEffectHammer, (sExcavationUiState->cursorX*16)+8, (sExcavationUiState->cursorY*16)+8, 0);
-    i2 = CreateSprite(&gSpriteHitHammer, (sExcavationUiState->cursorX*16)+24, sExcavationUiState->cursorY*16, 0);
-  } else {
-    i = CreateSprite(&gSpriteHitEffectPickaxe, (sExcavationUiState->cursorX*16)+8, (sExcavationUiState->cursorY*16)+8, 0);
-    i2 = CreateSprite(&gSpriteHitPickaxe, (sExcavationUiState->cursorX*16)+24, sExcavationUiState->cursorY*16, 0);
-  }
-  MakeCursorInvisible();
-  SetGpuReg(REG_OFFSET_BG3HOFS, 1);
-  SetGpuReg(REG_OFFSET_BG2HOFS, 1);
-  delay(3000);
-  BuildOamBuffer();
-  SetGpuReg(REG_OFFSET_BG3VOFS, 1);
-  SetGpuReg(REG_OFFSET_BG2VOFS, 1);
-  gSprites[i].invisible = 1;
-  gSprites[i2].invisible = 1;
-  BuildOamBuffer();
-  delay(3000);
-  SetGpuReg(REG_OFFSET_BG3HOFS, -1);
-  SetGpuReg(REG_OFFSET_BG2HOFS, -1);
-  gSprites[i].invisible = 0;
-  gSprites[i2].invisible = 0;
-  BuildOamBuffer();
-  delay(3000);
-  SetGpuReg(REG_OFFSET_BG3VOFS, -1);
-  SetGpuReg(REG_OFFSET_BG2VOFS, -1);
-  gSprites[i].invisible = 1;
-  BuildOamBuffer();
-  delay(3000);
-  SetGpuReg(REG_OFFSET_BG3HOFS, 1);
-  SetGpuReg(REG_OFFSET_BG2HOFS, 1);
-  gSprites[i].invisible = 0;
-  StartSpriteAnim(&gSprites[i2], 1);
-  gSprites[i2].x += 7;
-  AnimateSprites();
-  BuildOamBuffer();
-  delay(3000);
-  SetGpuReg(REG_OFFSET_BG3VOFS, 1);
-  SetGpuReg(REG_OFFSET_BG2VOFS, 1);
-  gSprites[i].invisible = 1;
-  BuildOamBuffer();
-  delay(3000);
-  SetGpuReg(REG_OFFSET_BG3HOFS, -1);
-  SetGpuReg(REG_OFFSET_BG2HOFS, -1);
-  gSprites[i].invisible = 0;
-  gSprites[i2].invisible = 1;
-  BuildOamBuffer();
-  delay(3000);
-  SetGpuReg(REG_OFFSET_BG3VOFS, -1);
-  SetGpuReg(REG_OFFSET_BG2VOFS, -1);
-  gSprites[i].invisible = 1;
-  gSprites[i2].invisible = 0;
-  BuildOamBuffer();
-  delay(3000);
-
-  // Back to default offset
-  SetGpuReg(REG_OFFSET_BG3VOFS, 0);
-  SetGpuReg(REG_OFFSET_BG3HOFS, 0);
-  SetGpuReg(REG_OFFSET_BG2HOFS, 0);
-  SetGpuReg(REG_OFFSET_BG2VOFS, 0);
-  gSprites[sExcavationUiState->cursorSpriteIndex].invisible = 0;
-  DestroySprite(&gSprites[i]);
-  delay(8000);
-  DestroySprite(&gSprites[i2]);
 }
 
 void Excavation_ItemUseCB(void) {
@@ -904,6 +1012,8 @@ static void Excavation_Init(MainCallback callback) {
   }
 
   sExcavationUiState->leavingCallback = callback;
+  sExcavationUiState->shakeState = 0;
+  sExcavationUiState->shouldShake = FALSE;
   sExcavationUiState->loadGameState = 0;
   sExcavationUiState->crackCount = 0;
   sExcavationUiState->crackPos = 0;
@@ -957,8 +1067,7 @@ enum {
   STATE_SET_CALLBACKS,
 };
 
-enum
-{
+enum {
 	STATE_GRAPHICS_VRAM,
 	STATE_GRAPHICS_DECOMPRESS,
 	STATE_GRAPHICS_PALETTES,
@@ -988,21 +1097,78 @@ enum {
 	CRACK_POS_MAX,
 };
 
+// IGNORE THIS PSF
+//
+// Uncompress some data idk
+static void LZ77UnCompSprite(const u32* data, u32 output[512]) {
+  LZ77UnCompVram(data, output);
+}
 
+static void split_sprite_into_pixels(u32 pixels[4096]) {
+  u32 i, j, element, slice;
+  u32 output[512];
+
+  LZ77UnCompSprite(gItemLightClayGfx, output);
+
+  for (i = 0; i < 512; i++) {
+    element = output[i];
+    for (j = 0; j < 8; j++) {
+      slice = (element >> (28 - j * 4)) & 0xF;
+      pixels[i * 8 + j] = slice;
+    }
+  }
+}
+
+static void SpriteTesting(void) {
+  u32 x, y, i;
+  u32* pixels = AllocZeroed(4096 * sizeof(u32));
+  for(i=0;i<4096;i++) {
+    pixels[i] = 0;
+  }
+  split_sprite_into_pixels(pixels);
+  for (i=0;i<4096;i++) {
+    //DebugPrintf("%u", pixels[i]);
+  }
+  /*for (x=0;x<64;x++) {
+    for (y=0;y<16;y++) {
+      if (pixels[y*64+x] != 0) {
+        DebugPrintf("#");
+        // Next Tile
+        for (i=x;i<64;i++) {
+          if (i%16==0) {
+            x = i;
+            break;
+          }
+        }
+        break;
+      } else if (pixels[y*64+x] == 0 && x%16==0){
+        DebugPrintf("_");
+      }
+    }
+  }
+*/
+}
 
 static void Excavation_SetupCB(void) {
   u8 taskId;
+
   switch(gMain.state) {
 	  // Clear Screen
 	  case STATE_CLEAR_SCREEN:
-		  SetVBlankHBlankCallbacksToNull();
-		  ClearScheduledBgCopiesToVram();
-		  ScanlineEffect_Stop();
-		  DmaClearLarge16(3, (void *)VRAM, VRAM_SIZE, 0x1000);
-		  gMain.state++;
-		  break;
+		SetVBlankHBlankCallbacksToNull();
+		ClearScheduledBgCopiesToVram();
+		ScanlineEffect_Stop();
+        SetGpuReg(REG_OFFSET_WIN0H, 0);
+        SetGpuReg(REG_OFFSET_WIN0V, 0);
+        SetGpuReg(REG_OFFSET_WIN1H, 0);
+        SetGpuReg(REG_OFFSET_WIN1V, 0);
+        SetGpuReg(REG_OFFSET_WININ, 0);
+        SetGpuReg(REG_OFFSET_WINOUT, 0);
+		DmaClearLarge16(3, (void *)VRAM, VRAM_SIZE, 0x1000);
+		gMain.state++;
+		break;
 
-		  // Reset data
+		// Reset data
 	  case STATE_RESET_DATA:
 		  FreeAllSpritePalettes();
 		  ResetPaletteFade();
@@ -1036,9 +1202,7 @@ static void Excavation_SetupCB(void) {
 		  // Load Sprite(s)
 	  case STATE_LOAD_SPRITES:
 		  InitBuriedItems();
-          DebugPrintf("InitBuriedItems");
 		  Excavation_LoadSpriteGraphics();
-          DebugPrintf("Excavation_LoadSpriteGraphics");
 		  gMain.state++;
 		  break;
 
@@ -1054,30 +1218,21 @@ static void Excavation_SetupCB(void) {
 		  break;
 
 	  case STATE_SET_CALLBACKS:
+          //SpriteTesting();
 		  SetVBlankCallback(Excavation_VBlankCB);
 		  SetMainCallback2(Excavation_MainCB);
 		  break;
   }
 }
 
-static bool8 Excavation_InitBgs(void)
-{
-    /*
-     * 1 screenblock is 2 KiB, so that should be a good size for our tilemap buffer. We don't need more than one
-     * screenblock since BG1's size setting is 0, which tells the GBA we are using a 32x32 tile background:
-     *      (32 tile * 32 tile * 2 bytes/tile = 2048)
-     * For more info on tilemap entries and how they work:
-     * https://www.coranac.com/tonc/text/regbg.htm#sec-map
-     */
+static bool8 Excavation_InitBgs(void) {
     const u32 TILEMAP_BUFFER_SIZE = (1024 * 2);
 
-    // BG registers may have scroll values left over from the previous screen. Reset all scroll values to 0.
     ResetAllBgsCoordinates();
 
     sBg2TilemapBuffer = AllocZeroed(TILEMAP_BUFFER_SIZE);
     sBg3TilemapBuffer = AllocZeroed(TILEMAP_BUFFER_SIZE);
-    if (sBg3TilemapBuffer == NULL)
-    {
+    if (sBg3TilemapBuffer == NULL) {
         return FALSE;
     } else if (sBg2TilemapBuffer == NULL) {
         return FALSE;
@@ -1100,9 +1255,7 @@ static bool8 Excavation_InitBgs(void)
     return TRUE;
 }
 
-static void Task_Excavation_WaitFadeAndBail(u8 taskId)
-{
-    // Wait until the screen fades to black before we start doing cleanup
+static void Task_Excavation_WaitFadeAndBail(u8 taskId) {
     if (!gPaletteFade.active)
     {
         SetMainCallback2(sExcavationUiState->leavingCallback);
@@ -1111,38 +1264,127 @@ static void Task_Excavation_WaitFadeAndBail(u8 taskId)
     }
 }
 
-static void Excavation_MainCB(void)
-{
+static void Excavation_MainCB(void) {
   RunTasks();
+  AdvanceComfyAnimations();
   AnimateSprites();
   BuildOamBuffer();
   DoScheduledBgTilemapCopiesToVram();
 }
 
-static void Excavation_VBlankCB(void)
-{
+static void ExcavationUi_Shake(u8 taskId) {
+  switch(sExcavationUiState->shakeState) {
+    case 0:
+      MakeCursorInvisible();
+      //gSprites[sExcavationUiState->bRedSpriteIndex].x += 1;
+      //gSprites[sExcavationUiState->bBlueSpriteIndex].x += 1;
+      SetGpuReg(REG_OFFSET_BG3HOFS, 1);
+      SetGpuReg(REG_OFFSET_BG2HOFS, 1);
+      sExcavationUiState->shakeState++;
+      break;
+    case 1:
+      //gSprites[sExcavationUiState->bRedSpriteIndex].y += 1;
+      //gSprites[sExcavationUiState->bBlueSpriteIndex].y += 1;
+      SetGpuReg(REG_OFFSET_BG3VOFS, 1);
+      SetGpuReg(REG_OFFSET_BG2VOFS, 1);
+      gSprites[sExcavationUiState->ShakeHitEffect].invisible = 1;
+      gSprites[sExcavationUiState->ShakeHitTool].invisible = 1;
+      sExcavationUiState->shakeState++;
+      break;
+    case 2:
+      //gSprites[sExcavationUiState->bRedSpriteIndex].x -= 2;
+      //gSprites[sExcavationUiState->bBlueSpriteIndex].x -= 2;
+      SetGpuReg(REG_OFFSET_BG3HOFS, -1);
+      SetGpuReg(REG_OFFSET_BG2HOFS, -1);
+      gSprites[sExcavationUiState->ShakeHitEffect].invisible = 0;
+      gSprites[sExcavationUiState->ShakeHitTool].invisible = 0;
+      sExcavationUiState->shakeState++;
+      break;
+    case 3:
+      //gSprites[sExcavationUiState->bRedSpriteIndex].y -= 2;
+      //gSprites[sExcavationUiState->bBlueSpriteIndex].y -= 2;
+      SetGpuReg(REG_OFFSET_BG3VOFS, -1);
+      SetGpuReg(REG_OFFSET_BG2VOFS, -1);
+      gSprites[sExcavationUiState->ShakeHitEffect].invisible = 1;
+      sExcavationUiState->shakeState++;
+      break;
+    case 4:
+      //gSprites[sExcavationUiState->bRedSpriteIndex].x += 2;
+      //gSprites[sExcavationUiState->bBlueSpriteIndex].x += 2;
+      SetGpuReg(REG_OFFSET_BG3HOFS, 1);
+      SetGpuReg(REG_OFFSET_BG2HOFS, 1);
+      gSprites[sExcavationUiState->ShakeHitEffect].invisible = 0;
+      gSprites[sExcavationUiState->ShakeHitTool].x += 7;
+      StartSpriteAnim(&gSprites[sExcavationUiState->ShakeHitTool], 1);
+      sExcavationUiState->shakeState++;
+      break;
+    case 5:
+      //gSprites[sExcavationUiState->bRedSpriteIndex].y += 2;
+      //gSprites[sExcavationUiState->bBlueSpriteIndex].y += 2;
+      SetGpuReg(REG_OFFSET_BG3VOFS, 1);
+      SetGpuReg(REG_OFFSET_BG2VOFS, 1);
+      gSprites[sExcavationUiState->ShakeHitEffect].invisible = 1;
+      sExcavationUiState->shakeState++;
+      VBlankIntrWait();
+      break;
+    case 6:
+      //gSprites[sExcavationUiState->bRedSpriteIndex].x -= 2;
+      //gSprites[sExcavationUiState->bBlueSpriteIndex].x -= 2;
+      SetGpuReg(REG_OFFSET_BG3HOFS, -1);
+      SetGpuReg(REG_OFFSET_BG2HOFS, -1);
+      gSprites[sExcavationUiState->ShakeHitEffect].invisible = 0;
+      gSprites[sExcavationUiState->ShakeHitTool].invisible = 1;
+      sExcavationUiState->shakeState++;
+      VBlankIntrWait();
+      break;
+    case 7:
+      //gSprites[sExcavationUiState->bRedSpriteIndex].y -= 2;
+      //gSprites[sExcavationUiState->bBlueSpriteIndex].y -= 2;
+      SetGpuReg(REG_OFFSET_BG3VOFS, -1);
+      SetGpuReg(REG_OFFSET_BG2VOFS, -1);
+      gSprites[sExcavationUiState->ShakeHitEffect].invisible = 1;
+      gSprites[sExcavationUiState->ShakeHitTool].invisible = 0;
+      sExcavationUiState->shakeState++;
+      VBlankIntrWait();
+      break;
+    case 8:
+      //gSprites[sExcavationUiState->bRedSpriteIndex].y += 1;
+      //gSprites[sExcavationUiState->bBlueSpriteIndex].y += 1;
+      //gSprites[sExcavationUiState->bRedSpriteIndex].x += 1;
+      //gSprites[sExcavationUiState->bBlueSpriteIndex].x += 1;
+      SetGpuReg(REG_OFFSET_BG3VOFS, 0);
+      SetGpuReg(REG_OFFSET_BG3HOFS, 0);
+      SetGpuReg(REG_OFFSET_BG2HOFS, 0);
+      SetGpuReg(REG_OFFSET_BG2VOFS, 0);
+      gSprites[sExcavationUiState->cursorSpriteIndex].invisible = 0;
+      sExcavationUiState->shakeState = 0;
+      sExcavationUiState->shouldShake = FALSE;
+      DestroySprite(&gSprites[sExcavationUiState->ShakeHitTool]);
+      DestroySprite(&gSprites[sExcavationUiState->ShakeHitEffect]);
+      DestroyTask(taskId);
+      VBlankIntrWait();
+      break;
+  }
+
+  BuildOamBuffer();
+}
+
+static void Excavation_VBlankCB(void) {
   // I discovered that the VBlankCB is actually ran every VBlank. There's no function that can halt it just because of a huge loop or smth
-  // However I discovered that the MainCB can be halted! And that's actually the case. UiShake() delays with huge loops to make the shake
+  // However I discovered that the MainCB can be halted! UiShake() delays with huge loops to make the shake
   // effect visible! Because of this, other tasks cannot run (or other functions) in the same time as UiShake is ran. This makes the fade/flash
   // effect on the items which got dug up, delay by a few `ms`! Because Vblank cannot be halted, we just do the checking, each vblank + there's no lag
   // because of this!
   Excavation_CheckItemFound();
   UpdatePaletteFade();
-
   LoadOam();
   ProcessSpriteCopyRequests();
   TransferPlttBuffer();
 }
 
-static void Excavation_FadeAndBail(void)
-{
+static void Excavation_FadeAndBail(void) {
     BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);
     CreateTask(Task_Excavation_WaitFadeAndBail, 0);
-
-    /*
-     * Set callbacks to ours while we wait for the fade to finish, then our above task will cleanup and swap the
-     * callbacks back to the one we saved earlier (which should re-load the overworld)
-     */
     SetVBlankCallback(Excavation_VBlankCB);
     SetMainCallback2(Excavation_MainCB);
 }
@@ -1210,7 +1452,10 @@ static const struct ItemRarity ItemRarityTable_Uncommon[] = {
 static const struct ItemRarity ItemRarityTable_Rare[] = {
   {ITEMID_STAR_PIECE, RARITY_RARE},
   {ITEMID_DAMP_ROCK, RARITY_RARE},
+  {ITEMID_HEAT_ROCK, RARITY_RARE},
   {ITEMID_REVIVE_MAX, RARITY_RARE},
+  {ITEMID_OVAL_STONE, RARITY_RARE},
+  {ITEMID_LIGHT_CLAY, RARITY_RARE},
 };
 
 static u8 GetRandomItemId() {
@@ -1238,7 +1483,7 @@ static u8 GetRandomItemId() {
       return ItemRarityTable_Uncommon[index].itemId;
       break;
     case RARITY_RARE:
-      index = random(3);
+      index = random(6);
       return ItemRarityTable_Rare[index].itemId;
       break;
   }
@@ -1247,13 +1492,32 @@ static u8 GetRandomItemId() {
   return 0;
 }
 
+
 static void Excavation_LoadSpriteGraphics(void) {
-  u8 i, j;
+  u32 i, j;
   u8 itemId1, itemId2, itemId3, itemId4;
   u16 rnd;
   u32 stonesWillFit[COUNT_ID_STONE];
-  u32 threshold[COUNT_ID_STONE];
   bool32 wasDrawn = FALSE;
+  struct ComfyAnimSpringConfig animConfigX, animConfigY;
+
+  // -- X values --
+  animConfigX.from = Q_24_8(0 + 8);
+  animConfigX.to = Q_24_8(0 + 8);
+  animConfigX.mass = Q_24_8(50);
+  animConfigX.tension = Q_24_8(285);
+  animConfigX.friction = Q_24_8(1150);
+  animConfigX.clampAfter = 0;
+  animConfigX.delayFrames = 0;
+
+  // -- Y values --
+  animConfigY.from = Q_24_8(2 * 16 + 8);
+  animConfigY.to = Q_24_8(2 * 16 + 8);
+  animConfigY.mass = Q_24_8(50);
+  animConfigY.tension = Q_24_8(285);
+  animConfigY.friction = Q_24_8(1150);
+  animConfigY.clampAfter = 0;
+  animConfigY.delayFrames = 0;
 
   LoadSpritePalette(sSpritePal_Cursor);
   LoadCompressedSpriteSheet(sSpriteSheet_Cursor);
@@ -1297,14 +1561,6 @@ static void Excavation_LoadSpriteGraphics(void) {
     DebugPrintf("item %d buried",4);
   }
 
-    threshold[0] = STONE_1x4_THRESHOLD;
-    threshold[1] = STONE_4x1_THRESHOLD;
-    threshold[2] = STONE_2x4_THRESHOLD;
-    threshold[3] = STONE_4x2_THRESHOLD;
-    threshold[4] = STONE_2x2_THRESHOLD;
-    threshold[5] = STONE_3x3_THRESHOLD;
-    threshold[6] = 0;
-
   // TODO: Change this randomness by using my new `random(u32 amount);` function!
   for (i=0; i<COUNT_MAX_NUMBER_STONES; i++) {
     rnd = Random();
@@ -1316,10 +1572,11 @@ static void Excavation_LoadSpriteGraphics(void) {
     //rnd should pull from that temp array when using doDrawRandomStone
     //if rnd rolls a stone that's not in the tempArray, roll again
 
-    for (j=0;j < COUNT_ID_STONE; j++){
-        if (rnd < threshold[j]){
-            DoDrawRandomStone(ID_STONE_1x4 + j);
-            DebugPrintf("stone %d printed for iteration %d",(ID_STONE_1x4 + j),i);
+    for (j=ID_STONE_1x4;j < COUNT_ID_STONE; j++){
+        DebugPrintf("rnd is %d vs threshold of %d",rnd,ExcavationStoneList[j].threshold);
+        if (rnd < ExcavationStoneList[j].threshold){
+            DoDrawRandomStone(j);
+            DebugPrintf("stone %d printed for iteration %d",(ID_STONE_1x4),i);
             wasDrawn = TRUE;
             break;
         }
@@ -1331,6 +1588,9 @@ static void Excavation_LoadSpriteGraphics(void) {
   sExcavationUiState->cursorSpriteIndex = CreateSprite(&gSpriteCursor, 8, 40, 0);
   sExcavationUiState->cursorX = 0;
   sExcavationUiState->cursorY = 2;
+  gSprites[sExcavationUiState->cursorSpriteIndex].data[COMFY_X] = CreateComfyAnim_Spring(&animConfigX);
+  gSprites[sExcavationUiState->cursorSpriteIndex].data[COMFY_Y] = CreateComfyAnim_Spring(&animConfigY);
+
   sExcavationUiState->bRedSpriteIndex = CreateSprite(&gSpriteButtonRed, 217,78,0);
   sExcavationUiState->bBlueSpriteIndex = CreateSprite(&gSpriteButtonBlue, 217,138,1);
   sExcavationUiState->mode = 0;
@@ -1355,42 +1615,43 @@ static void Task_ExcavationWaitFadeIn(u8 taskId) {
 #define RED_BUTTON 1
 
 static void Task_ExcavationMainInput(u8 taskId) {
+    if (gMain.newKeys & A_BUTTON && !sExcavationUiState->shouldShake /*&& sExcavationUiState->crackPos < 8 */)  {
+        Excavation_UpdateTerrain();
+        Excavation_UpdateCracks();
+        ScheduleBgCopyTilemapToVram(2);
+        DoScheduledBgTilemapCopiesToVram();
+        BuildOamBuffer();
 
-  // Because the UiShake function does manual delays with for loops, we have to imediatly call the update functions for sprites and the schedule
-  // functions for bgs. Otherwise we would notice the changes very late
-  if (gMain.newKeys & A_BUTTON /*&& sExcavationUiState->crackPos < 8 */)  {
-    Excavation_UpdateTerrain();
-    Excavation_UpdateCracks();
-    ScheduleBgCopyTilemapToVram(2);
-    DoScheduledBgTilemapCopiesToVram();
-    BuildOamBuffer();
-    UiShake();
-    //delay(8000);
-  }
+        if (sExcavationUiState->mode == 1) {
+            sExcavationUiState->ShakeHitEffect = CreateSprite(&gSpriteHitEffectHammer, (sExcavationUiState->cursorX*16)+8, (sExcavationUiState->cursorY*16)+8, 0);
+            sExcavationUiState->ShakeHitTool = CreateSprite(&gSpriteHitHammer, (sExcavationUiState->cursorX*16)+24, sExcavationUiState->cursorY*16, 0);
+        } else {
+            sExcavationUiState->ShakeHitEffect = CreateSprite(&gSpriteHitEffectPickaxe, (sExcavationUiState->cursorX*16)+8, (sExcavationUiState->cursorY*16)+8, 0);
+            sExcavationUiState->ShakeHitTool = CreateSprite(&gSpriteHitPickaxe, (sExcavationUiState->cursorX*16)+24, sExcavationUiState->cursorY*16, 0);
+        }
+        sExcavationUiState->shouldShake = TRUE;
+        CreateTask(ExcavationUi_Shake, 0);
+    }
 
-  else if (gMain.newAndRepeatedKeys & DPAD_LEFT && CURSOR_SPRITE.x > 8) {
-    CURSOR_SPRITE.x -= 16;
-    sExcavationUiState->cursorX -= 1;
-  } else if (gMain.newAndRepeatedKeys & DPAD_RIGHT && CURSOR_SPRITE.x < 184) {
-    CURSOR_SPRITE.x += 16;
-    sExcavationUiState->cursorX += 1;
-  } else if (gMain.newAndRepeatedKeys & DPAD_UP && CURSOR_SPRITE.y > 46) {
-    CURSOR_SPRITE.y -= 16;
-    sExcavationUiState->cursorY -= 1;
-  } else if (gMain.newAndRepeatedKeys & DPAD_DOWN && CURSOR_SPRITE.y < 151) {
-    CURSOR_SPRITE.y += 16;
-    sExcavationUiState->cursorY += 1;
-  }
+    else if (gMain.newAndRepeatedKeys & DPAD_LEFT && sExcavationUiState->cursorX > 0) {
+        sExcavationUiState->cursorX -= 1;
+    } else if (gMain.newAndRepeatedKeys & DPAD_RIGHT && sExcavationUiState->cursorX < 11) {
+        sExcavationUiState->cursorX += 1;
+    } else if (gMain.newAndRepeatedKeys & DPAD_UP && sExcavationUiState->cursorY > 2) {
+        sExcavationUiState->cursorY -= 1;
+    } else if (gMain.newAndRepeatedKeys & DPAD_DOWN && sExcavationUiState->cursorY < 9) {
+        sExcavationUiState->cursorY += 1;
+    }
 
-  else if (gMain.newAndRepeatedKeys & R_BUTTON) {
-    StartSpriteAnim(&gSprites[sExcavationUiState->bRedSpriteIndex], 1);
-    StartSpriteAnim(&gSprites[sExcavationUiState->bBlueSpriteIndex],1);
-    sExcavationUiState->mode = RED_BUTTON;
-  } else if (gMain.newAndRepeatedKeys & L_BUTTON) {
-    StartSpriteAnim(&gSprites[sExcavationUiState->bRedSpriteIndex], 0);
-    StartSpriteAnim(&gSprites[sExcavationUiState->bBlueSpriteIndex], 0);
-    sExcavationUiState->mode = BLUE_BUTTON;
-  }
+    else if (gMain.newAndRepeatedKeys & R_BUTTON) {
+        StartSpriteAnim(&gSprites[sExcavationUiState->bRedSpriteIndex], 1);
+        StartSpriteAnim(&gSprites[sExcavationUiState->bBlueSpriteIndex],1);
+        sExcavationUiState->mode = RED_BUTTON;
+    } else if (gMain.newAndRepeatedKeys & L_BUTTON) {
+      StartSpriteAnim(&gSprites[sExcavationUiState->bRedSpriteIndex], 0);
+        StartSpriteAnim(&gSprites[sExcavationUiState->bBlueSpriteIndex], 0);
+        sExcavationUiState->mode = BLUE_BUTTON;
+    }
 
 	if (AreAllItemsFound())
 		EndMining(taskId);
@@ -1410,7 +1671,7 @@ static void OverwriteTileDataInTilemapBuffer(u8 tile, u8 x, u8 y, u16* tilemapBu
 // DO NOT TOUCH ANY OF THE CRACK UPDATE FUNCTIONS!!!!! GENERATION IS TOO COMPLICATED TO GET FIXED! (most likely will forget everything lmao (thats why)! )!
 //
 // Each function represent one frame of a crack, but why are there two offset vars?????
-// Well there's `ofs` for telling how much to the left the next crack goes, (cracks are splite up by seven of these 32x32 `sprites`) (Cracks start at the end, so 23 is the first tile.);
+// Well there's `ofs` for telling how much to the left the next crack goes, (cracks are split up by seven of these 32x32 `sprites`) (Cracks start at the end, so 23 is the first tile.);
 //
 // `ofs2` tells how far the tile should move to the right side. Thats because the cracks dont really line up each other.
 // So you cant put one 32x32 `sprite` (calling them sprites) right next to another 32x32 `sprite`. To align the next `sprite` so it looks right, we have to offset the next `sprite` by 8 pixels or 1 tile.
@@ -1620,7 +1881,7 @@ static void Terrain_DrawLayerTileToScreen(u8 x, u8 y, u8 layer, u16* ptr) {
   u8 tileY = y;
 
   // Idk why tf I am doing the checking
-  // TODO: Change this \/
+  // TODO: Change this
   if (x == 0) {
     tileX = 0;
   } else {
@@ -1674,6 +1935,7 @@ static void Terrain_DrawLayerTileToScreen(u8 x, u8 y, u8 layer, u16* ptr) {
   }
 }
 
+// TODO: Turn this into a table
 static const u16* GetCorrectPalette(u32 TileTag) {
   switch (TileTag) {
     case TAG_ITEM_REVIVE:
@@ -1705,6 +1967,15 @@ static const u16* GetCorrectPalette(u32 TileTag) {
       break;
     case TAG_ITEM_STAR_PIECE:
       return gItemStarPiecePal;
+      break;
+    case TAG_ITEM_OVAL_STONE:
+      return gItemOvalStonePal;
+      break;
+    case TAG_ITEM_LIGHT_CLAY:
+      return gItemLightClayPal;
+      break;
+    case TAG_ITEM_HEAT_ROCK:
+      return gItemHeatRockPal;
       break;
   }
 }
@@ -1787,198 +2058,185 @@ static void DrawItemSprite(u8 x, u8 y, u8 itemId, u32 itemNumPalTag) {
       LoadCompressedSpriteSheet(sSpriteSheet_Stone3x3);
       CreateSprite(&gSpriteStone3x3, posX+POS_OFFS_64X64, posY+POS_OFFS_64X64, 3);
       break;
-    case ITEMID_HEART_SCALE:
-      gSpriteTemplate = CreatePaletteAndReturnTemplate(TAG_ITEM_HEARTSCALE, itemNumPalTag);
-      LoadCompressedSpriteSheet(sSpriteSheet_ItemHeartScale);
-      CreateSprite(&gSpriteTemplate, posX+POS_OFFS_64X64, posY+POS_OFFS_64X64, 3);
-      break;
-    case ITEMID_HARD_STONE:
-      gSpriteTemplate = CreatePaletteAndReturnTemplate(TAG_ITEM_HARDSTONE, itemNumPalTag);
-      LoadCompressedSpriteSheet(sSpriteSheet_ItemHardStone);
-      CreateSprite(&gSpriteTemplate, posX+POS_OFFS_64X64, posY+POS_OFFS_64X64, 3);
-      break;
-    case ITEMID_REVIVE:
-      gSpriteTemplate = CreatePaletteAndReturnTemplate(TAG_ITEM_REVIVE, itemNumPalTag);
-      LoadCompressedSpriteSheet(sSpriteSheet_ItemRevive);
-      CreateSprite(&gSpriteTemplate, posX+POS_OFFS_64X64, posY+POS_OFFS_64X64, 3);
-      break;
-    case ITEMID_STAR_PIECE:
-      gSpriteTemplate = CreatePaletteAndReturnTemplate(TAG_ITEM_STAR_PIECE, itemNumPalTag);
-      LoadCompressedSpriteSheet(sSpriteSheet_ItemStarPiece);
-      CreateSprite(&gSpriteTemplate, posX+POS_OFFS_64X64, posY+POS_OFFS_64X64, 3);
-      break;
-    case ITEMID_DAMP_ROCK:
-      gSpriteTemplate = CreatePaletteAndReturnTemplate(TAG_ITEM_DAMP_ROCK, itemNumPalTag);
-      LoadCompressedSpriteSheet(sSpriteSheet_ItemDampRock);
-      CreateSprite(&gSpriteTemplate, posX+POS_OFFS_64X64, posY+POS_OFFS_64X64, 3);
-      break;
-    case ITEMID_RED_SHARD:
-      gSpriteTemplate = CreatePaletteAndReturnTemplate(TAG_ITEM_RED_SHARD, itemNumPalTag);
-      LoadCompressedSpriteSheet(sSpriteSheet_ItemRedShard);
-      CreateSprite(&gSpriteTemplate, posX+POS_OFFS_64X64, posY+POS_OFFS_64X64, 3);
-      break;
-    case ITEMID_BLUE_SHARD:
-      gSpriteTemplate = CreatePaletteAndReturnTemplate(TAG_ITEM_BLUE_SHARD, itemNumPalTag);
-      LoadCompressedSpriteSheet(sSpriteSheet_ItemBlueShard);
-      CreateSprite(&gSpriteTemplate, posX+POS_OFFS_64X64, posY+POS_OFFS_64X64, 3);
-      break;
-    case ITEMID_IRON_BALL:
-      gSpriteTemplate = CreatePaletteAndReturnTemplate(TAG_ITEM_IRON_BALL, itemNumPalTag);
-      LoadCompressedSpriteSheet(sSpriteSheet_ItemIronBall);
-      CreateSprite(&gSpriteTemplate, posX+POS_OFFS_64X64, posY+POS_OFFS_64X64, 3);
-      break;
-    case ITEMID_REVIVE_MAX:
-      gSpriteTemplate = CreatePaletteAndReturnTemplate(TAG_ITEM_REVIVE_MAX, itemNumPalTag);
-      LoadCompressedSpriteSheet(sSpriteSheet_ItemReviveMax);
-      CreateSprite(&gSpriteTemplate, posX+POS_OFFS_64X64, posY+POS_OFFS_64X64, 3);
-      break;
-    case ITEMID_EVER_STONE:
-      gSpriteTemplate = CreatePaletteAndReturnTemplate(TAG_ITEM_EVER_STONE, itemNumPalTag);
-      LoadCompressedSpriteSheet(sSpriteSheet_ItemEverStone);
+    default: // If Item and not Stone
+      gSpriteTemplate = CreatePaletteAndReturnTemplate(ExcavationItemList[itemId].tag, itemNumPalTag);
+      LoadCompressedSpriteSheet(ExcavationItemList[itemId].sheet);
       CreateSprite(&gSpriteTemplate, posX+POS_OFFS_64X64, posY+POS_OFFS_64X64, 3);
       break;
   }
 }
 
+// Defines && Macros
+static void SetItemState(u32 posX, u32 posY, u32 x, u32 y, u32 itemStateId) {
+  sExcavationUiState->itemMap[posX + x + (posY + y) * 12] = itemStateId;
+}
+
+#define OIMD_2x2 SetItemState(posX, posY, 0, 0, itemStateId); \
+                 SetItemState(posX, posY, 1, 0, itemStateId); \
+                 SetItemState(posX, posY, 0, 1, itemStateId); \
+                 SetItemState(posX, posY, 1, 1, itemStateId);
+
+#define OIMD_3x3 OIMD_2x2 \
+                 SetItemState(posX, posY, 2, 0, itemStateId); \
+                 SetItemState(posX, posY, 2, 1, itemStateId); \
+                 SetItemState(posX, posY, 2, 2, itemStateId); \
+                 SetItemState(posX, posY, 0, 2, itemStateId); \
+                 SetItemState(posX, posY, 1, 2, itemStateId);
+
+#define OIMD_3x3_PLUS SetItemState(posX, posY, 1, 1, itemStateId); \
+                      SetItemState(posX, posY, 1, 0, itemStateId); \
+                      SetItemState(posX, posY, 0, 1, itemStateId); \
+                      SetItemState(posX, posY, 1, 2, itemStateId); \
+                      SetItemState(posX, posY, 2, 1, itemStateId);
+
 static void OverwriteItemMapData(u8 posX, u8 posY, u8 itemStateId, u8 itemId) {
   switch (itemId) {
     case ID_STONE_1x4:
-      sExcavationUiState->itemMap[posX + posY * 12]           = itemStateId;
-      sExcavationUiState->itemMap[posX + (posY + 1) * 12]     = itemStateId;
-      sExcavationUiState->itemMap[posX + (posY + 2) * 12]     = itemStateId;
-      sExcavationUiState->itemMap[posX + (posY + 3) * 12]     = itemStateId;
+      SetItemState(posX, posY, 0, 0, itemStateId);
+      SetItemState(posX, posY, 0, 1, itemStateId);
+      SetItemState(posX, posY, 0, 2, itemStateId);
+      SetItemState(posX, posY, 0, 3, itemStateId);
       break;
     case ID_STONE_4x1:
-      sExcavationUiState->itemMap[posX + posY * 12]           = itemStateId;
-      sExcavationUiState->itemMap[posX + 1 + posY * 12]       = itemStateId;
-      sExcavationUiState->itemMap[posX + 2 + posY * 12]       = itemStateId;
-      sExcavationUiState->itemMap[posX + 3 + posY * 12]       = itemStateId;
+      SetItemState(posX, posY, 0, 0, itemStateId);
+      SetItemState(posX, posY, 1, 0, itemStateId);
+      SetItemState(posX, posY, 2, 0, itemStateId);
+      SetItemState(posX, posY, 3, 0, itemStateId);
       break;
     case ID_STONE_2x4:
-      sExcavationUiState->itemMap[posX + posY * 12]           = itemStateId;
-      sExcavationUiState->itemMap[posX + (posY + 1) * 12]     = itemStateId;
-      sExcavationUiState->itemMap[posX + (posY + 2) * 12]     = itemStateId;
-      sExcavationUiState->itemMap[posX + (posY + 3) * 12]     = itemStateId;
-      sExcavationUiState->itemMap[posX + 1 + posY * 12]       = itemStateId;
-      sExcavationUiState->itemMap[posX + 1 + (posY + 1) * 12] = itemStateId;
-      sExcavationUiState->itemMap[posX + 1 + (posY + 2) * 12] = itemStateId;
-      sExcavationUiState->itemMap[posX + 1 + (posY + 3) * 12] = itemStateId;
+      OIMD_2x2
+      SetItemState(posX, posY, 0, 2, itemStateId);
+      SetItemState(posX, posY, 0, 3, itemStateId);
+      SetItemState(posX, posY, 1, 2, itemStateId);
+      SetItemState(posX, posY, 1, 3, itemStateId);
       break;
     case ID_STONE_4x2:
-      sExcavationUiState->itemMap[posX + posY * 12]           = itemStateId;
-      sExcavationUiState->itemMap[posX + 1 + posY * 12]       = itemStateId;
-      sExcavationUiState->itemMap[posX + 2 + posY * 12]       = itemStateId;
-      sExcavationUiState->itemMap[posX + 3 + posY * 12]       = itemStateId;
-      sExcavationUiState->itemMap[posX + (posY + 1) * 12]     = itemStateId;
-      sExcavationUiState->itemMap[posX + 1 + (posY + 1) * 12] = itemStateId;
-      sExcavationUiState->itemMap[posX + 2 + (posY + 1) * 12] = itemStateId;
-      sExcavationUiState->itemMap[posX + 3 + (posY + 1) * 12] = itemStateId;
+      OIMD_2x2
+      SetItemState(posX, posY, 2, 0, itemStateId);
+      SetItemState(posX, posY, 3, 0, itemStateId);
+      SetItemState(posX, posY, 2, 1, itemStateId);
+      SetItemState(posX, posY, 3, 1, itemStateId);
       break;
     case ID_STONE_2x2:
-      sExcavationUiState->itemMap[posX + posY * 12]           = itemStateId;
-      sExcavationUiState->itemMap[posX + (posY + 1) * 12]     = itemStateId;
-      sExcavationUiState->itemMap[posX + 1 + posY * 12]       = itemStateId;
-      sExcavationUiState->itemMap[posX + 1 + (posY + 1) * 12] = itemStateId;
+      OIMD_2x2
       break;
      case ID_STONE_3x3:
-      sExcavationUiState->itemMap[posX + posY * 12]           = itemStateId;
-      sExcavationUiState->itemMap[posX + (posY + 1) * 12]     = itemStateId;
-      sExcavationUiState->itemMap[posX + 1 + posY * 12]       = itemStateId;
-      sExcavationUiState->itemMap[posX + 1 + (posY + 1) * 12] = itemStateId;
-      sExcavationUiState->itemMap[posX + (posY + 2) * 12]     = itemStateId;
-      sExcavationUiState->itemMap[posX + 1 + (posY + 2) * 12] = itemStateId;
-      sExcavationUiState->itemMap[posX + 2 + (posY + 2) * 12] = itemStateId;
-      sExcavationUiState->itemMap[posX + 2 + (posY + 1) * 12] = itemStateId;
-      sExcavationUiState->itemMap[posX + 2 + posY * 12]       = itemStateId;
+      OIMD_3x3
       break;
     case ITEMID_HEART_SCALE:
-      sExcavationUiState->itemMap[posX + posY * 12]           = itemStateId;
-      sExcavationUiState->itemMap[posX + (posY + 1) * 12]     = itemStateId;
-      sExcavationUiState->itemMap[posX + 1 + (posY + 1) * 12] = itemStateId;
+      SetItemState(posX, posY, 0, 0, itemStateId);
+      SetItemState(posX, posY, 0, 1, itemStateId);
+      SetItemState(posX, posY, 1, 1, itemStateId);
       break;
     case ITEMID_HARD_STONE:
-      sExcavationUiState->itemMap[posX + posY * 12]           = itemStateId;
-      sExcavationUiState->itemMap[posX + 1 + posY * 12]       = itemStateId;
-      sExcavationUiState->itemMap[posX + (posY + 1) * 12]     = itemStateId;
-      sExcavationUiState->itemMap[posX + 1 + (posY + 1) * 12] = itemStateId;
+      OIMD_2x2
       break;
     case ITEMID_REVIVE:
-      sExcavationUiState->itemMap[posX + 1 + (posY + 1) * 12] = itemStateId;
-      sExcavationUiState->itemMap[posX + 1 + posY * 12]       = itemStateId;
-      sExcavationUiState->itemMap[posX + (posY + 1) * 12]     = itemStateId;
-      sExcavationUiState->itemMap[posX + 2 + (posY + 1) * 12] = itemStateId;
-      sExcavationUiState->itemMap[posX + 1 + (posY + 2) * 12] = itemStateId;
+      OIMD_3x3_PLUS
       break;
     case ITEMID_STAR_PIECE:
-      sExcavationUiState->itemMap[posX + 1 + (posY + 1) * 12] = itemStateId;
-      sExcavationUiState->itemMap[posX + 1 + posY * 12]       = itemStateId;
-      sExcavationUiState->itemMap[posX + (posY + 1) * 12]     = itemStateId;
-      sExcavationUiState->itemMap[posX + 2 + (posY + 1) * 12] = itemStateId;
-      sExcavationUiState->itemMap[posX + 1 + (posY + 2) * 12] = itemStateId;
+      OIMD_3x3_PLUS
       break;
     case ITEMID_DAMP_ROCK:
-      sExcavationUiState->itemMap[posX + 1 + (posY + 1) * 12] = itemStateId;
-      sExcavationUiState->itemMap[posX + 1 + posY * 12]       = itemStateId;
-      sExcavationUiState->itemMap[posX + (posY + 1) * 12]     = itemStateId;
-      sExcavationUiState->itemMap[posX + 2 + (posY + 1) * 12] = itemStateId;
-      sExcavationUiState->itemMap[posX + posY * 12]           = itemStateId;
-      sExcavationUiState->itemMap[posX + 2 + posY * 12]       = itemStateId;
-      sExcavationUiState->itemMap[posX + (posY + 2) * 12]     = itemStateId;
-      sExcavationUiState->itemMap[posX + 2 + (posY + 2) * 12] = itemStateId;
+      OIMD_2x2
+      SetItemState(posX, posY, 2, 1, itemStateId);
+      SetItemState(posX, posY, 2, 0, itemStateId);
+      SetItemState(posX, posY, 0, 2, itemStateId);
+      SetItemState(posX, posY, 2, 2, itemStateId);
       break;
     case ITEMID_RED_SHARD:
-      sExcavationUiState->itemMap[posX + 1 + (posY + 1) * 12] = itemStateId;
-      sExcavationUiState->itemMap[posX + 1 + posY * 12]       = itemStateId;
-      sExcavationUiState->itemMap[posX + (posY + 1) * 12]     = itemStateId;
-      sExcavationUiState->itemMap[posX + 1 + (posY + 2) * 12] = itemStateId;
-      sExcavationUiState->itemMap[posX + posY * 12]           = itemStateId;
-      sExcavationUiState->itemMap[posX + 2 + posY * 12]       = itemStateId;
-      sExcavationUiState->itemMap[posX + (posY + 2) * 12]     = itemStateId;
-      sExcavationUiState->itemMap[posX + 2 + (posY + 2) * 12] = itemStateId;
+      OIMD_2x2
+      SetItemState(posX, posY, 1, 2, itemStateId);
+      SetItemState(posX, posY, 2, 0, itemStateId);
+      SetItemState(posX, posY, 0, 2, itemStateId);
+      SetItemState(posX, posY, 2, 2, itemStateId);
       break;
     case ITEMID_BLUE_SHARD:
-      sExcavationUiState->itemMap[posX + 1 + (posY + 1) * 12] = itemStateId;
-      sExcavationUiState->itemMap[posX + 1 + posY * 12]       = itemStateId;
-      sExcavationUiState->itemMap[posX + (posY + 1) * 12]     = itemStateId;
-      sExcavationUiState->itemMap[posX + 2 + (posY + 1) * 12] = itemStateId;
-      sExcavationUiState->itemMap[posX + 1 + (posY + 2) * 12] = itemStateId;
-      sExcavationUiState->itemMap[posX + posY * 12]           = itemStateId;
-      sExcavationUiState->itemMap[posX + 2 + posY * 12]       = itemStateId;
-      sExcavationUiState->itemMap[posX + (posY + 2) * 12]     = itemStateId;
+      OIMD_3x3_PLUS
+      SetItemState(posX, posY, 0, 0, itemStateId);
+      SetItemState(posX, posY, 2, 0, itemStateId);
+      SetItemState(posX, posY, 0, 2, itemStateId);
       break;
     case ITEMID_IRON_BALL:
-      sExcavationUiState->itemMap[posX + 1 + (posY + 1) * 12] = itemStateId;
-      sExcavationUiState->itemMap[posX + 1 + posY * 12]       = itemStateId;
-      sExcavationUiState->itemMap[posX + (posY + 1) * 12]     = itemStateId;
-      sExcavationUiState->itemMap[posX + 2 + (posY + 1) * 12] = itemStateId;
-      sExcavationUiState->itemMap[posX + 1 + (posY + 2) * 12] = itemStateId;
-      sExcavationUiState->itemMap[posX + posY * 12]           = itemStateId;
-      sExcavationUiState->itemMap[posX + 2 + posY * 12]       = itemStateId;
-      sExcavationUiState->itemMap[posX + (posY + 2) * 12]     = itemStateId;
-      sExcavationUiState->itemMap[posX + 2 + (posY + 2) * 12] = itemStateId;
+      OIMD_3x3
       break;
     case ITEMID_REVIVE_MAX:
-      sExcavationUiState->itemMap[posX + 1 + (posY + 1) * 12] = itemStateId;
-      sExcavationUiState->itemMap[posX + 1 + posY * 12]       = itemStateId;
-      sExcavationUiState->itemMap[posX + (posY + 1) * 12]     = itemStateId;
-      sExcavationUiState->itemMap[posX + 2 + (posY + 1) * 12] = itemStateId;
-      sExcavationUiState->itemMap[posX + 1 + (posY + 2) * 12] = itemStateId;
-      sExcavationUiState->itemMap[posX + posY * 12]           = itemStateId;
-      sExcavationUiState->itemMap[posX + 2 + posY * 12]       = itemStateId;
-      sExcavationUiState->itemMap[posX + (posY + 2) * 12]     = itemStateId;
-      sExcavationUiState->itemMap[posX + 2 + (posY + 2) * 12] = itemStateId;
+      OIMD_3x3
       break;
     case ITEMID_EVER_STONE:
-      sExcavationUiState->itemMap[posX + posY * 12]           = itemStateId;
-      sExcavationUiState->itemMap[posX + 1 + posY * 12]       = itemStateId;
-      sExcavationUiState->itemMap[posX + 2 + posY * 12]       = itemStateId;
-      sExcavationUiState->itemMap[posX + 3 + posY * 12]       = itemStateId;
-      sExcavationUiState->itemMap[posX + (posY + 1) * 12]     = itemStateId;
-      sExcavationUiState->itemMap[posX + 1 + (posY + 1) * 12] = itemStateId;
-      sExcavationUiState->itemMap[posX + 2 + (posY + 1) * 12] = itemStateId;
-      sExcavationUiState->itemMap[posX + 3 + (posY + 1) * 12] = itemStateId;
+      OIMD_2x2
+      SetItemState(posX, posY, 2, 0, itemStateId);
+      SetItemState(posX, posY, 3, 0, itemStateId);
+      SetItemState(posX, posY, 2, 1, itemStateId);
+      SetItemState(posX, posY, 3, 1, itemStateId);
+      break;
+    case ITEMID_OVAL_STONE:
+      OIMD_3x3
+      break;
+    case ITEMID_LIGHT_CLAY:
+      SetItemState(posX, posY, 0, 0, itemStateId);
+      SetItemState(posX, posY, 0, 1, itemStateId);
+      SetItemState(posX, posY, 0, 2, itemStateId);
+      SetItemState(posX, posY, 1, 1, itemStateId);
+      SetItemState(posX, posY, 1, 2, itemStateId);
+      SetItemState(posX, posY, 1, 3, itemStateId);
+      SetItemState(posX, posY, 2, 0, itemStateId);
+      SetItemState(posX, posY, 2, 1, itemStateId);
+      SetItemState(posX, posY, 2, 2, itemStateId);
+      SetItemState(posX, posY, 3, 2, itemStateId);
+      SetItemState(posX, posY, 3, 3, itemStateId);
+      break;
+    case ITEMID_HEAT_ROCK:
+      SetItemState(posX, posY, 0, 0, itemStateId);
+      SetItemState(posX, posY, 0, 1, itemStateId);
+      SetItemState(posX, posY, 0, 2, itemStateId);
+      SetItemState(posX, posY, 1, 1, itemStateId);
+      SetItemState(posX, posY, 1, 2, itemStateId);
+      SetItemState(posX, posY, 2, 0, itemStateId);
+      SetItemState(posX, posY, 2, 1, itemStateId);
+      SetItemState(posX, posY, 2, 2, itemStateId);
+      SetItemState(posX, posY, 3, 1, itemStateId);
+      SetItemState(posX, posY, 3, 2, itemStateId);
       break;
   }
+}
+
+// Defines && Macros
+#define BORDERCHECK_COND(itemId) posX + ExcavationItemList[(itemId)].left > xBorder || \
+                                 posY + ExcavationItemList[(itemId)].top > yBorder
+
+static bool32 ItemStateCondition(u32 posX, u32 posY, u32 x, u32 y, u32 i) {
+  return (sExcavationUiState->itemMap[posX + (x) + (posY + (y)) * 12] == i);
+}
+
+static bool32 ItemPlaceable_Cond_2x2(u32 posX, u32 posY, u32 i) {
+  return (
+    ItemStateCondition(posX, posY, 0, 0, i) ||
+    ItemStateCondition(posX, posY, 0, 1, i) ||
+    ItemStateCondition(posX, posY, 1, 0, i) ||
+    ItemStateCondition(posX, posY, 1, 1, i)
+  );
+}
+
+static bool32 ItemPlaceable_Cond_3x3(u32 posX, u32 posY, u32 i) {
+  return (
+    ItemPlaceable_Cond_2x2(posX, posY, i) ||
+    ItemStateCondition(posX, posY, 2, 0, i) ||
+    ItemStateCondition(posX, posY, 2, 1, i) ||
+    ItemStateCondition(posX, posY, 2, 2, i) ||
+    ItemStateCondition(posX, posY, 0, 2, i) ||
+    ItemStateCondition(posX, posY, 1, 2, i)
+  );
+}
+
+static bool32 ItemPlaceable_Cond_3x3_Plus(u32 posX, u32 posY, u32 i) {
+  return (
+    ItemStateCondition(posX, posY, 1, 1, i) ||
+    ItemStateCondition(posX, posY, 0, 1, i) ||
+    ItemStateCondition(posX, posY, 1, 0, i) ||
+    ItemStateCondition(posX, posY, 2, 1, i) ||
+    ItemStateCondition(posX, posY, 1, 2, i)
+  );
 }
 
 // This function is used to determine wether an item should be placed or not.
@@ -1998,132 +2256,118 @@ static u8 CheckIfItemCanBePlaced(u8 itemId, u8 posX, u8 posY, u8 xBorder, u8 yBo
     switch (itemId) {
       case ITEMID_HEART_SCALE:
         if (
-          sExcavationUiState->itemMap[posX + posY * 12]           == i ||
-          sExcavationUiState->itemMap[posX + (posY + 1) * 12]     == i ||
-          sExcavationUiState->itemMap[posX + 1 + (posY + 1) * 12] == i ||
-          posX + HEART_SCALE_TILE_AMOUNT_RIGHT > xBorder ||
-          posY + HEART_SCALE_TILE_AMOUNT_BOTTOM > yBorder
+          ItemStateCondition(posX, posY, 0, 0, i) ||
+          ItemStateCondition(posX, posY, 0, 1, i) ||
+          ItemStateCondition(posX, posY, 1, 1, i) ||
+          BORDERCHECK_COND(itemId)
         ) { return 0;}
         break;
       case ITEMID_HARD_STONE:
         if (
-          sExcavationUiState->itemMap[posX + posY * 12]           == i ||
-          sExcavationUiState->itemMap[posX + 1 + posY * 12]       == i ||
-          sExcavationUiState->itemMap[posX + (posY + 1) * 12]     == i ||
-          sExcavationUiState->itemMap[posX + 1 + (posY + 1) * 12] == i ||
-          posX + HARD_STONE_TILE_AMOUNT_RIGHT > xBorder ||
-          posY + HARD_STONE_TILE_AMOUNT_BOTTOM > yBorder
+          ItemPlaceable_Cond_2x2(posX, posY, i) ||
+          BORDERCHECK_COND(itemId)
         ) {return 0;}
         break;
       case ITEMID_REVIVE:
         if (
-          sExcavationUiState->itemMap[posX + 1 + (posY + 1) * 12] == i ||
-          sExcavationUiState->itemMap[posX + 1 + posY * 12]       == i ||
-          sExcavationUiState->itemMap[posX + (posY + 1) * 12]     == i ||
-          sExcavationUiState->itemMap[posX + 2 + (posY + 1) * 12] == i ||
-          sExcavationUiState->itemMap[posX + 1 + (posY + 2) * 12] == i ||
-          posX + REVIVE_TILE_AMOUNT_RIGHT > xBorder ||
-          posY + REVIVE_TILE_AMOUNT_BOTTOM > yBorder
+          ItemPlaceable_Cond_3x3_Plus(posX, posY, i) ||
+          BORDERCHECK_COND(itemId)
         ) {return 0;}
         break;
       case ITEMID_STAR_PIECE:
         if (
-          sExcavationUiState->itemMap[posX + 1 + (posY + 1) * 12] == i ||
-          sExcavationUiState->itemMap[posX + 1 + posY * 12]       == i ||
-          sExcavationUiState->itemMap[posX + (posY + 1) * 12]     == i ||
-          sExcavationUiState->itemMap[posX + 2 + (posY + 1) * 12] == i ||
-          sExcavationUiState->itemMap[posX + 1 + (posY + 2) * 12] == i ||
-          posX + STAR_PIECE_TILE_AMOUNT_RIGHT > xBorder ||
-          posY + STAR_PIECE_TILE_AMOUNT_BOTTOM > yBorder
+          ItemPlaceable_Cond_3x3_Plus(posX, posY, i) ||
+          BORDERCHECK_COND(itemId)
         ) {return 0;}
         break;
       case ITEMID_DAMP_ROCK:
         if (
-          sExcavationUiState->itemMap[posX + 1 + (posY + 1) * 12] == i ||
-          sExcavationUiState->itemMap[posX + 1 + posY * 12]       == i ||
-          sExcavationUiState->itemMap[posX + (posY + 1) * 12]     == i ||
-          sExcavationUiState->itemMap[posX + 2 + (posY + 1) * 12] == i ||
-          sExcavationUiState->itemMap[posX + posY * 12]           == i ||
-          sExcavationUiState->itemMap[posX + 2 + posY * 12]       == i ||
-          sExcavationUiState->itemMap[posX + (posY + 2) * 12]     == i ||
-          sExcavationUiState->itemMap[posX + 2 + (posY + 2) * 12] == i ||
-          posX + DAMP_ROCK_TILE_AMOUNT_RIGHT > xBorder ||
-          posY + DAMP_ROCK_TILE_AMOUNT_BOTTOM > yBorder
+          ItemPlaceable_Cond_2x2(posX, posY, i) ||
+          ItemStateCondition(posX, posY, 2, 1, i) ||
+          ItemStateCondition(posX, posY, 2, 0, i) ||
+          ItemStateCondition(posX, posY, 0, 2, i) ||
+          ItemStateCondition(posX, posY, 2, 2, i) ||
+          BORDERCHECK_COND(itemId)
         ) {return 0;}
         break;
       case ITEMID_RED_SHARD:
         if (
-          sExcavationUiState->itemMap[posX + 1 + (posY + 1) * 12] == i ||
-          sExcavationUiState->itemMap[posX + 1 + posY * 12]       == i ||
-          sExcavationUiState->itemMap[posX + (posY + 1) * 12]     == i ||
-          sExcavationUiState->itemMap[posX + 1 + (posY + 2) * 12] == i ||
-          sExcavationUiState->itemMap[posX + posY * 12]           == i ||
-          sExcavationUiState->itemMap[posX + 2 + posY * 12]       == i ||
-          sExcavationUiState->itemMap[posX + (posY + 2) * 12]     == i ||
-          sExcavationUiState->itemMap[posX + 2 + (posY + 2) * 12] == i ||
-          posX + RED_SHARD_TILE_AMOUNT_RIGHT > xBorder ||
-          posY + RED_SHARD_TILE_AMOUNT_BOTTOM > yBorder
+          ItemPlaceable_Cond_2x2(posX, posY, i) ||
+          ItemStateCondition(posX, posY, 1, 2, i) ||
+          ItemStateCondition(posX, posY, 2, 0, i) ||
+          ItemStateCondition(posX, posY, 0, 2, i) ||
+          ItemStateCondition(posX, posY, 2, 2, i) ||
+          BORDERCHECK_COND(itemId)
         ) {return 0;}
         break;
       case ITEMID_BLUE_SHARD:
         if (
-          sExcavationUiState->itemMap[posX + 1 + (posY + 1) * 12] == i ||
-          sExcavationUiState->itemMap[posX + 1 + posY * 12]       == i ||
-          sExcavationUiState->itemMap[posX + (posY + 1) * 12]     == i ||
-          sExcavationUiState->itemMap[posX + 2 + (posY + 1) * 12] == i ||
-          sExcavationUiState->itemMap[posX + 1 + (posY + 2) * 12] == i ||
-          sExcavationUiState->itemMap[posX + posY * 12]           == i ||
-          sExcavationUiState->itemMap[posX + 2 + posY * 12]       == i ||
-          sExcavationUiState->itemMap[posX + (posY + 2) * 12]     == i ||
-          posX + BLUE_SHARD_TILE_AMOUNT_RIGHT > xBorder ||
-          posY + BLUE_SHARD_TILE_AMOUNT_BOTTOM > yBorder
+          ItemPlaceable_Cond_3x3_Plus(posX, posY, i) ||
+          ItemStateCondition(posX, posY, 0, 0, i) ||
+          ItemStateCondition(posX, posY, 2, 0, i) ||
+          ItemStateCondition(posX, posY, 0, 2, i) ||
+          BORDERCHECK_COND(itemId)
         ) {return 0;}
         break;
       case ITEMID_IRON_BALL:
         if (
-          sExcavationUiState->itemMap[posX + 1 + (posY + 1) * 12] == i ||
-          sExcavationUiState->itemMap[posX + 1 + posY * 12]       == i ||
-          sExcavationUiState->itemMap[posX + (posY + 1) * 12]     == i ||
-          sExcavationUiState->itemMap[posX + 2 + (posY + 1) * 12] == i ||
-          sExcavationUiState->itemMap[posX + 1 + (posY + 2) * 12] == i ||
-          sExcavationUiState->itemMap[posX + posY * 12]           == i ||
-          sExcavationUiState->itemMap[posX + 2 + posY * 12]       == i ||
-          sExcavationUiState->itemMap[posX + (posY + 2) * 12]     == i ||
-          sExcavationUiState->itemMap[posX + 2 + (posY + 2) * 12] == i ||
-          posX + IRON_BALL_TILE_AMOUNT_RIGHT > xBorder ||
-          posY + IRON_BALL_TILE_AMOUNT_BOTTOM > yBorder
+          ItemPlaceable_Cond_3x3(posX, posY, i) ||
+          BORDERCHECK_COND(itemId)
         ) {return 0;}
         break;
       case ITEMID_REVIVE_MAX:
         if (
-          sExcavationUiState->itemMap[posX + 1 + (posY + 1) * 12] == i ||
-          sExcavationUiState->itemMap[posX + 1 + posY * 12]       == i ||
-          sExcavationUiState->itemMap[posX + (posY + 1) * 12]     == i ||
-          sExcavationUiState->itemMap[posX + 2 + (posY + 1) * 12] == i ||
-          sExcavationUiState->itemMap[posX + 1 + (posY + 2) * 12] == i ||
-          sExcavationUiState->itemMap[posX + posY * 12]           == i ||
-          sExcavationUiState->itemMap[posX + 2 + posY * 12]       == i ||
-          sExcavationUiState->itemMap[posX + (posY + 2) * 12]     == i ||
-          sExcavationUiState->itemMap[posX + 2 + (posY + 2) * 12] == i ||
-          posX + REVIVE_MAX_TILE_AMOUNT_RIGHT > xBorder ||
-          posY + REVIVE_MAX_TILE_AMOUNT_BOTTOM > yBorder
+          ItemPlaceable_Cond_3x3(posX, posY, i) ||
+          BORDERCHECK_COND(itemId)
         ) {return 0;}
         break;
       case ITEMID_EVER_STONE:
         if (
-          sExcavationUiState->itemMap[posX + posY * 12]           == i ||
-          sExcavationUiState->itemMap[posX + 1 + posY * 12]       == i ||
-          sExcavationUiState->itemMap[posX + 2 + posY * 12]       == i ||
-          sExcavationUiState->itemMap[posX + 3 + posY * 12]       == i ||
-          sExcavationUiState->itemMap[posX + (posY + 1) * 12]     == i ||
-          sExcavationUiState->itemMap[posX + 1 + (posY + 1) * 12] == i ||
-          sExcavationUiState->itemMap[posX + 2 + (posY + 1) * 12] == i ||
-          sExcavationUiState->itemMap[posX + 3 + (posY + 1) * 12] == i ||
-          posX + EVER_STONE_TILE_AMOUNT_RIGHT > xBorder ||
-          posY + EVER_STONE_TILE_AMOUNT_BOTTOM > yBorder
+          ItemPlaceable_Cond_2x2(posX, posY, i) ||
+          ItemStateCondition(posX, posY, 2, 0, i) ||
+          ItemStateCondition(posX, posY, 3, 0, i) ||
+          ItemStateCondition(posX, posY, 2, 1, i) ||
+          ItemStateCondition(posX, posY, 3, 1, i) ||
+          BORDERCHECK_COND(itemId)
         ) {return 0;}
         break;
-
+      case ITEMID_OVAL_STONE:
+        if (
+          ItemPlaceable_Cond_3x3(posX, posY, i) ||
+          BORDERCHECK_COND(itemId)
+        ) {return 0;}
+        break;
+      case ITEMID_LIGHT_CLAY:
+        if (
+          ItemStateCondition(posX, posY, 0, 0, i) ||
+          ItemStateCondition(posX, posY, 0, 1, i) ||
+          ItemStateCondition(posX, posY, 0, 2, i) ||
+          ItemStateCondition(posX, posY, 1, 1, i) ||
+          ItemStateCondition(posX, posY, 1, 2, i) ||
+          ItemStateCondition(posX, posY, 1, 3, i) ||
+          ItemStateCondition(posX, posY, 2, 0, i) ||
+          ItemStateCondition(posX, posY, 2, 1, i) ||
+          ItemStateCondition(posX, posY, 2, 2, i) ||
+          ItemStateCondition(posX, posY, 3, 2, i) ||
+          ItemStateCondition(posX, posY, 3, 3, i) ||
+          BORDERCHECK_COND(itemId)
+        ) {return 0;}
+        break;
+      case ITEMID_HEAT_ROCK:
+        if (
+          ItemStateCondition(posX, posY, 0, 0, i) ||
+          ItemStateCondition(posX, posY, 0, 1, i) ||
+          ItemStateCondition(posX, posY, 0, 2, i) ||
+          ItemStateCondition(posX, posY, 1, 1, i) ||
+          ItemStateCondition(posX, posY, 1, 2, i) ||
+          ItemStateCondition(posX, posY, 2, 0, i) ||
+          ItemStateCondition(posX, posY, 2, 1, i) ||
+          ItemStateCondition(posX, posY, 2, 2, i) ||
+          ItemStateCondition(posX, posY, 3, 1, i) ||
+          ItemStateCondition(posX, posY, 3, 2, i) ||
+          BORDERCHECK_COND(itemId)
+        ) {return 0;}
+        break;
       }
   }
   return 1;
@@ -2272,8 +2516,7 @@ static bool32 DoesStoneFitInItemMap(u8 itemId)
 
 // TODO: Fill this function with the rest of the stones
 static void DoDrawRandomStone(u8 itemId) {
-  u8 x;
-  u8 y;
+  u8 x, y;
   u8 stoneIsPlaced = 0;
 
   for(y=0;y<8;y++) {
@@ -2285,9 +2528,10 @@ static void DoDrawRandomStone(u8 itemId) {
             sExcavationUiState->itemMap[x + (y + 1) * 12] == 0 &&
             sExcavationUiState->itemMap[x + (y + 2) * 12] == 0 &&
             sExcavationUiState->itemMap[x + (y + 3) * 12] == 0 &&
-            x + STONE_1x4_TILE_AMOUNT_RIGHT < 12 &&
-            y + STONE_1x4_TILE_AMOUNT_BOTTOM < 8 &&
-            Random() > 60000
+            x + ExcavationStoneList[itemId].left < 12 &&
+            y + ExcavationStoneList[itemId].top < 8
+            //y + ExcavationStoneList[itemId].top < 8 &&
+            //Random() > 60000
           ) {
             DrawItemSprite(x, y, itemId, TAG_DUMMY);
             // Dont want to use ITEM_TILE_DUG_UP, not sure if something unexpected will happen
@@ -2304,10 +2548,9 @@ static void DoDrawRandomStone(u8 itemId) {
             sExcavationUiState->itemMap[x + 1 + y * 12] == 0 &&
             sExcavationUiState->itemMap[x + 2 + y * 12] == 0 &&
             sExcavationUiState->itemMap[x + 3 + y * 12] == 0 &&
-            x + STONE_4x1_TILE_AMOUNT_RIGHT < 12 &&
-            y + STONE_4x1_TILE_AMOUNT_BOTTOM < 8
-            //y + STONE_4x1_TILE_AMOUNT_BOTTOM < 8 &&
-            //Random() > 60000
+            x + ExcavationStoneList[itemId].left < 12 &&
+            y + ExcavationStoneList[itemId].top < 8 &&
+            Random() > 60000
           ) {
             DrawItemSprite(x, y, itemId, TAG_DUMMY);
             OverwriteItemMapData(x, y, 6, itemId);
@@ -2326,8 +2569,8 @@ static void DoDrawRandomStone(u8 itemId) {
             sExcavationUiState->itemMap[x + 1 + (y + 1) * 12] == 0 &&
             sExcavationUiState->itemMap[x + 1 + (y + 2) * 12] == 0 &&
             sExcavationUiState->itemMap[x + 1 + (y + 3) * 12] == 0 &&
-            x + STONE_2x4_TILE_AMOUNT_RIGHT < 12 &&
-            y + STONE_2x4_TILE_AMOUNT_BOTTOM < 8 &&
+            x + ExcavationStoneList[itemId].left < 12 &&
+            y + ExcavationStoneList[itemId].top < 8 &&
             Random() > 60000
           ) {
             DrawItemSprite(x, y, itemId, TAG_DUMMY);
@@ -2347,8 +2590,9 @@ static void DoDrawRandomStone(u8 itemId) {
             sExcavationUiState->itemMap[x + 1 + (y + 1) * 12] == 0 &&
             sExcavationUiState->itemMap[x + 2 + (y + 1) * 12] == 0 &&
             sExcavationUiState->itemMap[x + 3 + (y + 1) * 12] == 0 &&
-            x + STONE_4x2_TILE_AMOUNT_RIGHT < 12 &&
-            y + STONE_4x2_TILE_AMOUNT_BOTTOM < 8 &&
+            x + ExcavationStoneList[itemId].left < 12 &&
+            y + ExcavationStoneList[itemId].top < 8 &&
+
             Random() > 60000
           ) {
             DrawItemSprite(x, y, itemId, TAG_DUMMY);
@@ -2364,8 +2608,9 @@ static void DoDrawRandomStone(u8 itemId) {
             sExcavationUiState->itemMap[x + 1 + y * 12]       == 0 &&
             sExcavationUiState->itemMap[x + (y + 1) * 12]     == 0 &&
             sExcavationUiState->itemMap[x + 1 + (y + 1) * 12] == 0 &&
-            x + STONE_2x2_TILE_AMOUNT_RIGHT < 12 &&
-            y + STONE_2x2_TILE_AMOUNT_BOTTOM < 8 &&
+            x + ExcavationStoneList[itemId].left < 12 &&
+            y + ExcavationStoneList[itemId].top < 8 &&
+
             Random() > 60000
           ) {
             DrawItemSprite(x, y, itemId, TAG_DUMMY);
@@ -2386,8 +2631,9 @@ static void DoDrawRandomStone(u8 itemId) {
             sExcavationUiState->itemMap[x + 2 + (y + 2) * 12] == 0 &&
             sExcavationUiState->itemMap[x + 1 + (y + 2) * 12] == 0 &&
             sExcavationUiState->itemMap[x + (y + 2) * 12]     == 0 &&
-            x + STONE_3x3_TILE_AMOUNT_RIGHT < 12 &&
-            y + STONE_3x3_TILE_AMOUNT_BOTTOM < 8 &&
+            x + ExcavationStoneList[itemId].left < 12 &&
+            y + ExcavationStoneList[itemId].top < 8 &&
+
             Random() > 60000
           ) {
             DrawItemSprite(x, y, itemId, TAG_DUMMY);
@@ -2441,7 +2687,7 @@ static void Excavation_CheckItemFound(void) {
   } else if (sExcavationUiState->state_item2 == full) {
     BeginNormalPaletteFade(0x00080000, 2, 16, 0, RGB_WHITE);
     sExcavationUiState->state_item2 = stop;
-	SetBuriedItemStatus(1,TRUE);
+	  SetBuriedItemStatus(1,TRUE);
   }
 
   full = sExcavationUiState->Item3_TilesToDigUp;
@@ -2457,7 +2703,7 @@ static void Excavation_CheckItemFound(void) {
   } else if (sExcavationUiState->state_item3 == full) {
     BeginNormalPaletteFade(0x00100000, 2, 16, 0, RGB_WHITE);
     sExcavationUiState->state_item3 = stop;
-	SetBuriedItemStatus(2,TRUE);
+	  SetBuriedItemStatus(2,TRUE);
   }
 
   full = sExcavationUiState->Item4_TilesToDigUp;
@@ -2473,7 +2719,7 @@ static void Excavation_CheckItemFound(void) {
   } else if (sExcavationUiState->state_item4 == full) {
     BeginNormalPaletteFade(0x00200000, 2, 16, 0, RGB_WHITE);
     sExcavationUiState->state_item4 = stop;
-	SetBuriedItemStatus(3,TRUE);
+	  SetBuriedItemStatus(3,TRUE);
   }
 
   for(i=0;i<96;i++) {
@@ -2681,8 +2927,15 @@ static void Excavation_FreeResources(void) {
     }
     // Free all allocated tilemap and pixel buffers associated with the windows.
     FreeAllWindowBuffers();
+    ReleaseComfyAnims();
     // Reset all sprite data
     ResetSpriteData();
+    SetGpuReg(REG_OFFSET_WIN0H, 0);
+    SetGpuReg(REG_OFFSET_WIN0V, 0);
+    SetGpuReg(REG_OFFSET_WIN1H, 0);
+    SetGpuReg(REG_OFFSET_WIN1V, 0);
+    SetGpuReg(REG_OFFSET_WININ, 0);
+    SetGpuReg(REG_OFFSET_WINOUT, 0);
 }
 
 static void InitMiningWindows(void) {
@@ -2845,8 +3098,33 @@ static void MakeCursorInvisible(void) {
 	  gSprites[sExcavationUiState->cursorSpriteIndex].invisible = 1;
 }
 
+struct HighlightWindowCoords {
+    u8 left;
+    u8 right;
+};
+
+struct HWWindowPosition {
+    struct HighlightWindowCoords winh;
+    struct HighlightWindowCoords winv;
+};
+
+static const struct HWWindowPosition HWinCoords[1] = {
+  {
+    {7, 233},
+    {7, 89}
+  },
+};
+
 static void HandleGameFinish(u8 taskId) {
-	MakeCursorInvisible();
+  MakeCursorInvisible();
+
+  // Ignore PSF
+  //
+  //SetGpuReg(REG_OFFSET_DISPCNT, DISPCNT_WIN0_ON);
+  //SetGpuReg(REG_OFFSET_WIN0H, WIN_RANGE(HWinCoords[0].winh.left, HWinCoords[0].winh.right));
+  //SetGpuReg(REG_OFFSET_WIN0V, WIN_RANGE(HWinCoords[0].winv.left, HWinCoords[0].winv.right));
+  //SetGpuReg(REG_OFFSET_WININ, WININ_WIN0_BG1);
+  //SetGpuReg(REG_OFFSET_WINOUT, WINOUT_WIN01_ALL);
 
 	if (IsCrackMax())
 		PrintMessage(sText_TheWall);
@@ -2899,7 +3177,7 @@ static void InitBuriedItems(void) {
 }
 
 static void SetBuriedItemsId(u32 index, u32 itemId) {
-	sExcavationUiState->buriedItem[index].itemId = excavationIdItemIdMap[itemId];
+	sExcavationUiState->buriedItem[index].itemId = ExcavationItemList[itemId].realItemId;
 }
 
 static void SetBuriedItemStatus(u32 index, bool32 status) {
@@ -2961,18 +3239,18 @@ static u32 Debug_DetermineStoneSize(u32 random, u32 stoneIndex)
     desiredStones[1] = ID_STONE_4x1;
     desiredStones[2] = 0;
 
+
     switch(desiredStones[stoneIndex])
     {
         default:
         case 0: return random;
-        case ID_STONE_1x4: return (STONE_1x4_THRESHOLD - 1);
-        case ID_STONE_4x1: return (STONE_4x1_THRESHOLD - 1);
-        case ID_STONE_2x4: return (STONE_2x4_THRESHOLD - 1);
-        case ID_STONE_4x2: return (STONE_4x2_THRESHOLD - 1);
-        case ID_STONE_2x2: return (STONE_2x2_THRESHOLD - 1);
-        case ID_STONE_3x3: return (STONE_3x3_THRESHOLD - 1);
+        case ID_STONE_1x4: return (ExcavationStoneList[ID_STONE_1x4].threshold - 1);
+        case ID_STONE_4x1: return (ExcavationStoneList[ID_STONE_4x1].threshold - 1);
+        case ID_STONE_2x4: return (ExcavationStoneList[ID_STONE_2x4].threshold - 1);
+        case ID_STONE_4x2: return (ExcavationStoneList[ID_STONE_4x2].threshold - 1);
+        case ID_STONE_2x2: return (ExcavationStoneList[ID_STONE_2x2].threshold - 1);
+        case ID_STONE_3x3: return (ExcavationStoneList[ID_STONE_3x3].threshold - 1);
     }
-
     return random;
 }
 
