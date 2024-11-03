@@ -887,6 +887,12 @@ void Excavation_ItemUseCB(void) {
   Excavation_Init(CB2_ReturnToField);
 }
 
+static u32 Debug_SetNumberOfBuriedItems(u32 rnd)
+{
+    u32 desiredNumItems = 4;
+    return (desiredNumItems - 2);
+}
+
 static void Excavation_Init(MainCallback callback) {
   u8 rnd = Random();
   sExcavationUiState = AllocZeroed(sizeof(struct ExcavationState));
@@ -919,6 +925,8 @@ static void Excavation_Init(MainCallback callback) {
     rnd = 2;
   }
 
+  rnd = Debug_SetNumberOfBuriedItems(rnd); // Debug
+
   switch(rnd) {
     case 0:
       sExcavationUiState->state_item3 = DESELECTED;
@@ -928,6 +936,7 @@ static void Excavation_Init(MainCallback callback) {
       sExcavationUiState->state_item3 = SELECTED;
       sExcavationUiState->state_item2 = DESELECTED;
       break;
+    default:
     case 2:
       sExcavationUiState->state_item3 = SELECTED;
       sExcavationUiState->state_item2 = SELECTED;
