@@ -59,6 +59,8 @@ static void Excavation_UpdateTerrain(void);
 static void Excavation_DrawRandomTerrain(void);
 static void DoDrawRandomItem(u8 itemStateId, u8 itemId);
 static void DoDrawRandomStone(u8 itemId);
+static bool32 DoesStoneFitInItemMap(u8 itemId);
+static bool32 CanStoneBePlacedAtXY(u32 x, u32 y, u32 itemId);
 static void Excavation_CheckItemFound(void);
 static void PrintMessage(const u8 *string);
 static void InitMiningWindows(void);
@@ -799,10 +801,11 @@ struct ExcavationItem {
 };
 
 struct ExcavationStone {
-  u32 excStoneId;
   u32 top; // starts with 0
   u32 left; // starts with 0
   u32 threshold;
+  u32 height;
+  u32 width;
 };
 
 static const struct ExcavationItem ExcavationItemList[] = {
@@ -941,40 +944,46 @@ static const struct ExcavationItem ExcavationItemList[] = {
 
 static const struct ExcavationStone ExcavationStoneList[] = {
   [ID_STONE_1x4] = {
-    .excStoneId = ID_STONE_1x4,
     .top = 3,
     .left = 0,
     .threshold = 10922,
+    .width = 1,
+    .height = 4,
   },
   [ID_STONE_4x1] = {
-    .excStoneId = ID_STONE_4x1,
     .top = 0,
     .left = 3,
     .threshold = 21844,
+    .width = 4,
+    .height = 1,
   },
   [ID_STONE_2x4] = {
-    .excStoneId = ID_STONE_2x4,
     .top = 3,
     .left = 1,
     .threshold = 32766,
+    .width = 2,
+    .height = 4,
   },
   [ID_STONE_4x2] = {
-    .excStoneId = ID_STONE_4x2,
     .top = 1,
     .left = 3,
     .threshold = 54610,
+    .width = 4,
+    .height = 2,
   },
   [ID_STONE_2x2] = {
-    .excStoneId = ID_STONE_2x2,
     .top = 1,
     .left = 1,
     .threshold = 54610,
+    .width = 2,
+    .height = 2,
   },
   [ID_STONE_3x3] = {
-    .excStoneId = ID_STONE_3x3,
     .top = 2,
-    .threshold = 65535,
     .left = 2,
+    .threshold = 65535,
+    .width = 3,
+    .height = 3,
   },
 };
 
@@ -1497,7 +1506,7 @@ static void Excavation_LoadSpriteGraphics(void) {
   u32 i, j;
   u8 itemId1, itemId2, itemId3, itemId4;
   u16 rnd;
-  u32 stonesWillFit[COUNT_ID_STONE];
+  u32 stone = ITEMID_NONE;
   bool32 wasDrawn = FALSE;
   struct ComfyAnimSpringConfig animConfigX, animConfigY;
 
@@ -1563,26 +1572,18 @@ static void Excavation_LoadSpriteGraphics(void) {
 
   // TODO: Change this randomness by using my new `random(u32 amount);` function!
   for (i=0; i<COUNT_MAX_NUMBER_STONES; i++) {
-    rnd = Random();
-    rnd = Debug_DetermineStoneSize(rnd,i); //Debug
 
-    wasDrawn = FALSE;
-    //Check every stone size that will fit in current itemMap
-    //Create an tempArray of ones that will def fit
-    //rnd should pull from that temp array when using doDrawRandomStone
-    //if rnd rolls a stone that's not in the tempArray, roll again
+      stone = ITEMID_NONE;
+      while (!DoesStoneFitInItemMap(stone))
+          stone = ((Random() % COUNT_ID_STONE) + ID_STONE_1x4);
 
-    for (j=ID_STONE_1x4;j < COUNT_ID_STONE; j++){
-        DebugPrintf("rnd is %d vs threshold of %d",rnd,ExcavationStoneList[j].threshold);
-        if (rnd < ExcavationStoneList[j].threshold){
-            DoDrawRandomStone(j);
-            DebugPrintf("stone %d printed for iteration %d",(ID_STONE_1x4),i);
-            wasDrawn = TRUE;
-            break;
-        }
-    }
-    if (wasDrawn)
-        continue;
+      DoDrawRandomStone(stone);
+      DebugPrintf("stone %d printed for iteration %d",j,i);
+      //Check every stone size that will fit in current itemMap
+      //Create an tempArray of ones that will def fit
+      //rnd should pull from that temp array when using doDrawRandomStone
+      //if rnd rolls a stone that's not in the tempArray, roll again
+
   }
 
   sExcavationUiState->cursorSpriteIndex = CreateSprite(&gSpriteCursor, 8, 40, 0);
@@ -2448,13 +2449,15 @@ static void DoDrawRandomItem(u8 itemStateId, u8 itemId) {
         }
     }
 }
-
 #define TAG_DUMMY 0
 
-static bool32 CanStoneBePlacedAtXY(u32 x, u32 y, u32 width, u32 height)
+static bool32 CanStoneBePlacedAtXY(u32 x, u32 y, u32 itemId)
 {
     u32 dx, dy;
+    u32 height = ExcavationStoneList[itemId].height;
+    u32 width = ExcavationStoneList[itemId].width;
 
+    DebugPrintf("itemId %d | height %d | width %d",itemId,height,width);
     if ((x + width) > GRID_WIDTH)
         return FALSE;
 
@@ -2474,40 +2477,16 @@ static bool32 CanStoneBePlacedAtXY(u32 x, u32 y, u32 width, u32 height)
 static bool32 DoesStoneFitInItemMap(u8 itemId)
 {
     u32 coordX,coordY;
-    u32 height, width;
+    DebugPrintf("itemId in DoesStoneFitInItemMap %d",itemId);
 
-    switch(itemId){
-        case ID_STONE_1x4:
-            width = 1;
-            height = 4;
-            break;
-        case ID_STONE_4x1:
-            width = 4;
-            height = 1;
-            break;
-        case ID_STONE_2x4:
-            width = 2;
-            height = 4;
-            break;
-        case ID_STONE_4x2:
-            width = 4;
-            height = 2;
-            break;
-        case ID_STONE_2x2:
-            width = 2;
-            height = 2;
-            break;
-        case ID_STONE_3x3:
-            width = 3;
-            height = 3;
-            break;
-    }
+    if (itemId == ITEM_NONE)
+        return FALSE;
 
     for (coordX = 0; coordX < GRID_WIDTH; coordX++)
     {
         for (coordY = 0; coordY < GRID_HEIGHT; coordY++)
         {
-            if (CanStoneBePlacedAtXY(coordX,coordY,width,height))
+            if (CanStoneBePlacedAtXY(coordX,coordY,itemId))
                 return TRUE;
         }
     }
@@ -2940,15 +2919,15 @@ static void Excavation_FreeResources(void) {
 
 static void InitMiningWindows(void) {
 	if (InitWindows(sWindowTemplates))
-	{
-		DeactivateAllTextPrinters();
-		ScheduleBgCopyTilemapToVram(0);
-
-		LoadMessageBoxGfx(WIN_MSG, 20, BG_PLTT_ID(15));
-		PutWindowTilemap(WIN_MSG);
-		CopyWindowToVram(WIN_MSG, COPYWIN_FULL);
-		Menu_LoadStdPalAt(BG_PLTT_ID(14));
-	}
+    {
+        DeactivateAllTextPrinters();
+        ScheduleBgCopyTilemapToVram(0);
+        LoadBgTiles(GetWindowAttribute(WIN_MSG, WINDOW_BG), gMessageBox_Gfx, 0x1C0, 20);
+        LoadPalette(GetOverworldTextboxPalettePtr(), BG_PLTT_ID(15), PLTT_SIZE_4BPP);
+        PutWindowTilemap(WIN_MSG);
+        CopyWindowToVram(WIN_MSG, COPYWIN_FULL);
+        Menu_LoadStdPalAt(BG_PLTT_ID(14));
+    }
 }
 
 static void PrintMessage(const u8 *string) {
@@ -3235,8 +3214,8 @@ static u32 Debug_DetermineStoneSize(u32 random, u32 stoneIndex)
     if (Debug_IsMiningDebugEnabled())
         return random;
 
-    desiredStones[0] = ID_STONE_4x1;
-    desiredStones[1] = ID_STONE_4x1;
+    desiredStones[0] = 0;
+    desiredStones[1] = 0;
     desiredStones[2] = 0;
 
 

@@ -58,7 +58,7 @@
 #define ID_STONE_4x2                    253
 #define ID_STONE_2x2                    254
 #define ID_STONE_3x3                    255
-#define COUNT_ID_STONE                  256
+#define COUNT_ID_STONE                  6
 
 #define GRID_WIDTH 12
 #define GRID_HEIGHT 8
