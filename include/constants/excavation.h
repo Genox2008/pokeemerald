@@ -32,6 +32,8 @@
 #define STONE_3x3_TILE_AMOUNT_RIGHT     2
 #define STONE_3x3_TILE_AMOUNT_BOTTOM    2
 
+#define COUNT_ID_STONE                  6
+
 /*          --Items--                   */
 
 #define ITEMID_NONE 0
@@ -105,6 +107,13 @@
 #define ITEM_ZONE_4_X_RIGHT_BOUNDARY    11
 #define ITEM_ZONE_4_Y_UP_BOUNDARY       4
 #define ITEM_ZONE_4_Y_DOWN_BOUNDARY     7
+
+#define STONE_1x4_THRESHOLD 10922
+#define STONE_4x1_THRESHOLD 21844
+#define STONE_2x4_THRESHOLD 32766
+#define STONE_4x2_THRESHOLD 43688
+#define STONE_2x2_THRESHOLD 54610
+#define STONE_3x3_THRESHOLD 65535
 
 // TODO: change this value to the max itemId
 #define EXCAVATION_ITEM_COUNT ITEMID_REVIVE_MAX

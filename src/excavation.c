@@ -77,6 +77,13 @@ static u32 GetNumberOfFoundItems(void);
 static bool32 GetBuriedItemStatus(u32 index);
 static void ExitExcavationUI(u8 taskId);
 
+static bool32 Debug_IsMiningDebugEnabled(void);
+static u32 Debug_SetNumberOfBuriedItems(u32 rnd);
+static u32 Debug_CreateRandomItem(u32 random);
+static u32 Debug_DetermineStoneSize(u32 random, u32 stoneIndex);
+static void Debug_DetermineLocation(u32* x, u32* y, u32 item);
+
+
 struct BuriedItem {
   u32 itemId;
   bool32 status;
@@ -137,7 +144,7 @@ static const u32 excavationIdItemIdMap[] = {
 static EWRAM_DATA struct ExcavationState *sExcavationUiState = NULL;
 static EWRAM_DATA u8 *sBg2TilemapBuffer = NULL;
 static EWRAM_DATA u8 *sBg3TilemapBuffer = NULL;
-static EWRAM_DATA u8 debugVariable = 0; // Debug
+static EWRAM_DATA u8 debugVariable = 99; // Debug
 
 static const struct WindowTemplate sWindowTemplates[] =
 {
@@ -887,12 +894,6 @@ void Excavation_ItemUseCB(void) {
   Excavation_Init(CB2_ReturnToField);
 }
 
-static u32 Debug_SetNumberOfBuriedItems(u32 rnd)
-{
-    u32 desiredNumItems = 4;
-    return (desiredNumItems - 2);
-}
-
 static void Excavation_Init(MainCallback callback) {
   u8 rnd = Random();
   sExcavationUiState = AllocZeroed(sizeof(struct ExcavationState));
@@ -1035,7 +1036,9 @@ static void Excavation_SetupCB(void) {
 		  // Load Sprite(s)
 	  case STATE_LOAD_SPRITES:
 		  InitBuriedItems();
+          DebugPrintf("InitBuriedItems");
 		  Excavation_LoadSpriteGraphics();
+          DebugPrintf("Excavation_LoadSpriteGraphics");
 		  gMain.state++;
 		  break;
 
@@ -1210,24 +1213,12 @@ static const struct ItemRarity ItemRarityTable_Rare[] = {
   {ITEMID_REVIVE_MAX, RARITY_RARE},
 };
 
-static u32 Debug_CreateRandomId(void)
-{
-    switch (debugVariable++)
-    {
-        default:
-        case 0: return ITEMID_REVIVE;
-        case 1: return ITEMID_IRON_BALL;
-        case 2: return ITEMID_STAR_PIECE;
-        case 3: return ITEMID_DAMP_ROCK;
-    }
-}
-
 static u8 GetRandomItemId() {
   u32 rarity;
   u32 index;
   u32 rnd = random(7);
 
-  return Debug_CreateRandomId(); // Debug
+  return Debug_CreateRandomItem(rnd); // Debug
 
   if (rnd < 4) {
     rarity = RARITY_COMMON;
@@ -1257,9 +1248,10 @@ static u8 GetRandomItemId() {
 }
 
 static void Excavation_LoadSpriteGraphics(void) {
-  u8 i;
+  u8 i, j;
   u8 itemId1, itemId2, itemId3, itemId4;
   u16 rnd;
+  u32 threshold[COUNT_ID_STONE];
   LoadSpritePalette(sSpritePal_Cursor);
   LoadCompressedSpriteSheet(sSpriteSheet_Cursor);
 
@@ -1274,12 +1266,14 @@ static void Excavation_LoadSpriteGraphics(void) {
 	SetBuriedItemsId(0, itemId1);
     DoDrawRandomItem(1, itemId1);
     sExcavationUiState->Item1_TilesToDigUp = ExcavationUtil_GetTotalTileAmount(itemId1);
+    DebugPrintf("item %d buried",1);
   }
   if (sExcavationUiState->state_item2 == SELECTED) {
     itemId2 = GetRandomItemId();
 	SetBuriedItemsId(1, itemId2);
     DoDrawRandomItem(2, itemId2);
     sExcavationUiState->Item2_TilesToDigUp = ExcavationUtil_GetTotalTileAmount(itemId2);
+    DebugPrintf("item %d buried",2);
   } else {
     LoadSpritePalette(sSpritePal_Blank1);
   }
@@ -1288,6 +1282,7 @@ static void Excavation_LoadSpriteGraphics(void) {
 	SetBuriedItemsId(2, itemId3);
     DoDrawRandomItem(3, itemId3);
     sExcavationUiState->Item3_TilesToDigUp = ExcavationUtil_GetTotalTileAmount(itemId3);
+    DebugPrintf("item %d buried",3);
   } else {
     LoadSpritePalette(sSpritePal_Blank2);
   }
@@ -1296,25 +1291,27 @@ static void Excavation_LoadSpriteGraphics(void) {
 	SetBuriedItemsId(3, itemId4);
     DoDrawRandomItem(4, itemId4);
     sExcavationUiState->Item4_TilesToDigUp = ExcavationUtil_GetTotalTileAmount(itemId4);
+    DebugPrintf("item %d buried",4);
   }
+
+    threshold[0] = STONE_1x4_THRESHOLD;
+    threshold[1] = STONE_4x1_THRESHOLD;
+    threshold[2] = STONE_2x4_THRESHOLD;
+    threshold[3] = STONE_4x2_THRESHOLD;
+    threshold[4] = STONE_2x2_THRESHOLD;
+    threshold[5] = STONE_3x3_THRESHOLD;
+    threshold[6] = 0;
 
   // TODO: Change this randomness by using my new `random(u32 amount);` function!
   for (i=0; i<2; i++) {
     rnd = Random();
+    rnd = Debug_DetermineStoneSize(rnd,i); //Debug
 
-    if (rnd < 10922) {
-      DoDrawRandomStone(ID_STONE_1x4);
-    } else if (rnd < 21844) {
-      DoDrawRandomStone(ID_STONE_4x1);
-    } else if (rnd < 32766) {
-      DoDrawRandomStone(ID_STONE_2x4);
-    } else if (rnd < 43688) {
-      DoDrawRandomStone(ID_STONE_4x2);
-    } else if (rnd < 54610) {
-      DoDrawRandomStone(ID_STONE_2x2);
-    } else if (rnd < 65535) {
-      DoDrawRandomStone(ID_STONE_3x3);
+    for (j=0;j < COUNT_ID_STONE; j++){
+        if (rnd < threshold[i])
+            DoDrawRandomStone(ID_STONE_1x4 + j);
     }
+        DebugPrintf("stone %d printed for iteration %d",(ID_STONE_1x4 + j - 1),i);
   }
 
   sExcavationUiState->cursorSpriteIndex = CreateSprite(&gSpriteCursor, 8, 40, 0);
@@ -2117,31 +2114,6 @@ static u8 CheckIfItemCanBePlaced(u8 itemId, u8 posX, u8 posY, u8 xBorder, u8 yBo
   }
   return 1;
 }
-
-static void Debug_DetermineLocation(u32* x, u32* y, u32 item)
-{
-    switch (item)
-    {
-        default:
-        case 1:
-            *x = 1;
-            *y = 1;
-            break;
-        case 2:
-            *x = 1;
-            *y = 5;
-            break;
-        case 3:
-            *x = 7;
-            *y = 1;
-            break;
-        case 4:
-            *x = 7;
-            *y = 5;
-            break;
-    }
-}
-
 static void DoDrawRandomItem(u8 itemStateId, u8 itemId) {
     u32 y;
     u32 x;
@@ -2867,5 +2839,88 @@ static void ExitExcavationUI(u8 taskId) {
 	PlaySE(SE_PC_OFF);
 	BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);
 	gTasks[taskId].func = Task_ExcavationFadeAndExitMenu;
+}
+
+static bool32 Debug_IsMiningDebugEnabled(void)
+{
+    return (debugVariable == 99);
+}
+
+static u32 Debug_SetNumberOfBuriedItems(u32 rnd)
+{
+    u32 desiredNumItems = 1;
+
+    if (Debug_IsMiningDebugEnabled())
+        return rnd;
+
+    return (desiredNumItems - 2);
+}
+
+static u32 Debug_CreateRandomItem(u32 random)
+{
+    if (Debug_IsMiningDebugEnabled())
+        return random;
+
+    switch (debugVariable++)
+    {
+        default:
+        case 0: return ITEMID_REVIVE;
+        case 1: return ITEMID_HEART_SCALE;
+        case 2: return ITEMID_RED_SHARD;
+        case 3: return ITEMID_BLUE_SHARD;
+    }
+}
+
+static u32 Debug_DetermineStoneSize(u32 random, u32 stoneIndex)
+{
+    u32 desiredStones[2];
+
+    if (Debug_IsMiningDebugEnabled())
+        return random;
+
+    desiredStones[0] = 0;
+    desiredStones[1] = 0;
+    desiredStones[2] = 0;
+
+    switch(desiredStones[stoneIndex])
+    {
+        default:
+        case 0: return random;
+        case ID_STONE_1x4: return (STONE_1x4_THRESHOLD - 1);
+        case ID_STONE_4x1: return (STONE_4x1_THRESHOLD - 1);
+        case ID_STONE_2x4: return (STONE_2x4_THRESHOLD - 1);
+        case ID_STONE_4x2: return (STONE_4x2_THRESHOLD - 1);
+        case ID_STONE_2x2: return (STONE_2x2_THRESHOLD - 1);
+        case ID_STONE_3x3: return (STONE_3x3_THRESHOLD - 1);
+    }
+
+    return random;
+}
+
+static void Debug_DetermineLocation(u32* x, u32* y, u32 item)
+{
+    if (Debug_IsMiningDebugEnabled())
+        return;
+
+    switch (item)
+    {
+        default:
+        case 1:
+            *x = 1;
+            *y = 1;
+            break;
+        case 2:
+            *x = 1;
+            *y = 5;
+            break;
+        case 3:
+            *x = 7;
+            *y = 1;
+            break;
+        case 4:
+            *x = 7;
+            *y = 5;
+            break;
+    }
 }
 
