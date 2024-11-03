@@ -86,7 +86,7 @@ static void ExitExcavationUI(u8 taskId);
 static bool32 Debug_IsMiningDebugEnabled(void);
 static u32 Debug_SetNumberOfBuriedItems(u32 rnd);
 static u32 Debug_CreateRandomItem(u32 random);
-static u32 Debug_DetermineStoneSize(u32 random, u32 stoneIndex);
+static u32 Debug_DetermineStoneSize(u32 stone, u32 stoneIndex);
 static void Debug_DetermineLocation(u32* x, u32* y, u32 item);
 
 
@@ -803,7 +803,6 @@ struct ExcavationItem {
 struct ExcavationStone {
   u32 top; // starts with 0
   u32 left; // starts with 0
-  u32 threshold;
   u32 height;
   u32 width;
 };
@@ -946,42 +945,36 @@ static const struct ExcavationStone ExcavationStoneList[] = {
   [ID_STONE_1x4] = {
     .top = 3,
     .left = 0,
-    .threshold = 10922,
     .width = 1,
     .height = 4,
   },
   [ID_STONE_4x1] = {
     .top = 0,
     .left = 3,
-    .threshold = 21844,
     .width = 4,
     .height = 1,
   },
   [ID_STONE_2x4] = {
     .top = 3,
     .left = 1,
-    .threshold = 32766,
     .width = 2,
     .height = 4,
   },
   [ID_STONE_4x2] = {
     .top = 1,
     .left = 3,
-    .threshold = 54610,
     .width = 4,
     .height = 2,
   },
   [ID_STONE_2x2] = {
     .top = 1,
     .left = 1,
-    .threshold = 54610,
     .width = 2,
     .height = 2,
   },
   [ID_STONE_3x3] = {
     .top = 2,
     .left = 2,
-    .threshold = 65535,
     .width = 3,
     .height = 3,
   },
@@ -1576,6 +1569,8 @@ static void Excavation_LoadSpriteGraphics(void) {
       stone = ITEMID_NONE;
       while (!DoesStoneFitInItemMap(stone))
           stone = ((Random() % COUNT_ID_STONE) + ID_STONE_1x4);
+
+      stone = Debug_DetermineStoneSize(stone,i);
 
       DoDrawRandomStone(stone);
       DebugPrintf("stone %d printed for iteration %d",j,i);
@@ -3207,30 +3202,21 @@ static u32 Debug_CreateRandomItem(u32 random)
     }
 }
 
-static u32 Debug_DetermineStoneSize(u32 random, u32 stoneIndex)
+static u32 Debug_DetermineStoneSize(u32 stone, u32 stoneIndex)
 {
     u32 desiredStones[2];
+    u32 returnStone;
 
     if (Debug_IsMiningDebugEnabled())
-        return random;
+        return stone;
 
     desiredStones[0] = 0;
     desiredStones[1] = 0;
     desiredStones[2] = 0;
 
+    returnStone = desiredStones[stoneIndex];
 
-    switch(desiredStones[stoneIndex])
-    {
-        default:
-        case 0: return random;
-        case ID_STONE_1x4: return (ExcavationStoneList[ID_STONE_1x4].threshold - 1);
-        case ID_STONE_4x1: return (ExcavationStoneList[ID_STONE_4x1].threshold - 1);
-        case ID_STONE_2x4: return (ExcavationStoneList[ID_STONE_2x4].threshold - 1);
-        case ID_STONE_4x2: return (ExcavationStoneList[ID_STONE_4x2].threshold - 1);
-        case ID_STONE_2x2: return (ExcavationStoneList[ID_STONE_2x2].threshold - 1);
-        case ID_STONE_3x3: return (ExcavationStoneList[ID_STONE_3x3].threshold - 1);
-    }
-    return random;
+    return (!returnStone ? stone : returnStone);
 }
 
 static void Debug_DetermineLocation(u32* x, u32* y, u32 item)
