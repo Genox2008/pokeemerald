@@ -11,28 +11,36 @@
 #define ID_STONE_1x4                    250
 #define STONE_1x4_TILE_AMOUNT_RIGHT     0
 #define STONE_1x4_TILE_AMOUNT_BOTTOM    4
+#define STONE_1x4_THRESHOLD             10922
 
 #define ID_STONE_4x1                    251
 #define STONE_4x1_TILE_AMOUNT_RIGHT     4
 #define STONE_4x1_TILE_AMOUNT_BOTTOM    0
+#define STONE_4x1_THRESHOLD             21844
 
 #define ID_STONE_2x4                    252
 #define STONE_2x4_TILE_AMOUNT_RIGHT     1
 #define STONE_2x4_TILE_AMOUNT_BOTTOM    4
+#define STONE_2x4_THRESHOLD             32766
 
 #define ID_STONE_4x2                    253
 #define STONE_4x2_TILE_AMOUNT_RIGHT     4
 #define STONE_4x2_TILE_AMOUNT_BOTTOM    1
+#define STONE_4x2_THRESHOLD             43688
 
 #define ID_STONE_2x2                    254
 #define STONE_2x2_TILE_AMOUNT_RIGHT     1
 #define STONE_2x2_TILE_AMOUNT_BOTTOM    1
+#define STONE_2x2_THRESHOLD             54610
 
 #define ID_STONE_3x3                    255
 #define STONE_3x3_TILE_AMOUNT_RIGHT     2
 #define STONE_3x3_TILE_AMOUNT_BOTTOM    2
+#define STONE_3x3_THRESHOLD             65535
 
 #define COUNT_ID_STONE                  6
+#define COUNT_MAX_NUMBER_STONES         2
+
 
 /*          --Items--                   */
 
@@ -88,6 +96,9 @@
 #define HEART_SCALE_TILE_AMOUNT_RIGHT   1
 #define HEART_SCALE_TILE_AMOUNT_BOTTOM  1
 
+#define GRID_WIDTH 12
+#define GRID_HEIGHT 8
+
 #define ITEM_ZONE_1_X_LEFT_BOUNDARY     0
 #define ITEM_ZONE_1_X_RIGHT_BOUNDARY    5
 #define ITEM_ZONE_1_Y_UP_BOUNDARY       0
@@ -96,24 +107,17 @@
 #define ITEM_ZONE_2_X_LEFT_BOUNDARY     0
 #define ITEM_ZONE_2_X_RIGHT_BOUNDARY    5
 #define ITEM_ZONE_2_Y_UP_BOUNDARY       4
-#define ITEM_ZONE_2_Y_DOWN_BOUNDARY     7
+#define ITEM_ZONE_2_Y_DOWN_BOUNDARY     GRID_HEIGHT - 1;
 
 #define ITEM_ZONE_3_X_LEFT_BOUNDARY     6
-#define ITEM_ZONE_3_X_RIGHT_BOUNDARY    11
+#define ITEM_ZONE_3_X_RIGHT_BOUNDARY    GRID_WIDTH - 1
 #define ITEM_ZONE_3_Y_UP_BOUNDARY       0
 #define ITEM_ZONE_3_Y_DOWN_BOUNDARY     3
 
 #define ITEM_ZONE_4_X_LEFT_BOUNDARY     6
-#define ITEM_ZONE_4_X_RIGHT_BOUNDARY    11
+#define ITEM_ZONE_4_X_RIGHT_BOUNDARY    GRID_WIDTH - 1
 #define ITEM_ZONE_4_Y_UP_BOUNDARY       4
-#define ITEM_ZONE_4_Y_DOWN_BOUNDARY     7
-
-#define STONE_1x4_THRESHOLD 10922
-#define STONE_4x1_THRESHOLD 21844
-#define STONE_2x4_THRESHOLD 32766
-#define STONE_4x2_THRESHOLD 43688
-#define STONE_2x2_THRESHOLD 54610
-#define STONE_3x3_THRESHOLD 65535
+#define ITEM_ZONE_4_Y_DOWN_BOUNDARY     GRID_HEIGHT - 1
 
 // TODO: change this value to the max itemId
 #define EXCAVATION_ITEM_COUNT ITEMID_REVIVE_MAX

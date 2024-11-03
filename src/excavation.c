@@ -144,7 +144,7 @@ static const u32 excavationIdItemIdMap[] = {
 static EWRAM_DATA struct ExcavationState *sExcavationUiState = NULL;
 static EWRAM_DATA u8 *sBg2TilemapBuffer = NULL;
 static EWRAM_DATA u8 *sBg3TilemapBuffer = NULL;
-static EWRAM_DATA u8 debugVariable = 99; // Debug
+static EWRAM_DATA u8 debugVariable = 0; // Debug
 
 static const struct WindowTemplate sWindowTemplates[] =
 {
@@ -530,7 +530,7 @@ static const struct OamData gOamHitTools = {
     .paletteNum = 0,
 };
 
-//#define DEBUG_ITEM_GEN
+#define DEBUG_ITEM_GEN
 
 static const struct OamData gOamItem32x32 = {
     .y = 0,
@@ -1251,7 +1251,10 @@ static void Excavation_LoadSpriteGraphics(void) {
   u8 i, j;
   u8 itemId1, itemId2, itemId3, itemId4;
   u16 rnd;
+  u32 stonesWillFit[COUNT_ID_STONE];
   u32 threshold[COUNT_ID_STONE];
+  bool32 wasDrawn = FALSE;
+
   LoadSpritePalette(sSpritePal_Cursor);
   LoadCompressedSpriteSheet(sSpriteSheet_Cursor);
 
@@ -1303,15 +1306,26 @@ static void Excavation_LoadSpriteGraphics(void) {
     threshold[6] = 0;
 
   // TODO: Change this randomness by using my new `random(u32 amount);` function!
-  for (i=0; i<2; i++) {
+  for (i=0; i<COUNT_MAX_NUMBER_STONES; i++) {
     rnd = Random();
     rnd = Debug_DetermineStoneSize(rnd,i); //Debug
 
+    wasDrawn = FALSE;
+    //Check every stone size that will fit in current itemMap
+    //Create an tempArray of ones that will def fit
+    //rnd should pull from that temp array when using doDrawRandomStone
+    //if rnd rolls a stone that's not in the tempArray, roll again
+
     for (j=0;j < COUNT_ID_STONE; j++){
-        if (rnd < threshold[i])
+        if (rnd < threshold[j]){
             DoDrawRandomStone(ID_STONE_1x4 + j);
+            DebugPrintf("stone %d printed for iteration %d",(ID_STONE_1x4 + j),i);
+            wasDrawn = TRUE;
+            break;
+        }
     }
-        DebugPrintf("stone %d printed for iteration %d",(ID_STONE_1x4 + j - 1),i);
+    if (wasDrawn)
+        continue;
   }
 
   sExcavationUiState->cursorSpriteIndex = CreateSprite(&gSpriteCursor, 8, 40, 0);
@@ -2167,12 +2181,14 @@ static void DoDrawRandomItem(u8 itemStateId, u8 itemId) {
 
     for(y=yMin; y<=yMax; y++) {
         for(x=xMin; x<=xMax; x++) {
+
             if (isItemPlaced)
                 continue;
 
             if (Random() <= 49151)
-                // continue; // Comment out when Debug
-                Debug_DetermineLocation(&x,&y,itemStateId); // Debug
+                continue;
+
+            Debug_DetermineLocation(&x,&y,itemStateId); // Debug
 
             if (!CheckIfItemCanBePlaced(itemId, x, y, xMax, yMax))
                 continue;
@@ -2191,6 +2207,68 @@ static void DoDrawRandomItem(u8 itemStateId, u8 itemId) {
 
 #define TAG_DUMMY 0
 
+static bool32 CanStoneBePlacedAtXY(u32 x, u32 y, u32 width, u32 height)
+{
+    u32 dx, dy;
+
+    if ((x + width) > GRID_WIDTH)
+        return FALSE;
+
+    if ((y + height) > GRID_HEIGHT)
+        return FALSE;
+
+    for (dx = 0; dx < width; dx++) {
+        for (dy = 0; dy < height; dy++) {
+            if (sExcavationUiState->itemMap[x + dx + (y + dy) * GRID_WIDTH] != 0) {
+                return FALSE;
+            }
+        }
+    }
+    return TRUE;
+}
+
+static bool32 DoesStoneFitInItemMap(u8 itemId)
+{
+    u32 coordX,coordY;
+    u32 height, width;
+
+    switch(itemId){
+        case ID_STONE_1x4:
+            width = 1;
+            height = 4;
+            break;
+        case ID_STONE_4x1:
+            width = 4;
+            height = 1;
+            break;
+        case ID_STONE_2x4:
+            width = 2;
+            height = 4;
+            break;
+        case ID_STONE_4x2:
+            width = 4;
+            height = 2;
+            break;
+        case ID_STONE_2x2:
+            width = 2;
+            height = 2;
+            break;
+        case ID_STONE_3x3:
+            width = 3;
+            height = 3;
+            break;
+    }
+
+    for (coordX = 0; coordX < GRID_WIDTH; coordX++)
+    {
+        for (coordY = 0; coordY < GRID_HEIGHT; coordY++)
+        {
+            if (CanStoneBePlacedAtXY(coordX,coordY,width,height))
+                return TRUE;
+        }
+    }
+    return FALSE;
+}
 
 // TODO: Fill this function with the rest of the stones
 static void DoDrawRandomStone(u8 itemId) {
@@ -2227,8 +2305,9 @@ static void DoDrawRandomStone(u8 itemId) {
             sExcavationUiState->itemMap[x + 2 + y * 12] == 0 &&
             sExcavationUiState->itemMap[x + 3 + y * 12] == 0 &&
             x + STONE_4x1_TILE_AMOUNT_RIGHT < 12 &&
-            y + STONE_4x1_TILE_AMOUNT_BOTTOM < 8 &&
-            Random() > 60000
+            y + STONE_4x1_TILE_AMOUNT_BOTTOM < 8
+            //y + STONE_4x1_TILE_AMOUNT_BOTTOM < 8 &&
+            //Random() > 60000
           ) {
             DrawItemSprite(x, y, itemId, TAG_DUMMY);
             OverwriteItemMapData(x, y, 6, itemId);
@@ -2848,7 +2927,7 @@ static bool32 Debug_IsMiningDebugEnabled(void)
 
 static u32 Debug_SetNumberOfBuriedItems(u32 rnd)
 {
-    u32 desiredNumItems = 1;
+    u32 desiredNumItems = 4;
 
     if (Debug_IsMiningDebugEnabled())
         return rnd;
@@ -2864,10 +2943,10 @@ static u32 Debug_CreateRandomItem(u32 random)
     switch (debugVariable++)
     {
         default:
-        case 0: return ITEMID_REVIVE;
-        case 1: return ITEMID_HEART_SCALE;
-        case 2: return ITEMID_RED_SHARD;
-        case 3: return ITEMID_BLUE_SHARD;
+        case 0: return ITEMID_REVIVE_MAX;
+        case 1: return ITEMID_REVIVE_MAX;
+        case 2: return ITEMID_EVER_STONE;
+        case 3: return ITEMID_EVER_STONE;
     }
 }
 
@@ -2878,8 +2957,8 @@ static u32 Debug_DetermineStoneSize(u32 random, u32 stoneIndex)
     if (Debug_IsMiningDebugEnabled())
         return random;
 
-    desiredStones[0] = 0;
-    desiredStones[1] = 0;
+    desiredStones[0] = ID_STONE_4x1;
+    desiredStones[1] = ID_STONE_4x1;
     desiredStones[2] = 0;
 
     switch(desiredStones[stoneIndex])
