@@ -137,6 +137,7 @@ static const u32 excavationIdItemIdMap[] = {
 static EWRAM_DATA struct ExcavationState *sExcavationUiState = NULL;
 static EWRAM_DATA u8 *sBg2TilemapBuffer = NULL;
 static EWRAM_DATA u8 *sBg3TilemapBuffer = NULL;
+static EWRAM_DATA u8 debugVariable = 0; // Debug
 
 static const struct WindowTemplate sWindowTemplates[] =
 {
@@ -1200,11 +1201,24 @@ static const struct ItemRarity ItemRarityTable_Rare[] = {
   {ITEMID_REVIVE_MAX, RARITY_RARE},
 };
 
+static u32 Debug_CreateRandomId(void)
+{
+    switch (debugVariable++)
+    {
+        default:
+        case 0: return ITEMID_REVIVE;
+        case 1: return ITEMID_IRON_BALL;
+        case 2: return ITEMID_STAR_PIECE;
+        case 3: return ITEMID_DAMP_ROCK;
+    }
+}
+
 static u8 GetRandomItemId() {
   u32 rarity;
   u32 index;
   u32 rnd = random(7);
 
+  return Debug_CreateRandomId(); // Debug
 
   if (rnd < 4) {
     rarity = RARITY_COMMON;
@@ -2198,6 +2212,7 @@ static void DoDrawRandomItem(u8 itemStateId, u8 itemId) {
 }
 
 #define TAG_DUMMY 0
+
 
 // TODO: Fill this function with the rest of the stones
 static void DoDrawRandomStone(u8 itemId) {
