@@ -2109,106 +2109,103 @@ static u8 CheckIfItemCanBePlaced(u8 itemId, u8 posX, u8 posY, u8 xBorder, u8 yBo
   return 1;
 }
 
-static void DoDrawRandomItem(u8 itemStateId, u8 itemId) {
-  u8 y;
-  u8 x;
-  u16 rnd;
-  u8 posX;
-  u8 posY;
-  u8 t;
-  u8 canItemBePlaced = 1;
-  u8 isItemPlaced = 0;
-
-  // Zone Split
-  //
-  // The wall is splitted into 4x6 tiles zones. Each zone is reserved for 1 item
-  //
-  // |item1|item3|
-  // |item2|item4|
-
-  switch(itemStateId) {
-    case 1:
-      for(y=0; y<=3; y++) {
-        for(x=0; x<=5; x++) {
-          if (isItemPlaced == 0) {
-            if (Random() > 49151) {
-              canItemBePlaced = CheckIfItemCanBePlaced(itemId, x, y, 5, 3);
-              if (canItemBePlaced == 1) {
-                DrawItemSprite(x,y,itemId, TAG_PAL_ITEM1);
-                OverwriteItemMapData(x, y, itemStateId, itemId); // For the collection logic, overwrite the itemmap data
-                isItemPlaced = 1;
-                break;
-              }
-            }
-          }
-        }
-        // If it hasn't placed an Item (that's very unlikely but while debuggin, this happened), just retry
-        if (y == 3 && isItemPlaced == 0) {
-          y = 0;
-        }
-      }
-    case 2:
-      for(y=4; y<=7; y++) {
-        for(x=0; x<=5; x++) {
-          if (isItemPlaced == 0) {
-            if (Random() > 49151) {
-              canItemBePlaced = CheckIfItemCanBePlaced(itemId, x, y, 5, 7);
-              if (canItemBePlaced == 1) {
-                DrawItemSprite(x,y,itemId, TAG_PAL_ITEM2);
-                OverwriteItemMapData(x, y, itemStateId, itemId); // For the collection logic, overwrite the itemmap data
-                isItemPlaced = 1;
-                break;
-              }
-            }
-          }
-        }
-        if (y == 7 && isItemPlaced == 0) {
-          y = 4;
-        }
-      }
-
-    case 3:
-      for(y=0; y<=3; y++) {
-        for(x=6; x<=11; x++) {
-          if (isItemPlaced == 0) {
-            if (Random() > 49151) {
-              canItemBePlaced = CheckIfItemCanBePlaced(itemId, x, y, 11, 3);
-              if (canItemBePlaced == 1) {
-                DrawItemSprite(x,y,itemId, TAG_PAL_ITEM3);
-                OverwriteItemMapData(x, y, itemStateId, itemId); // For the collection logic, overwrite the itemmap data
-                isItemPlaced = 1;
-                break;
-              }
-            }
-          }
-        }
-        // If it hasn't placed an Item (that's very unlikely but while debuggin, this happened), just retry
-        if (y == 3 && isItemPlaced == 0) {
-          y = 0;
-        }
-      }
-
-    case 4:
-     for(y=4; y<=7; y++) {
-      for(x=6; x<=11; x++) {
-        if (isItemPlaced == 0) {
-          if (Random() > 49151) {
-            canItemBePlaced = CheckIfItemCanBePlaced(itemId, x, y, 11, 7);
-            if (canItemBePlaced == 1) {
-              DrawItemSprite(x,y,itemId, TAG_PAL_ITEM4);
-              OverwriteItemMapData(x, y, itemStateId, itemId); // For the collection logic, overwrite the itemmap data
-              isItemPlaced = 1;
-              break;
-            }
-          }
-        }
-      }
-      // If it hasn't placed an Item (that's very unlikely but while debuggin, this happened), just retry
-      if (y == 7 && isItemPlaced == 0) {
-        y = 4;
-      }
+static void Debug_DetermineLocation(u32* x, u32* y, u32 item)
+{
+    switch (item)
+    {
+        default:
+        case 1:
+            *x = 1;
+            *y = 1;
+            break;
+        case 2:
+            *x = 1;
+            *y = 5;
+            break;
+        case 3:
+            *x = 7;
+            *y = 1;
+            break;
+        case 4:
+            *x = 7;
+            *y = 5;
+            break;
     }
-  }
+}
+
+static void DoDrawRandomItem(u8 itemStateId, u8 itemId) {
+    u32 y;
+    u32 x;
+    u16 rnd;
+    u8 posX;
+    u8 posY;
+    u8 t;
+    u8 canItemBePlaced = 1;
+    bool32 isItemPlaced = FALSE;
+    u32 xMax, yMax, xMin, yMin;
+    u32 paletteTag;
+
+    // Zone Split
+    //
+    // The wall is splitted into 4x6 tiles zones. Each zone is reserved for 1 item
+    //
+    // |item1|item3|
+    // |item2|item4|
+
+    switch(itemStateId) {
+        default:
+        case 1:
+            xMin = ITEM_ZONE_1_X_LEFT_BOUNDARY;
+            xMax = ITEM_ZONE_1_X_RIGHT_BOUNDARY;
+            yMin = ITEM_ZONE_1_Y_UP_BOUNDARY;
+            yMax = ITEM_ZONE_1_Y_DOWN_BOUNDARY;
+            paletteTag = TAG_PAL_ITEM1;
+            break;
+        case 2:
+            xMin = ITEM_ZONE_2_X_LEFT_BOUNDARY;
+            xMax = ITEM_ZONE_2_X_RIGHT_BOUNDARY;
+            yMin = ITEM_ZONE_2_Y_UP_BOUNDARY;
+            yMax = ITEM_ZONE_2_Y_DOWN_BOUNDARY;
+            paletteTag = TAG_PAL_ITEM2;
+            break;
+        case 3:
+            xMin = ITEM_ZONE_3_X_LEFT_BOUNDARY;
+            xMax = ITEM_ZONE_3_X_RIGHT_BOUNDARY;
+            yMin = ITEM_ZONE_3_Y_UP_BOUNDARY;
+            yMax = ITEM_ZONE_3_Y_DOWN_BOUNDARY;
+            paletteTag = TAG_PAL_ITEM3;
+            break;
+        case 4:
+            xMin = ITEM_ZONE_4_X_LEFT_BOUNDARY;
+            xMax = ITEM_ZONE_4_X_RIGHT_BOUNDARY;
+            yMin = ITEM_ZONE_4_Y_UP_BOUNDARY;
+            yMax = ITEM_ZONE_4_Y_DOWN_BOUNDARY;
+            paletteTag = TAG_PAL_ITEM4;
+            break;
+    }
+
+    for(y=yMin; y<=yMax; y++) {
+        for(x=xMin; x<=xMax; x++) {
+            if (isItemPlaced)
+                continue;
+
+            if (Random() <= 49151)
+                // continue; // Comment out when Debug
+                Debug_DetermineLocation(&x,&y,itemStateId); // Debug
+
+            if (!CheckIfItemCanBePlaced(itemId, x, y, xMax, yMax))
+                continue;
+
+            DrawItemSprite(x,y,itemId, paletteTag);
+            OverwriteItemMapData(x, y, itemStateId, itemId); // For the collection logic, overwrite the itemmap data
+            isItemPlaced = TRUE;
+            break;
+        }
+        // If it hasn't placed an Item (that's very unlikely but while debuggin, this happened), just retry
+        if (y == yMax && !isItemPlaced) {
+            y = yMin;
+        }
+    }
 }
 
 #define TAG_DUMMY 0
