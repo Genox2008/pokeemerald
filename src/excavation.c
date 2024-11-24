@@ -59,6 +59,8 @@ static void Excavation_UpdateTerrain(void);
 static void Excavation_DrawRandomTerrain(void);
 static void DoDrawRandomItem(u8 itemStateId, u8 itemId);
 static void DoDrawRandomStone(u8 itemId);
+static bool32 DoesStoneFitInItemMap(u8 itemId);
+static bool32 CanStoneBePlacedAtXY(u32 x, u32 y, u32 itemId);
 static void Excavation_CheckItemFound(void);
 static void PrintMessage(const u8 *string);
 static void InitMiningWindows(void);
@@ -81,6 +83,12 @@ static u32 GetNumberOfFoundItems(void);
 static bool32 GetBuriedItemStatus(u32 index);
 static void ExitExcavationUI(u8 taskId);
 
+static u32 Debug_SetNumberOfBuriedItems(u32 rnd);
+static u32 Debug_CreateRandomItem(u32 random);
+static u32 Debug_DetermineStoneSize(u32 stone, u32 stoneIndex);
+static void Debug_DetermineLocation(u32* x, u32* y, u32 item);
+static void Debug_RaiseSpritePriority(u32 spriteId);
+
 struct BuriedItem {
   u32 itemId;
   bool32 status;
@@ -89,12 +97,12 @@ struct BuriedItem {
 struct ExcavationState {
   MainCallback leavingCallback; // Callback to leave the Ui
   u32 loadGameState;            // ?
-  bool32 shouldShake;           // If set to true, shake gets executed every VBlank 
+  bool32 shouldShake;           // If set to true, shake gets executed every VBlank
   u32 shakeState;               // State of shaking steps
   u32 ShakeHitTool;
   u32 ShakeHitEffect;
   bool32 mode;                  // Hammer or Pickaxe
-  u32 cursorSpriteIndex;        
+  u32 cursorSpriteIndex;
   u32 bRedSpriteIndex;
   u32 bBlueSpriteIndex;
   u32 crackCount;               // How many cracks in one 32x32 portion
@@ -152,6 +160,12 @@ struct ExcavationState {
 static EWRAM_DATA struct ExcavationState *sExcavationUiState = NULL;
 static EWRAM_DATA u8 *sBg2TilemapBuffer = NULL;
 static EWRAM_DATA u8 *sBg3TilemapBuffer = NULL;
+
+//#define EXCAVATION_DEBUG
+
+#ifdef EXCAVATION_DEBUG
+static EWRAM_DATA u8 debugVariable = 0; // Debug
+#endif
 
 static const struct WindowTemplate sWindowTemplates[] =
 {
@@ -336,6 +350,34 @@ static const struct OamData gOamHitTools = {
     .paletteNum = 0,
 };
 
+static const struct OamData gOamItem32x32 = {
+    .y = 0,
+    .affineMode = 0,
+    .objMode = 0,
+    .bpp = 0,
+    .shape = 0,
+    .x = 0,
+    .matrixNum = 0,
+    .size = 2,
+    .tileNum = 0,
+    .priority = 3,
+    .paletteNum = 0,
+};
+
+static const struct OamData gOamItem64x64 = {
+    .y = 0,
+    .affineMode = 0,
+    .objMode = 0,
+    .bpp = 0,
+    .shape = 0,
+    .x = 0,
+    .matrixNum = 0,
+    .size = 3,
+    .tileNum = 0,
+    .priority = 3,
+    .paletteNum = 0,
+};
+
 static const union AnimCmd gAnimCmdCursor[] = {
     ANIMCMD_FRAME(0, 20),
     ANIMCMD_FRAME(4, 20),
@@ -410,8 +452,8 @@ static const union AnimCmd *const gHitPickaxeAnim[] = {
 #define COMFY_Y 1
 
 static void SpriteCB_Cursor(struct Sprite* sprite) {
-    sprite->x = ReadComfyAnimValueSmooth(&gComfyAnims[sprite->data[COMFY_X]]); 
-    sprite->y = ReadComfyAnimValueSmooth(&gComfyAnims[sprite->data[COMFY_Y]]); 
+    sprite->x = ReadComfyAnimValueSmooth(&gComfyAnims[sprite->data[COMFY_X]]);
+    sprite->y = ReadComfyAnimValueSmooth(&gComfyAnims[sprite->data[COMFY_Y]]);
 
     // Update anim's X and Y pos
     gComfyAnims[gSprites[sExcavationUiState->cursorSpriteIndex].data[COMFY_X]].config.data.spring.to = Q_24_8(8 + 16 * sExcavationUiState->cursorX);
@@ -605,14 +647,14 @@ static const struct SpritePalette sSpritePal_Stone3x3[] =
 
 // Item SpriteSheets and SpritePalettes
 static const struct CompressedSpriteSheet sSpriteSheet_ItemHeartScale = {
-  gItemHeartScaleGfx, 
-  64*64/2, 
+  gItemHeartScaleGfx,
+  64*64/2,
   TAG_ITEM_HEARTSCALE,
 };
 
 static const struct CompressedSpriteSheet sSpriteSheet_ItemHardStone = {
   gItemHardStoneGfx,
-  64*64/2, 
+  64*64/2,
   TAG_ITEM_HARDSTONE,
 };
 
@@ -680,42 +722,6 @@ static const struct CompressedSpriteSheet sSpriteSheet_ItemHeatRock = {
   gItemHeatRockGfx,
   64*64/2,
   TAG_ITEM_HEAT_ROCK,
-};
-
-static const struct OamData gOamItem32x32 = {
-    .y = 0,
-    .affineMode = 0,
-    .objMode = 0,
-    .bpp = 0,
-    .shape = 0,
-    .x = 0,
-    .matrixNum = 0,
-    .size = 2,
-    .tileNum = 0,
-    #ifdef DEBUG_ITEM_GEN
-    .priority = 0,
-    #else
-    .priority = 3,
-    #endif
-    .paletteNum = 0,
-};
-
-static const struct OamData gOamItem64x64 = {
-    .y = 0,
-    .affineMode = 0,
-    .objMode = 0,
-    .bpp = 0,
-    .shape = 0,
-    .x = 0,
-    .matrixNum = 0,
-    .size = 3,
-    .tileNum = 0,
-    #ifdef DEBUG_ITEM_GEN
-    .priority = 0,
-    #else
-    .priority = 3,
-    #endif
-    .paletteNum = 0,
 };
 
 static const struct SpriteTemplate gSpriteStone1x4 = {
@@ -789,9 +795,10 @@ struct ExcavationItem {
 };
 
 struct ExcavationStone {
-  u32 excStoneId;
   u32 top; // starts with 0
   u32 left; // starts with 0
+  u32 height;
+  u32 width;
 };
 
 static const struct ExcavationItem ExcavationItemList[] = {
@@ -840,7 +847,7 @@ static const struct ExcavationItem ExcavationItemList[] = {
     .totalTiles = 7,
     .tag = TAG_ITEM_DAMP_ROCK,
     .sheet = &sSpriteSheet_ItemDampRock,
-  },  
+  },
   [ITEMID_RED_SHARD] = {
     .excItemId = ITEMID_RED_SHARD,
     .realItemId = ITEM_RED_SHARD,
@@ -925,39 +932,45 @@ static const struct ExcavationItem ExcavationItemList[] = {
     .totalTiles = 9,
     .tag = TAG_ITEM_HEAT_ROCK,
     .sheet = &sSpriteSheet_ItemHeatRock,
-  }, 
+  },
 };
 
 static const struct ExcavationStone ExcavationStoneList[] = {
   [ID_STONE_1x4] = {
-    .excStoneId = ID_STONE_1x4,
     .top = 3,
     .left = 0,
+    .width = 1,
+    .height = 4,
   },
   [ID_STONE_4x1] = {
-    .excStoneId = ID_STONE_4x1,
     .top = 0,
     .left = 3,
+    .width = 4,
+    .height = 1,
   },
   [ID_STONE_2x4] = {
-    .excStoneId = ID_STONE_2x4,
     .top = 3,
     .left = 1,
+    .width = 2,
+    .height = 4,
   },
   [ID_STONE_4x2] = {
-    .excStoneId = ID_STONE_4x2,
     .top = 1,
     .left = 3,
+    .width = 4,
+    .height = 2,
   },
   [ID_STONE_2x2] = {
-    .excStoneId = ID_STONE_2x2,
     .top = 1,
     .left = 1,
+    .width = 2,
+    .height = 2,
   },
   [ID_STONE_3x3] = {
-    .excStoneId = ID_STONE_3x3,
     .top = 2,
     .left = 2,
+    .width = 3,
+    .height = 3,
   },
 };
 
@@ -1019,6 +1032,8 @@ static void Excavation_Init(MainCallback callback) {
     rnd = 2;
   }
 
+  rnd = Debug_SetNumberOfBuriedItems(rnd); // Debug
+
   switch(rnd) {
     case 0:
       sExcavationUiState->state_item3 = DESELECTED;
@@ -1028,6 +1043,7 @@ static void Excavation_Init(MainCallback callback) {
       sExcavationUiState->state_item3 = SELECTED;
       sExcavationUiState->state_item2 = DESELECTED;
       break;
+    default:
     case 2:
       sExcavationUiState->state_item3 = SELECTED;
       sExcavationUiState->state_item2 = SELECTED;
@@ -1079,10 +1095,10 @@ enum {
 
 // IGNORE THIS PSF
 //
-// Uncompress some data idk 
+// Uncompress some data idk
 static void LZ77UnCompSprite(const u32* data, u32 output[512]) {
   LZ77UnCompVram(data, output);
-}   
+}
 
 static void split_sprite_into_pixels(u32 pixels[4096]) {
   u32 i, j, element, slice;
@@ -1096,7 +1112,7 @@ static void split_sprite_into_pixels(u32 pixels[4096]) {
       slice = (element >> (28 - j * 4)) & 0xF;
       pixels[i * 8 + j] = slice;
     }
-  } 
+  }
 }
 
 static void SpriteTesting(void) {
@@ -1107,7 +1123,7 @@ static void SpriteTesting(void) {
   }
   split_sprite_into_pixels(pixels);
   for (i=0;i<4096;i++) {
-    DebugPrintf("%u", pixels[i]);
+    //DebugPrintf("%u", pixels[i]);
   }
   /*for (x=0;x<64;x++) {
     for (y=0;y<16;y++) {
@@ -1260,7 +1276,7 @@ static void ExcavationUi_Shake(u8 taskId) {
       //gSprites[sExcavationUiState->bBlueSpriteIndex].x += 1;
       SetGpuReg(REG_OFFSET_BG3HOFS, 1);
       SetGpuReg(REG_OFFSET_BG2HOFS, 1);
-      sExcavationUiState->shakeState++; 
+      sExcavationUiState->shakeState++;
       break;
     case 1:
       //gSprites[sExcavationUiState->bRedSpriteIndex].y += 1;
@@ -1451,19 +1467,20 @@ static u8 GetRandomItemId() {
     rarity = RARITY_RARE;
   }
 
+#ifdef EXCAVATION_DEBUG
+  return Debug_CreateRandomItem(item); // Debug
+#endif
+
   switch (rarity) {
     case RARITY_COMMON:
       index = random(3);
       return ItemRarityTable_Common[index].itemId;
-      break;
     case RARITY_UNCOMMON:
       index = random(4);
       return ItemRarityTable_Uncommon[index].itemId;
-      break;
     case RARITY_RARE:
       index = random(6);
       return ItemRarityTable_Rare[index].itemId;
-      break;
   }
 
   // This won't ever happen.
@@ -1472,10 +1489,13 @@ static u8 GetRandomItemId() {
 
 
 static void Excavation_LoadSpriteGraphics(void) {
-  u8 i;
+  u32 i, j;
   u8 itemId1, itemId2, itemId3, itemId4;
+  u32 x, y;
   u16 rnd;
-  struct ComfyAnimSpringConfig animConfigX, animConfigY;  
+  u32 stone = ITEMID_NONE;
+  bool32 wasDrawn = FALSE;
+  struct ComfyAnimSpringConfig animConfigX, animConfigY;
 
   // -- X values --
   animConfigX.from = Q_24_8(0 + 8);
@@ -1486,7 +1506,7 @@ static void Excavation_LoadSpriteGraphics(void) {
   animConfigX.clampAfter = 0;
   animConfigX.delayFrames = 0;
 
-  // -- Y values -- 
+  // -- Y values --
   animConfigY.from = Q_24_8(2 * 16 + 8);
   animConfigY.to = Q_24_8(2 * 16 + 8);
   animConfigY.mass = Q_24_8(50);
@@ -1534,22 +1554,20 @@ static void Excavation_LoadSpriteGraphics(void) {
   }
 
   // TODO: Change this randomness by using my new `random(u32 amount);` function!
-  for (i=0; i<2; i++) {
-    rnd = Random();
 
-    if (rnd < 10922) {
-      DoDrawRandomStone(ID_STONE_1x4);
-    } else if (rnd < 21844) {
-      DoDrawRandomStone(ID_STONE_4x1);
-    } else if (rnd < 32766) {
-      DoDrawRandomStone(ID_STONE_2x4);
-    } else if (rnd < 43688) {
-      DoDrawRandomStone(ID_STONE_4x2);
-    } else if (rnd < 54610) {
-      DoDrawRandomStone(ID_STONE_2x2);
-    } else if (rnd < 65535) {
-      DoDrawRandomStone(ID_STONE_3x3);
-    }
+  for (i=0; i<COUNT_MAX_NUMBER_STONES; i++) {
+
+      stone = ITEMID_NONE;
+      while (!DoesStoneFitInItemMap(stone))
+          stone = ((Random() % COUNT_ID_STONE) + ID_STONE_1x4);
+
+      stone = Debug_DetermineStoneSize(stone,i);
+      DoDrawRandomStone(stone);
+      //Check every stone size that will fit in current itemMap
+      //Create an tempArray of ones that will def fit
+      //rnd should pull from that temp array when using doDrawRandomStone
+      //if rnd rolls a stone that's not in the tempArray, roll again
+
   }
 
   sExcavationUiState->cursorSpriteIndex = CreateSprite(&gSpriteCursor, 8, 40, 0);
@@ -1991,6 +2009,7 @@ static void DrawItemSprite(u8 x, u8 y, u8 itemId, u32 itemNumPalTag) {
   struct SpriteTemplate gSpriteTemplate;
   u8 posX = x * 16;
   u8 posY = y * 16 + 32;
+  u32 spriteId;
   //ExcavationItem_LoadPalette(gTestItemPal, tag);
 
   //LoadPalette(gTestItemPal, OBJ_PLTT_ID(3), PLTT_SIZE_4BPP);
@@ -1998,39 +2017,41 @@ static void DrawItemSprite(u8 x, u8 y, u8 itemId, u32 itemNumPalTag) {
     case ID_STONE_1x4:
       LoadSpritePalette(sSpritePal_Stone1x4);
       LoadCompressedSpriteSheet(sSpriteSheet_Stone1x4);
-      CreateSprite(&gSpriteStone1x4, posX+POS_OFFS_64X64, posY+POS_OFFS_64X64, 3);
+      spriteId = CreateSprite(&gSpriteStone1x4, posX+POS_OFFS_64X64, posY+POS_OFFS_64X64, 3);
       break;
     case ID_STONE_4x1:
       LoadSpritePalette(sSpritePal_Stone4x1);
       LoadCompressedSpriteSheet(sSpriteSheet_Stone4x1);
-      CreateSprite(&gSpriteStone4x1, posX+POS_OFFS_64X64, posY+POS_OFFS_64X64, 3);
+      spriteId = CreateSprite(&gSpriteStone4x1, posX+POS_OFFS_64X64, posY+POS_OFFS_64X64, 3);
       break;
     case ID_STONE_2x4:
       LoadSpritePalette(sSpritePal_Stone2x4);
       LoadCompressedSpriteSheet(sSpriteSheet_Stone2x4);
-      CreateSprite(&gSpriteStone2x4, posX+POS_OFFS_64X64, posY+POS_OFFS_64X64, 3);
+      spriteId = CreateSprite(&gSpriteStone2x4, posX+POS_OFFS_64X64, posY+POS_OFFS_64X64, 3);
       break;
     case ID_STONE_4x2:
       LoadSpritePalette(sSpritePal_Stone4x2);
       LoadCompressedSpriteSheet(sSpriteSheet_Stone4x2);
-      CreateSprite(&gSpriteStone4x2, posX+POS_OFFS_64X64, posY+POS_OFFS_64X64, 3);
+      spriteId = CreateSprite(&gSpriteStone4x2, posX+POS_OFFS_64X64, posY+POS_OFFS_64X64, 3);
       break;
     case ID_STONE_2x2:
       LoadSpritePalette(sSpritePal_Stone2x2);
       LoadCompressedSpriteSheet(sSpriteSheet_Stone2x2);
-      CreateSprite(&gSpriteStone2x2, posX+POS_OFFS_64X64, posY+POS_OFFS_64X64, 3);
+      spriteId = CreateSprite(&gSpriteStone2x2, posX+POS_OFFS_64X64, posY+POS_OFFS_64X64, 3);
       break;
     case ID_STONE_3x3:
       LoadSpritePalette(sSpritePal_Stone3x3);
       LoadCompressedSpriteSheet(sSpriteSheet_Stone3x3);
-      CreateSprite(&gSpriteStone3x3, posX+POS_OFFS_64X64, posY+POS_OFFS_64X64, 3);
+      spriteId = CreateSprite(&gSpriteStone3x3, posX+POS_OFFS_64X64, posY+POS_OFFS_64X64, 3);
       break;
     default: // If Item and not Stone
       gSpriteTemplate = CreatePaletteAndReturnTemplate(ExcavationItemList[itemId].tag, itemNumPalTag);
       LoadCompressedSpriteSheet(ExcavationItemList[itemId].sheet);
-      CreateSprite(&gSpriteTemplate, posX+POS_OFFS_64X64, posY+POS_OFFS_64X64, 3);
+      spriteId = CreateSprite(&gSpriteTemplate, posX+POS_OFFS_64X64, posY+POS_OFFS_64X64, 3);
       break;
   }
+
+  Debug_RaiseSpritePriority(spriteId);
 }
 
 // Defines && Macros
@@ -2041,7 +2062,7 @@ static void SetItemState(u32 posX, u32 posY, u32 x, u32 y, u32 itemStateId) {
 #define OIMD_2x2 SetItemState(posX, posY, 0, 0, itemStateId); \
                  SetItemState(posX, posY, 1, 0, itemStateId); \
                  SetItemState(posX, posY, 0, 1, itemStateId); \
-                 SetItemState(posX, posY, 1, 1, itemStateId); 
+                 SetItemState(posX, posY, 1, 1, itemStateId);
 
 #define OIMD_3x3 OIMD_2x2 \
                  SetItemState(posX, posY, 2, 0, itemStateId); \
@@ -2056,7 +2077,7 @@ static void SetItemState(u32 posX, u32 posY, u32 x, u32 y, u32 itemStateId) {
                       SetItemState(posX, posY, 1, 2, itemStateId); \
                       SetItemState(posX, posY, 2, 1, itemStateId);
 
-static void OverwriteItemMapData(u8 posX, u8 posY, u8 itemStateId, u8 itemId) { 
+static void OverwriteItemMapData(u8 posX, u8 posY, u8 itemStateId, u8 itemId) {
   switch (itemId) {
     case ID_STONE_1x4:
       SetItemState(posX, posY, 0, 0, itemStateId);
@@ -2102,10 +2123,10 @@ static void OverwriteItemMapData(u8 posX, u8 posY, u8 itemStateId, u8 itemId) {
       OIMD_3x3_PLUS
       break;
     case ITEMID_STAR_PIECE:
-      OIMD_3x3_PLUS     
+      OIMD_3x3_PLUS
       break;
     case ITEMID_DAMP_ROCK:
-      OIMD_2x2 
+      OIMD_2x2
       SetItemState(posX, posY, 2, 1, itemStateId);
       SetItemState(posX, posY, 2, 0, itemStateId);
       SetItemState(posX, posY, 0, 2, itemStateId);
@@ -2181,7 +2202,7 @@ static bool32 ItemPlaceable_Cond_2x2(u32 posX, u32 posY, u32 i) {
     ItemStateCondition(posX, posY, 0, 0, i) ||
     ItemStateCondition(posX, posY, 0, 1, i) ||
     ItemStateCondition(posX, posY, 1, 0, i) ||
-    ItemStateCondition(posX, posY, 1, 1, i) 
+    ItemStateCondition(posX, posY, 1, 1, i)
   );
 }
 
@@ -2310,11 +2331,11 @@ static u8 CheckIfItemCanBePlaced(u8 itemId, u8 posX, u8 posY, u8 xBorder, u8 yBo
           ItemStateCondition(posX, posY, 0, 1, i) ||
           ItemStateCondition(posX, posY, 0, 2, i) ||
           ItemStateCondition(posX, posY, 1, 1, i) ||
-          ItemStateCondition(posX, posY, 1, 2, i) || 
+          ItemStateCondition(posX, posY, 1, 2, i) ||
           ItemStateCondition(posX, posY, 1, 3, i) ||
           ItemStateCondition(posX, posY, 2, 0, i) ||
-          ItemStateCondition(posX, posY, 2, 1, i) || 
-          ItemStateCondition(posX, posY, 2, 2, i) || 
+          ItemStateCondition(posX, posY, 2, 1, i) ||
+          ItemStateCondition(posX, posY, 2, 2, i) ||
           ItemStateCondition(posX, posY, 3, 2, i) ||
           ItemStateCondition(posX, posY, 3, 3, i) ||
           BORDERCHECK_COND(itemId)
@@ -2332,254 +2353,145 @@ static u8 CheckIfItemCanBePlaced(u8 itemId, u8 posX, u8 posY, u8 xBorder, u8 yBo
           ItemStateCondition(posX, posY, 2, 2, i) ||
           ItemStateCondition(posX, posY, 3, 1, i) ||
           ItemStateCondition(posX, posY, 3, 2, i) ||
-          BORDERCHECK_COND(itemId) 
+          BORDERCHECK_COND(itemId)
         ) {return 0;}
         break;
       }
   }
   return 1;
 }
-
 static void DoDrawRandomItem(u8 itemStateId, u8 itemId) {
-  u8 y;
-  u8 x;
-  u16 rnd;
-  u8 posX;
-  u8 posY;
-  u8 t;
-  u8 canItemBePlaced = 1;
-  u8 isItemPlaced = 0;
+    u32 y;
+    u32 x;
+    u16 rnd;
+    u8 posX;
+    u8 posY;
+    u8 t;
+    u8 canItemBePlaced = 1;
+    bool32 isItemPlaced = FALSE;
+    u32 xMax, yMax, xMin, yMin;
+    u32 paletteTag;
 
-  // Zone Split
-  //
-  // The wall is splitted into 4x6 tiles zones. Each zone is reserved for 1 item
-  //
-  // |item1|item3|
-  // |item2|item4|
+    // Zone Split
+    //
+    // The wall is splitted into 4x6 tiles zones. Each zone is reserved for 1 item
+    //
+    // |item1|item3|
+    // |item2|item4|
 
-  switch(itemStateId) {
-    case 1:
-      for(y=0; y<=3; y++) {
-        for(x=0; x<=5; x++) {
-          if (isItemPlaced == 0) {
-            if (Random() > 49151) {
-              canItemBePlaced = CheckIfItemCanBePlaced(itemId, x, y, 5, 3);
-              if (canItemBePlaced == 1) {
-                DrawItemSprite(x,y,itemId, TAG_PAL_ITEM1);
-                OverwriteItemMapData(x, y, itemStateId, itemId); // For the collection logic, overwrite the itemmap data
-                isItemPlaced = 1;
-                break;
-              }
-            }
-          }
-        }
-        // If it hasn't placed an Item (that's very unlikely but while debuggin, this happened), just retry
-        if (y == 3 && isItemPlaced == 0) {
-          y = 0;
-        }
-      }
-    case 2:
-      for(y=4; y<=7; y++) {
-        for(x=0; x<=5; x++) {
-          if (isItemPlaced == 0) {
-            if (Random() > 49151) {
-              canItemBePlaced = CheckIfItemCanBePlaced(itemId, x, y, 5, 7);
-              if (canItemBePlaced == 1) {
-                DrawItemSprite(x,y,itemId, TAG_PAL_ITEM2);
-                OverwriteItemMapData(x, y, itemStateId, itemId); // For the collection logic, overwrite the itemmap data
-                isItemPlaced = 1;
-                break;
-              }
-            }
-          }
-        }
-        if (y == 7 && isItemPlaced == 0) {
-          y = 4;
-        }
-      }
-
-    case 3:
-      for(y=0; y<=3; y++) {
-        for(x=6; x<=11; x++) {
-          if (isItemPlaced == 0) {
-            if (Random() > 49151) {
-              canItemBePlaced = CheckIfItemCanBePlaced(itemId, x, y, 11, 3);
-              if (canItemBePlaced == 1) {
-                DrawItemSprite(x,y,itemId, TAG_PAL_ITEM3);
-                OverwriteItemMapData(x, y, itemStateId, itemId); // For the collection logic, overwrite the itemmap data
-                isItemPlaced = 1;
-                break;
-              }
-            }
-          }
-        }
-        // If it hasn't placed an Item (that's very unlikely but while debuggin, this happened), just retry
-        if (y == 3 && isItemPlaced == 0) {
-          y = 0;
-        }
-      }
-
-    case 4:
-     for(y=4; y<=7; y++) {
-      for(x=6; x<=11; x++) {
-        if (isItemPlaced == 0) {
-          if (Random() > 49151) {
-            canItemBePlaced = CheckIfItemCanBePlaced(itemId, x, y, 11, 7);
-            if (canItemBePlaced == 1) {
-              DrawItemSprite(x,y,itemId, TAG_PAL_ITEM4);
-              OverwriteItemMapData(x, y, itemStateId, itemId); // For the collection logic, overwrite the itemmap data
-              isItemPlaced = 1;
-              break;
-            }
-          }
-        }
-      }
-      // If it hasn't placed an Item (that's very unlikely but while debuggin, this happened), just retry
-      if (y == 7 && isItemPlaced == 0) {
-        y = 4;
-      }
+    switch(itemStateId) {
+        default:
+        case 1:
+            xMin = ITEM_ZONE_1_X_LEFT_BOUNDARY;
+            xMax = ITEM_ZONE_1_X_RIGHT_BOUNDARY;
+            yMin = ITEM_ZONE_1_Y_UP_BOUNDARY;
+            yMax = ITEM_ZONE_1_Y_DOWN_BOUNDARY;
+            paletteTag = TAG_PAL_ITEM1;
+            break;
+        case 2:
+            xMin = ITEM_ZONE_2_X_LEFT_BOUNDARY;
+            xMax = ITEM_ZONE_2_X_RIGHT_BOUNDARY;
+            yMin = ITEM_ZONE_2_Y_UP_BOUNDARY;
+            yMax = ITEM_ZONE_2_Y_DOWN_BOUNDARY;
+            paletteTag = TAG_PAL_ITEM2;
+            break;
+        case 3:
+            xMin = ITEM_ZONE_3_X_LEFT_BOUNDARY;
+            xMax = ITEM_ZONE_3_X_RIGHT_BOUNDARY;
+            yMin = ITEM_ZONE_3_Y_UP_BOUNDARY;
+            yMax = ITEM_ZONE_3_Y_DOWN_BOUNDARY;
+            paletteTag = TAG_PAL_ITEM3;
+            break;
+        case 4:
+            xMin = ITEM_ZONE_4_X_LEFT_BOUNDARY;
+            xMax = ITEM_ZONE_4_X_RIGHT_BOUNDARY;
+            yMin = ITEM_ZONE_4_Y_UP_BOUNDARY;
+            yMax = ITEM_ZONE_4_Y_DOWN_BOUNDARY;
+            paletteTag = TAG_PAL_ITEM4;
+            break;
     }
-  }
-}
 
+    for(y=yMin; y<=yMax; y++) {
+        for(x=xMin; x<=xMax; x++) {
+
+            if (isItemPlaced)
+                continue;
+
+            if (Random() <= 49151)
+                continue;
+
+            Debug_DetermineLocation(&x,&y,itemStateId); // Debug
+
+            if (!CheckIfItemCanBePlaced(itemId, x, y, xMax, yMax))
+                continue;
+
+            DrawItemSprite(x,y,itemId, paletteTag);
+            OverwriteItemMapData(x, y, itemStateId, itemId); // For the collection logic, overwrite the itemmap data
+            isItemPlaced = TRUE;
+            break;
+        }
+        // If it hasn't placed an Item (that's very unlikely but while debuggin, this happened), just retry
+        if (y == yMax && !isItemPlaced) {
+            y = yMin;
+        }
+    }
+}
 #define TAG_DUMMY 0
 
+static bool32 CanStoneBePlacedAtXY(u32 x, u32 y, u32 itemId)
+{
+    u32 dx, dy;
+    u32 height = ExcavationStoneList[itemId].height;
+    u32 width = ExcavationStoneList[itemId].width;
+
+    if ((x + width) > GRID_WIDTH)
+        return FALSE;
+
+    if ((y + height) > GRID_HEIGHT)
+        return FALSE;
+
+    for (dx = 0; dx < width; dx++) {
+        for (dy = 0; dy < height; dy++) {
+            if (sExcavationUiState->itemMap[x + dx + (y + dy) * GRID_WIDTH] != 0) {
+                return FALSE;
+            }
+        }
+    }
+    return TRUE;
+}
+
+static bool32 DoesStoneFitInItemMap(u8 itemId)
+{
+    u32 coordX,coordY;
+
+    if (itemId == ITEM_NONE)
+        return FALSE;
+
+    for (coordX = 0; coordX < GRID_WIDTH; coordX++)
+    {
+        for (coordY = 0; coordY < GRID_HEIGHT; coordY++)
+        {
+            if (CanStoneBePlacedAtXY(coordX,coordY,itemId))
+                return TRUE;
+        }
+    }
+    return FALSE;
+}
+
 // TODO: Fill this function with the rest of the stones
-static void DoDrawRandomStone(u8 itemId) {
-  u8 x, y;
-  u8 stoneIsPlaced = 0;
+static void DoDrawRandomStone(u8 itemId){
+    u32 x = Random() % GRID_WIDTH;
+    u32 y = Random() % GRID_HEIGHT;
 
-  for(y=0;y<8;y++) {
-    for(x=0;x<12;x++) {
-      switch(itemId) {
-        case ID_STONE_1x4:
-          if (
-            sExcavationUiState->itemMap[x + y * 12]       == 0 &&
-            sExcavationUiState->itemMap[x + (y + 1) * 12] == 0 &&
-            sExcavationUiState->itemMap[x + (y + 2) * 12] == 0 &&
-            sExcavationUiState->itemMap[x + (y + 3) * 12] == 0 &&
-            x + ExcavationStoneList[itemId].left < 12 &&
-            y + ExcavationStoneList[itemId].top < 8 &&
-            Random() > 60000
-          ) {
-            DrawItemSprite(x, y, itemId, TAG_DUMMY);
-            // Dont want to use ITEM_TILE_DUG_UP, not sure if something unexpected will happen
-            OverwriteItemMapData(x, y, 6, itemId);
-            // Stops the looping so the stone isn't drawn multiple times lmao
-            x = 11;
-            y = 7;
-            stoneIsPlaced = 1;
-          }
-          break;
-        case ID_STONE_4x1:
-          if (
-            sExcavationUiState->itemMap[x + y * 12]     == 0 &&
-            sExcavationUiState->itemMap[x + 1 + y * 12] == 0 &&
-            sExcavationUiState->itemMap[x + 2 + y * 12] == 0 &&
-            sExcavationUiState->itemMap[x + 3 + y * 12] == 0 &&
-            x + ExcavationStoneList[itemId].left < 12 &&
-            y + ExcavationStoneList[itemId].top < 8 &&
-            Random() > 60000
-          ) {
-            DrawItemSprite(x, y, itemId, TAG_DUMMY);
-            OverwriteItemMapData(x, y, 6, itemId);
-            x = 11;
-            y = 7;
-            stoneIsPlaced = 1;
-          }
-          break;
-        case ID_STONE_2x4:
-          if (
-            sExcavationUiState->itemMap[x + y * 12]           == 0 &&
-            sExcavationUiState->itemMap[x + (y + 1) * 12]     == 0 &&
-            sExcavationUiState->itemMap[x + (y + 2) * 12]     == 0 &&
-            sExcavationUiState->itemMap[x + (y + 3) * 12]     == 0 &&
-            sExcavationUiState->itemMap[x + 1 + y * 12]       == 0 &&
-            sExcavationUiState->itemMap[x + 1 + (y + 1) * 12] == 0 &&
-            sExcavationUiState->itemMap[x + 1 + (y + 2) * 12] == 0 &&
-            sExcavationUiState->itemMap[x + 1 + (y + 3) * 12] == 0 &&
-            x + ExcavationStoneList[itemId].left < 12 &&
-            y + ExcavationStoneList[itemId].top < 8 &&
-            Random() > 60000
-          ) {
-            DrawItemSprite(x, y, itemId, TAG_DUMMY);
-            OverwriteItemMapData(x, y, 6, itemId);
-            x = 11;
-            y = 7;
-            stoneIsPlaced = 1;
-          }
-          break;
-        case ID_STONE_4x2:
-          if (
-            sExcavationUiState->itemMap[x + y * 12]           == 0 &&
-            sExcavationUiState->itemMap[x + 1 + y * 12]       == 0 &&
-            sExcavationUiState->itemMap[x + 2 + y * 12]       == 0 &&
-            sExcavationUiState->itemMap[x + 3 + y * 12]       == 0 &&
-            sExcavationUiState->itemMap[x + (y + 1) * 12]     == 0 &&
-            sExcavationUiState->itemMap[x + 1 + (y + 1) * 12] == 0 &&
-            sExcavationUiState->itemMap[x + 2 + (y + 1) * 12] == 0 &&
-            sExcavationUiState->itemMap[x + 3 + (y + 1) * 12] == 0 &&
-            x + ExcavationStoneList[itemId].left < 12 &&
-            y + ExcavationStoneList[itemId].top < 8 &&
-
-            Random() > 60000
-          ) {
-            DrawItemSprite(x, y, itemId, TAG_DUMMY);
-            OverwriteItemMapData(x, y, 6, itemId);
-            x = 11;
-            y = 7;
-            stoneIsPlaced = 1;
-          }
-          break;
-        case ID_STONE_2x2:
-          if (
-            sExcavationUiState->itemMap[x + y * 12]           == 0 &&
-            sExcavationUiState->itemMap[x + 1 + y * 12]       == 0 &&
-            sExcavationUiState->itemMap[x + (y + 1) * 12]     == 0 &&
-            sExcavationUiState->itemMap[x + 1 + (y + 1) * 12] == 0 &&
-            x + ExcavationStoneList[itemId].left < 12 &&
-            y + ExcavationStoneList[itemId].top < 8 &&
-
-            Random() > 60000
-          ) {
-            DrawItemSprite(x, y, itemId, TAG_DUMMY);
-            OverwriteItemMapData(x, y, 6, itemId);
-            x = 11;
-            y = 7;
-            stoneIsPlaced = 1;
-          }
-          break;
-        case ID_STONE_3x3:
-          if (
-            sExcavationUiState->itemMap[x + y * 12]           == 0 &&
-            sExcavationUiState->itemMap[x + 1 + y * 12]       == 0 &&
-            sExcavationUiState->itemMap[x + (y + 1) * 12]     == 0 &&
-            sExcavationUiState->itemMap[x + 1 + (y + 1) * 12] == 0 &&
-            sExcavationUiState->itemMap[x + 2 + y * 12]       == 0 &&
-            sExcavationUiState->itemMap[x + 2 + (y + 1) * 12] == 0 &&
-            sExcavationUiState->itemMap[x + 2 + (y + 2) * 12] == 0 &&
-            sExcavationUiState->itemMap[x + 1 + (y + 2) * 12] == 0 &&
-            sExcavationUiState->itemMap[x + (y + 2) * 12]     == 0 &&
-            x + ExcavationStoneList[itemId].left < 12 &&
-            y + ExcavationStoneList[itemId].top < 8 &&
-
-            Random() > 60000
-          ) {
-            DrawItemSprite(x, y, itemId, TAG_DUMMY);
-            OverwriteItemMapData(x, y, 6, itemId);
-            x = 11;
-            y = 7;
-            stoneIsPlaced = 1;
-          }
-          break;
-
-      }
+    while(!CanStoneBePlacedAtXY(x,y,itemId))
+    {
+        x = Random() % GRID_WIDTH;
+        y = Random() % GRID_HEIGHT;
     }
-    if (stoneIsPlaced == 0 && y == 7) {
-      y=0;
-    }
-  }
 
+    DrawItemSprite(x, y, itemId, TAG_DUMMY);
+    // Dont want to use ITEM_TILE_DUG_UP, not sure if something unexpected will happen
+    OverwriteItemMapData(x, y, 6, itemId);
 }
 
 static void Excavation_CheckItemFound(void) {
@@ -2869,15 +2781,15 @@ static void Excavation_FreeResources(void) {
 
 static void InitMiningWindows(void) {
 	if (InitWindows(sWindowTemplates))
-	{
-		DeactivateAllTextPrinters();
-		ScheduleBgCopyTilemapToVram(0);
-
-		LoadMessageBoxGfx(WIN_MSG, 20, BG_PLTT_ID(15));
-		PutWindowTilemap(WIN_MSG);
-		CopyWindowToVram(WIN_MSG, COPYWIN_FULL);
-		Menu_LoadStdPalAt(BG_PLTT_ID(14));
-	}
+    {
+        DeactivateAllTextPrinters();
+        ScheduleBgCopyTilemapToVram(0);
+        LoadBgTiles(GetWindowAttribute(WIN_MSG, WINDOW_BG), gMessageBox_Gfx, 0x1C0, 20);
+        LoadPalette(GetOverworldTextboxPalettePtr(), BG_PLTT_ID(15), PLTT_SIZE_4BPP);
+        PutWindowTilemap(WIN_MSG);
+        CopyWindowToVram(WIN_MSG, COPYWIN_FULL);
+        Menu_LoadStdPalAt(BG_PLTT_ID(14));
+    }
 }
 
 static void PrintMessage(const u8 *string) {
@@ -3053,7 +2965,7 @@ static void HandleGameFinish(u8 taskId) {
   //SetGpuReg(REG_OFFSET_WIN0H, WIN_RANGE(HWinCoords[0].winh.left, HWinCoords[0].winh.right));
   //SetGpuReg(REG_OFFSET_WIN0V, WIN_RANGE(HWinCoords[0].winv.left, HWinCoords[0].winv.right));
   //SetGpuReg(REG_OFFSET_WININ, WININ_WIN0_BG1);
-  //SetGpuReg(REG_OFFSET_WINOUT, WINOUT_WIN01_ALL);  
+  //SetGpuReg(REG_OFFSET_WINOUT, WINOUT_WIN01_ALL);
 
 	if (IsCrackMax())
 		PrintMessage(sText_TheWall);
@@ -3125,5 +3037,86 @@ static void ExitExcavationUI(u8 taskId) {
 	PlaySE(SE_PC_OFF);
 	BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);
 	gTasks[taskId].func = Task_ExcavationFadeAndExitMenu;
+}
+
+static u32 Debug_SetNumberOfBuriedItems(u32 rnd)
+{
+    u32 desiredNumItems = 4;
+
+#ifdef EXCAVATION_DEBUG
+        return (desiredNumItems - 2);
+#endif
+    return rnd;
+}
+
+static u32 Debug_CreateRandomItem(u32 random)
+{
+    u32 debug = 4;
+#ifdef EXCAVATION_DEBUG
+    switch (debugVariable++)
+#else
+    switch (debug)
+#endif
+    {
+        case 0: return ITEMID_REVIVE_MAX;
+        case 1: return ITEMID_REVIVE_MAX;
+        case 2: return ITEMID_EVER_STONE;
+        case 3: return ITEMID_EVER_STONE;
+        default: return random;
+    }
+}
+
+static u32 Debug_DetermineStoneSize(u32 stone, u32 stoneIndex)
+{
+    u32 desiredStones[2];
+    u32 returnStone;
+
+    desiredStones[0] = ITEMID_NONE;
+    desiredStones[1] = ITEMID_NONE ;
+    desiredStones[2] = ITEMID_NONE;
+
+    returnStone = desiredStones[stoneIndex];
+
+#ifdef EXCAVATION_DEBUG
+    return (!returnStone ? stone : returnStone);
+#else
+    return stone;
+#endif
+}
+
+static void Debug_DetermineLocation(u32* x, u32* y, u32 item)
+{
+#ifdef EXCAVATION_DEBUG
+    {
+        switch (item)
+        {
+            default:
+            case 1:
+                *x = 1;
+                *y = 1;
+                break;
+            case 2:
+                *x = 1;
+                *y = 5;
+                break;
+            case 3:
+                *x = 7;
+                *y = 1;
+                break;
+            case 4:
+                *x = 7;
+                *y = 5;
+                break;
+        }
+    }
+#endif
+    return;
+}
+
+static void Debug_RaiseSpritePriority(u32 spriteId)
+{
+#ifdef EXCAVATION_DEBUG
+    gSprites[spriteId].oam.priority = 0;
+#endif
 }
 

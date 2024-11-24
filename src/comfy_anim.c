@@ -52,9 +52,9 @@ static void AdvanceComfyAnim_Spring(struct ComfyAnim *anim)
     s32 prevPositionSign, curPositionSign;
     struct ComfyAnimSpringConfig *config = &anim->config.data.spring;
 
-    
+
     //DebugPrintf(".to = %u", config->to);
-    DebugPrintf("%u", ReadComfyAnimValueSmooth(anim));
+    //DebugPrintf("%u", ReadComfyAnimValueSmooth(anim));
 
     // When the spring value isn't moving AND it's at the target position, the animation is considered completed.
     if (abs(anim->velocity) < STATIONARY_VELOCITY_THRESHOLD && abs(config->to - anim->position) < SPRING_POSITION_PRECISION)
@@ -147,7 +147,7 @@ u32 CreateComfyAnim_Easing(struct ComfyAnimEasingConfig *config)
 
     if (i == INVALID_COMFY_ANIM)
         return i;
-    
+
     anim = &gComfyAnims[i];
     anim->inUse = TRUE;
     anim->completed = FALSE;
@@ -167,7 +167,7 @@ u32 CreateComfyAnim_Spring(struct ComfyAnimSpringConfig *config)
 
     if (i == INVALID_COMFY_ANIM)
         return i;
-    
+
     anim = &gComfyAnims[i];
     anim->inUse = TRUE;
     anim->completed = FALSE;
