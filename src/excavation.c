@@ -1138,12 +1138,12 @@ static void Excavation_SetupCB(void) {
 		SetVBlankHBlankCallbacksToNull();
 		ClearScheduledBgCopiesToVram();
 		ScanlineEffect_Stop();
-        SetGpuReg(REG_OFFSET_WIN0H, 0);
-        SetGpuReg(REG_OFFSET_WIN0V, 0);
-        SetGpuReg(REG_OFFSET_WIN1H, 0);
-        SetGpuReg(REG_OFFSET_WIN1V, 0);
-        SetGpuReg(REG_OFFSET_WININ, 0);
-        SetGpuReg(REG_OFFSET_WINOUT, 0);
+    SetGpuReg(REG_OFFSET_WIN0H, 0);
+    SetGpuReg(REG_OFFSET_WIN0V, 0);
+    SetGpuReg(REG_OFFSET_WIN1H, 0);
+    SetGpuReg(REG_OFFSET_WIN1V, 0);
+    SetGpuReg(REG_OFFSET_WININ, 0);
+    SetGpuReg(REG_OFFSET_WINOUT, 0);
 		DmaClearLarge16(3, (void *)VRAM, VRAM_SIZE, 0x1000);
 		gMain.state++;
 		break;
@@ -1206,33 +1206,33 @@ static void Excavation_SetupCB(void) {
 }
 
 static bool8 Excavation_InitBgs(void) {
-    const u32 TILEMAP_BUFFER_SIZE = (1024 * 2);
+  const u32 TILEMAP_BUFFER_SIZE = (1024 * 2);
 
-    ResetAllBgsCoordinates();
+  ResetAllBgsCoordinates();
 
-    sBg2TilemapBuffer = AllocZeroed(TILEMAP_BUFFER_SIZE);
-    sBg3TilemapBuffer = AllocZeroed(TILEMAP_BUFFER_SIZE);
-    if (sBg3TilemapBuffer == NULL) {
-        return FALSE;
-    } else if (sBg2TilemapBuffer == NULL) {
-        return FALSE;
-    }
+  sBg2TilemapBuffer = AllocZeroed(TILEMAP_BUFFER_SIZE);
+  sBg3TilemapBuffer = AllocZeroed(TILEMAP_BUFFER_SIZE);
+  if (sBg3TilemapBuffer == NULL) {
+    return FALSE;
+  } else if (sBg2TilemapBuffer == NULL) {
+    return FALSE;
+  }
 
-    ResetBgsAndClearDma3BusyFlags(0);
+  ResetBgsAndClearDma3BusyFlags(0);
 
-    InitBgsFromTemplates(0, sExcavationBgTemplates, NELEMS(sExcavationBgTemplates));
+  InitBgsFromTemplates(0, sExcavationBgTemplates, NELEMS(sExcavationBgTemplates));
 
-    SetBgTilemapBuffer(2, sBg2TilemapBuffer);
-    SetBgTilemapBuffer(3, sBg3TilemapBuffer);
+  SetBgTilemapBuffer(2, sBg2TilemapBuffer);
+  SetBgTilemapBuffer(3, sBg3TilemapBuffer);
 
-    ScheduleBgCopyTilemapToVram(2);
-    ScheduleBgCopyTilemapToVram(3);
+  ScheduleBgCopyTilemapToVram(2);
+  ScheduleBgCopyTilemapToVram(3);
 
 	ShowBg(0);
-    ShowBg(2);
-    ShowBg(3);
+  ShowBg(2);
+  ShowBg(3);
 
-    return TRUE;
+  return TRUE;
 }
 
 static void Task_Excavation_WaitFadeAndBail(u8 taskId) {
