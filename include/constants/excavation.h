@@ -34,9 +34,11 @@
 #define TAG_STONE_2X2           28
 #define TAG_STONE_3X3           29
 
+/*********** FLAGS ************/
+#define FLAG_USE_DEFAULT_MESSAGE_BOX FALSE
+
 /*********** DEBUG FLAGS ************/
 #define DEBUG_SET_ITEM_PRIORITY_TOP FALSE
-
 
 enum
 {

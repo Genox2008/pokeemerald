@@ -215,6 +215,9 @@ static const u32 gCracksAndTerrainTiles[] = INCBIN_U32("graphics/excavation/crac
 static const u32 gCracksAndTerrainTilemap[] = INCBIN_U32("graphics/excavation/cracks_terrain.bin.lz");
 static const u16 gCracksAndTerrainPalette[] = INCBIN_U16("graphics/excavation/cracks_terrain.gbapal");
 
+static const u8 gExcavationMessageBoxGfx[] = INCBIN_U8("graphics/excavation/message_box.4bpp");
+static const u16 gExcavationMessageBoxPal[] = INCBIN_U16("graphics/excavation/message_box.gbapal");
+
 // Sprite data
 const u32 gCursorGfx[] = INCBIN_U32("graphics/pokenav/region_map/cursor_small.4bpp.lz");
 const u16 gCursorPal[] = INCBIN_U16("graphics/pokenav/region_map/cursor.gbapal");
@@ -360,7 +363,7 @@ static const struct OamData gOamItem64x64 = {
     .matrixNum = 0,
     #if DEBUG_SET_ITEM_PRIORITY_TOP == FALSE
     .size = 3,
-    #else
+    #elif DEBUG_SET_ITEM_PRIORITY_TOP == TRUE 
     .size = 0,
     #endif
     .tileNum = 0,
@@ -2774,11 +2777,17 @@ static void InitMiningWindows(void) {
     {
         DeactivateAllTextPrinters();
         ScheduleBgCopyTilemapToVram(0);
+        #if FLAG_USE_DEFAULT_MESSAGE_BOX == FALSE
+        LoadBgTiles(GetWindowAttribute(WIN_MSG, WINDOW_BG), gExcavationMessageBoxGfx, 0x1C0, 20);
+        LoadPalette(gExcavationMessageBoxPal, BG_PLTT_ID(15), PLTT_SIZE_4BPP);
+        LoadPalette(gExcavationMessageBoxPal, BG_PLTT_ID(14), PLTT_SIZE_4BPP);
+        #elif FLAG_USE_DEFAULT_MESSAGE_BOX == TRUE
         LoadBgTiles(GetWindowAttribute(WIN_MSG, WINDOW_BG), gMessageBox_Gfx, 0x1C0, 20);
         LoadPalette(GetOverworldTextboxPalettePtr(), BG_PLTT_ID(15), PLTT_SIZE_4BPP);
+        Menu_LoadStdPalAt(BG_PLTT_ID(14));
+        #endif
         PutWindowTilemap(WIN_MSG);
         CopyWindowToVram(WIN_MSG, COPYWIN_FULL);
-        Menu_LoadStdPalAt(BG_PLTT_ID(14));
     }
 }
 
@@ -2787,7 +2796,7 @@ static void PrintMessage(const u8 *string) {
 	u32 x = 0;
 	u32 y = 1;
 
-	u8 txtColor[]= {TEXT_COLOR_TRANSPARENT, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_LIGHT_GRAY};
+	u8 txtColor[]= {TEXT_COLOR_WHITE, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_LIGHT_GRAY};
 
 	DrawDialogFrameWithCustomTileAndPalette(WIN_MSG, FALSE, 20, 15);
 	FillWindowPixelBuffer(WIN_MSG, PIXEL_FILL(TEXT_COLOR_WHITE));
