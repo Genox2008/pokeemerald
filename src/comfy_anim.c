@@ -143,7 +143,7 @@ u32 CreateComfyAnim_Easing(struct ComfyAnimEasingConfig *config)
 
     if (i == INVALID_COMFY_ANIM)
         return i;
-    
+
     anim = &gComfyAnims[i];
     anim->inUse = TRUE;
     anim->completed = FALSE;
@@ -163,7 +163,7 @@ u32 CreateComfyAnim_Spring(struct ComfyAnimSpringConfig *config)
 
     if (i == INVALID_COMFY_ANIM)
         return i;
-    
+
     anim = &gComfyAnims[i];
     anim->inUse = TRUE;
     anim->completed = FALSE;
