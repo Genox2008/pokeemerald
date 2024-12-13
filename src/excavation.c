@@ -1086,56 +1086,112 @@ enum {
 	CRACK_POS_MAX,
 };
 
+
+
+
 // IGNORE THIS PSF
-//
+static const u32 gTestForAlgGfx[] = INCBIN_U32("graphics/battle_interface/ball_caught_indicator.4bpp.lz");
+
+
 // Uncompress some data idk
 static void LZ77UnCompSprite(const u32* data, u32 output[512]) {
   LZ77UnCompVram(data, output);
 }
 
-static void split_sprite_into_pixels(u32 pixels[4096]) {
-  u32 i, j, element, slice;
-  u32 output[512];
+// 4bpp images store indices like this. Lets imagine the number 0 being the transparent color index and 1 any other color index.
+// The image with have to analyse looks like this:
+//
+//              0 1 0 0
+//
+// If we open the png, we would see the colors in the order, from left to right.
+// However, the pixels are stored in reverse order in the 4bpp file format. So they are stored like this:
+//
+//              0 0 1 0
+//
+// 
+//
+//          --- ANOTHER EXAMPLE ---
+//
+//              . . # # # . . .
+//              . # # # # # . .
+//              # # # # # # # .
+//              # # # # # # # .
+//              # # # # # # # .
+//              . # # # # # . .
+//              . . # # # . . .
+//              . . . . . . . .
+//
+//
+//  It is stored like this
+//
+//              . . . # # # . . 
+//              . . # # # # # . 
+//              . # # # # # # # 
+//              . # # # # # # # 
+//              . # # # # # # # 
+//              . . # # # # # . 
+//              . . . # # # . . 
+//              . . . . . . . . 
 
-  LZ77UnCompSprite(gItemLightClayGfx, output);
+static const u8 sText_Transparent[] = _("o ");
+static const u8 sText_NoTransparent[] = _("8 ");
 
-  for (i = 0; i < 512; i++) {
-    element = output[i];
-    for (j = 0; j < 8; j++) {
-      slice = (element >> (28 - j * 4)) & 0xF;
-      pixels[i * 8 + j] = slice;
+static void GetOneTileRow(u32 row, u32 uncomp_sprite[512]) {
+    u32 px_row, i;
+    u32 tile[8];
+    u32 tile_idx = row * 8;
+    u32 tile_loop_limit = tile_idx+8;
+    bool32 continue_parent_loop = FALSE;
+    u8 string[8] = _("");
+
+    for (tile_idx; tile_idx < tile_loop_limit; tile_idx++) {
+        for (px_row=0; px_row<8; px_row++) {
+            tile[px_row] = uncomp_sprite[tile_idx*8 + px_row];
+            //DebugPrintf("%d", uncomp_sprite[tile_idx*8 + px_row]);
+        }
+
+        for(i=0; i<8; i++) {
+            if (tile[i] > 0) {
+                StringAppend(string, sText_NoTransparent);
+                //DebugPrintf("#");
+                continue_parent_loop = TRUE;
+                break;
+            }
+        }
+        if (continue_parent_loop) {
+            continue_parent_loop = FALSE;
+            continue;
+        }
+
+        StringAppend(string, sText_Transparent);
+        //DebugPrintf(".");
+        //DebugPrintf("-------");
     }
-  }
+    DebugPrintf("%S", string);
+
 }
 
-static void SpriteTesting(void) {
-  u32 x, y, i;
-  u32* pixels = AllocZeroed(4096 * sizeof(u32));
-  for(i=0;i<4096;i++) {
-    pixels[i] = 0;
-  }
-  split_sprite_into_pixels(pixels);
-  for (i=0;i<4096;i++) {
-    //DebugPrintf("%u", pixels[i]);
-  }
-  /*for (x=0;x<64;x++) {
-    for (y=0;y<16;y++) {
-      if (pixels[y*64+x] != 0) {
-        DebugPrintf("#");
-        // Next Tile
-        for (i=x;i<64;i++) {
-          if (i%16==0) {
-            x = i;
-            break;
-          }
-        }
-        break;
-      } else if (pixels[y*64+x] == 0 && x%16==0){
-        DebugPrintf("_");
-      }
-    }
-  }
-*/
+static void RunSpriteAnalysisAlgorithm() {
+    // The algorithm I came up with to get each row in a tile is the following:
+    //
+    //          which_tile * 8 + px_row
+    //
+    // - 'which_tile' is basically an index for a 8 by 8 tile in a sprite. Think of it as an array of 8 by 8 tiles.
+    // - We have to multiply 'which_tile' by 8 because of how each row is stored
+    // - 'px_row' is just the index for the rows in 8 by 8 tile. It gets incremented by 1 each iteration.
+    
+    u32 uncomp_sprite[512];                 // Storage for the uncompressed sprite
+
+    LZ77UnCompSprite(gItemReviveGfx, uncomp_sprite);
+
+    GetOneTileRow(0, uncomp_sprite);
+    GetOneTileRow(1, uncomp_sprite);
+    GetOneTileRow(2, uncomp_sprite);
+    GetOneTileRow(3, uncomp_sprite);
+    GetOneTileRow(4, uncomp_sprite);
+    GetOneTileRow(5, uncomp_sprite);
+    GetOneTileRow(6, uncomp_sprite);
+    GetOneTileRow(7, uncomp_sprite);
 }
 
 static void Excavation_SetupCB(void) {
@@ -1147,12 +1203,12 @@ static void Excavation_SetupCB(void) {
 		SetVBlankHBlankCallbacksToNull();
 		ClearScheduledBgCopiesToVram();
 		ScanlineEffect_Stop();
-    SetGpuReg(REG_OFFSET_WIN0H, 0);
-    SetGpuReg(REG_OFFSET_WIN0V, 0);
-    SetGpuReg(REG_OFFSET_WIN1H, 0);
-    SetGpuReg(REG_OFFSET_WIN1V, 0);
-    SetGpuReg(REG_OFFSET_WININ, 0);
-    SetGpuReg(REG_OFFSET_WINOUT, 0);
+        SetGpuReg(REG_OFFSET_WIN0H, 0);
+        SetGpuReg(REG_OFFSET_WIN0V, 0);
+        SetGpuReg(REG_OFFSET_WIN1H, 0);
+        SetGpuReg(REG_OFFSET_WIN1V, 0);
+        SetGpuReg(REG_OFFSET_WININ, 0);
+        SetGpuReg(REG_OFFSET_WINOUT, 0);
 		DmaClearLarge16(3, (void *)VRAM, VRAM_SIZE, 0x1000);
 		gMain.state++;
 		break;
@@ -1190,6 +1246,7 @@ static void Excavation_SetupCB(void) {
 
 		  // Load Sprite(s)
 	  case STATE_LOAD_SPRITES:
+          RunSpriteAnalysisAlgorithm();
 		  InitBuriedItems();
 		  Excavation_LoadSpriteGraphics();
 		  gMain.state++;
@@ -1207,7 +1264,6 @@ static void Excavation_SetupCB(void) {
 		  break;
 
 	  case STATE_SET_CALLBACKS:
-          //SpriteTesting();
 		  SetVBlankCallback(Excavation_VBlankCB);
 		  SetMainCallback2(Excavation_MainCB);
 		  break;
