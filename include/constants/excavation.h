@@ -1,3 +1,7 @@
+#ifndef GUARD_EXCAVATION_CONSTANTS
+
+#define GUARD_EXCAVATION_CONSTANTS
+
 #include "constants/items.h"
 #include "gba/types.h"
 #include "gba/defines.h"
@@ -49,6 +53,7 @@ enum
     ID_STONE_4x2,
     ID_STONE_2x2,
     ID_STONE_3x3,
+    ITEMID_HEART_SCALE,
     ITEMID_HARD_STONE,
     ITEMID_REVIVE,
     ITEMID_STAR_PIECE,
@@ -58,7 +63,6 @@ enum
     ITEMID_IRON_BALL,
     ITEMID_REVIVE_MAX,
     ITEMID_EVER_STONE,
-    ITEMID_HEART_SCALE,
     ITEMID_OVAL_STONE,
     ITEMID_LIGHT_CLAY,
     ITEMID_HEAT_ROCK,
@@ -93,3 +97,4 @@ enum
 
 // TODO: change this value to the max itemId
 
+#endif

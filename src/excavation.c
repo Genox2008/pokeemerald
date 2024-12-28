@@ -33,6 +33,7 @@
 #include "constants/items.h"
 #include "item.h"
 #include "comfy_anim.h"
+#include "data/excavation.h"
 
 /* >> Callbacks << */
 static void Excavation_Init(MainCallback callback);
@@ -1168,7 +1169,7 @@ static void GetOneTileRow(u32 row, u32 uncomp_sprite[512]) {
         //DebugPrintf("-------");
     }
     DebugPrintf("%S", string);
-
+   
 }
 
 static void RunSpriteAnalysisAlgorithm() {
@@ -1246,7 +1247,6 @@ static void Excavation_SetupCB(void) {
 
 		  // Load Sprite(s)
 	  case STATE_LOAD_SPRITES:
-          RunSpriteAnalysisAlgorithm();
 		  InitBuriedItems();
 		  Excavation_LoadSpriteGraphics();
 		  gMain.state++;
@@ -2108,172 +2108,27 @@ static void SetItemState(u32 posX, u32 posY, u32 x, u32 y, u32 itemStateId) {
   sExcavationUiState->itemMap[posX + x + (posY + y) * 12] = itemStateId;
 }
 
-#define OIMD_2x2 SetItemState(posX, posY, 0, 0, itemStateId); \
-                 SetItemState(posX, posY, 1, 0, itemStateId); \
-                 SetItemState(posX, posY, 0, 1, itemStateId); \
-                 SetItemState(posX, posY, 1, 1, itemStateId);
-
-#define OIMD_3x3 OIMD_2x2 \
-                 SetItemState(posX, posY, 2, 0, itemStateId); \
-                 SetItemState(posX, posY, 2, 1, itemStateId); \
-                 SetItemState(posX, posY, 2, 2, itemStateId); \
-                 SetItemState(posX, posY, 0, 2, itemStateId); \
-                 SetItemState(posX, posY, 1, 2, itemStateId);
-
-#define OIMD_3x3_PLUS SetItemState(posX, posY, 1, 1, itemStateId); \
-                      SetItemState(posX, posY, 1, 0, itemStateId); \
-                      SetItemState(posX, posY, 0, 1, itemStateId); \
-                      SetItemState(posX, posY, 1, 2, itemStateId); \
-                      SetItemState(posX, posY, 2, 1, itemStateId);
-
 static void OverwriteItemMapData(u8 posX, u8 posY, u8 itemStateId, u8 itemId) {
-  switch (itemId) {
-    case ID_STONE_1x4:
-      SetItemState(posX, posY, 0, 0, itemStateId);
-      SetItemState(posX, posY, 0, 1, itemStateId);
-      SetItemState(posX, posY, 0, 2, itemStateId);
-      SetItemState(posX, posY, 0, 3, itemStateId);
-      break;
-    case ID_STONE_4x1:
-      SetItemState(posX, posY, 0, 0, itemStateId);
-      SetItemState(posX, posY, 1, 0, itemStateId);
-      SetItemState(posX, posY, 2, 0, itemStateId);
-      SetItemState(posX, posY, 3, 0, itemStateId);
-      break;
-    case ID_STONE_2x4:
-      OIMD_2x2
-      SetItemState(posX, posY, 0, 2, itemStateId);
-      SetItemState(posX, posY, 0, 3, itemStateId);
-      SetItemState(posX, posY, 1, 2, itemStateId);
-      SetItemState(posX, posY, 1, 3, itemStateId);
-      break;
-    case ID_STONE_4x2:
-      OIMD_2x2
-      SetItemState(posX, posY, 2, 0, itemStateId);
-      SetItemState(posX, posY, 3, 0, itemStateId);
-      SetItemState(posX, posY, 2, 1, itemStateId);
-      SetItemState(posX, posY, 3, 1, itemStateId);
-      break;
-    case ID_STONE_2x2:
-      OIMD_2x2
-      break;
-     case ID_STONE_3x3:
-      OIMD_3x3
-      break;
-    case ITEMID_HEART_SCALE:
-      SetItemState(posX, posY, 0, 0, itemStateId);
-      SetItemState(posX, posY, 0, 1, itemStateId);
-      SetItemState(posX, posY, 1, 1, itemStateId);
-      break;
-    case ITEMID_HARD_STONE:
-      OIMD_2x2
-      break;
-    case ITEMID_REVIVE:
-      OIMD_3x3_PLUS
-      break;
-    case ITEMID_STAR_PIECE:
-      OIMD_3x3_PLUS
-      break;
-    case ITEMID_DAMP_ROCK:
-      OIMD_2x2
-      SetItemState(posX, posY, 2, 1, itemStateId);
-      SetItemState(posX, posY, 2, 0, itemStateId);
-      SetItemState(posX, posY, 0, 2, itemStateId);
-      SetItemState(posX, posY, 2, 2, itemStateId);
-      break;
-    case ITEMID_RED_SHARD:
-      OIMD_2x2
-      SetItemState(posX, posY, 1, 2, itemStateId);
-      SetItemState(posX, posY, 2, 0, itemStateId);
-      SetItemState(posX, posY, 0, 2, itemStateId);
-      SetItemState(posX, posY, 2, 2, itemStateId);
-      break;
-    case ITEMID_BLUE_SHARD:
-      OIMD_3x3_PLUS
-      SetItemState(posX, posY, 0, 0, itemStateId);
-      SetItemState(posX, posY, 2, 0, itemStateId);
-      SetItemState(posX, posY, 0, 2, itemStateId);
-      break;
-    case ITEMID_IRON_BALL:
-      OIMD_3x3
-      break;
-    case ITEMID_REVIVE_MAX:
-      OIMD_3x3
-      break;
-    case ITEMID_EVER_STONE:
-      OIMD_2x2
-      SetItemState(posX, posY, 2, 0, itemStateId);
-      SetItemState(posX, posY, 3, 0, itemStateId);
-      SetItemState(posX, posY, 2, 1, itemStateId);
-      SetItemState(posX, posY, 3, 1, itemStateId);
-      break;
-    case ITEMID_OVAL_STONE:
-      OIMD_3x3
-      break;
-    case ITEMID_LIGHT_CLAY:
-      SetItemState(posX, posY, 0, 0, itemStateId);
-      SetItemState(posX, posY, 0, 1, itemStateId);
-      SetItemState(posX, posY, 0, 2, itemStateId);
-      SetItemState(posX, posY, 1, 1, itemStateId);
-      SetItemState(posX, posY, 1, 2, itemStateId);
-      SetItemState(posX, posY, 1, 3, itemStateId);
-      SetItemState(posX, posY, 2, 0, itemStateId);
-      SetItemState(posX, posY, 2, 1, itemStateId);
-      SetItemState(posX, posY, 2, 2, itemStateId);
-      SetItemState(posX, posY, 3, 2, itemStateId);
-      SetItemState(posX, posY, 3, 3, itemStateId);
-      break;
-    case ITEMID_HEAT_ROCK:
-      SetItemState(posX, posY, 0, 0, itemStateId);
-      SetItemState(posX, posY, 0, 1, itemStateId);
-      SetItemState(posX, posY, 0, 2, itemStateId);
-      SetItemState(posX, posY, 1, 1, itemStateId);
-      SetItemState(posX, posY, 1, 2, itemStateId);
-      SetItemState(posX, posY, 2, 0, itemStateId);
-      SetItemState(posX, posY, 2, 1, itemStateId);
-      SetItemState(posX, posY, 2, 2, itemStateId);
-      SetItemState(posX, posY, 3, 1, itemStateId);
-      SetItemState(posX, posY, 3, 2, itemStateId);
-      break;
-  }
+    u32 x, y;
+
+    for (x=0; x<4; x++) {
+        for (y=0; y<4; y++) {
+            if (SpriteTileTable[itemId][x+y*4] == 1)
+                SetItemState(posX, posY, x, y, itemStateId);
+        }
+    }
 }
 
 // Defines && Macros
 #define BORDERCHECK_COND(itemId) posX + ExcavationItemList[(itemId)].left > xBorder || \
                                  posY + ExcavationItemList[(itemId)].top > yBorder
+#define IGNORE_COORDS 255
 
 static bool32 ItemStateCondition(u32 posX, u32 posY, u32 x, u32 y, u32 i) {
-  return (sExcavationUiState->itemMap[posX + (x) + (posY + (y)) * 12] == i);
-}
-
-static bool32 ItemPlaceable_Cond_2x2(u32 posX, u32 posY, u32 i) {
-  return (
-    ItemStateCondition(posX, posY, 0, 0, i) ||
-    ItemStateCondition(posX, posY, 0, 1, i) ||
-    ItemStateCondition(posX, posY, 1, 0, i) ||
-    ItemStateCondition(posX, posY, 1, 1, i)
-  );
-}
-
-static bool32 ItemPlaceable_Cond_3x3(u32 posX, u32 posY, u32 i) {
-  return (
-    ItemPlaceable_Cond_2x2(posX, posY, i) ||
-    ItemStateCondition(posX, posY, 2, 0, i) ||
-    ItemStateCondition(posX, posY, 2, 1, i) ||
-    ItemStateCondition(posX, posY, 2, 2, i) ||
-    ItemStateCondition(posX, posY, 0, 2, i) ||
-    ItemStateCondition(posX, posY, 1, 2, i)
-  );
-}
-
-static bool32 ItemPlaceable_Cond_3x3_Plus(u32 posX, u32 posY, u32 i) {
-  return (
-    ItemStateCondition(posX, posY, 1, 1, i) ||
-    ItemStateCondition(posX, posY, 0, 1, i) ||
-    ItemStateCondition(posX, posY, 1, 0, i) ||
-    ItemStateCondition(posX, posY, 2, 1, i) ||
-    ItemStateCondition(posX, posY, 1, 2, i)
-  );
+  if (x == IGNORE_COORDS || y == IGNORE_COORDS)
+    return FALSE;
+  else 
+    return (sExcavationUiState->itemMap[posX + (x) + (posY + (y)) * 12] == i);
 }
 
 // This function is used to determine wether an item should be placed or not.
@@ -2286,129 +2141,47 @@ static bool32 ItemPlaceable_Cond_3x3_Plus(u32 posX, u32 posY, u32 i) {
 // *_RIGHT tells whats the max. amount of tiles if you go from left to right (starting with 0)
 // the same with *_BOTTOM but going down from top to bottom
 static u8 CheckIfItemCanBePlaced(u8 itemId, u8 posX, u8 posY, u8 xBorder, u8 yBorder) {
-  u8 i;
+    u32 i, x, y;
+    u32 xcoords[16], ycoords[16];
 
-  for(i=1;i<=4;i++) {
 
-    switch (itemId) {
-      case ITEMID_HEART_SCALE:
+    for(i=1;i<=4;i++) {
+        for (x=0; x<4; x++) {
+            for (y=0; y<4; y++) {
+                if (SpriteTileTable[itemId][x+y*4] == 1) {
+                    xcoords[x+y*4] = x;
+                    ycoords[x+y*4] = y;
+                } else {
+                    xcoords[x+y*4] = IGNORE_COORDS;
+                    ycoords[x+y*4] = IGNORE_COORDS;
+                }
+            }
+        }   
+
         if (
-          ItemStateCondition(posX, posY, 0, 0, i) ||
-          ItemStateCondition(posX, posY, 0, 1, i) ||
-          ItemStateCondition(posX, posY, 1, 1, i) ||
-          BORDERCHECK_COND(itemId)
-        ) { return 0;}
-        break;
-      case ITEMID_HARD_STONE:
-        if (
-          ItemPlaceable_Cond_2x2(posX, posY, i) ||
-          BORDERCHECK_COND(itemId)
-        ) {return 0;}
-        break;
-      case ITEMID_REVIVE:
-        if (
-          ItemPlaceable_Cond_3x3_Plus(posX, posY, i) ||
-          BORDERCHECK_COND(itemId)
-        ) {return 0;}
-        break;
-      case ITEMID_STAR_PIECE:
-        if (
-          ItemPlaceable_Cond_3x3_Plus(posX, posY, i) ||
-          BORDERCHECK_COND(itemId)
-        ) {return 0;}
-        break;
-      case ITEMID_DAMP_ROCK:
-        if (
-          ItemPlaceable_Cond_2x2(posX, posY, i) ||
-          ItemStateCondition(posX, posY, 2, 1, i) ||
-          ItemStateCondition(posX, posY, 2, 0, i) ||
-          ItemStateCondition(posX, posY, 0, 2, i) ||
-          ItemStateCondition(posX, posY, 2, 2, i) ||
-          BORDERCHECK_COND(itemId)
-        ) {return 0;}
-        break;
-      case ITEMID_RED_SHARD:
-        if (
-          ItemPlaceable_Cond_2x2(posX, posY, i) ||
-          ItemStateCondition(posX, posY, 1, 2, i) ||
-          ItemStateCondition(posX, posY, 2, 0, i) ||
-          ItemStateCondition(posX, posY, 0, 2, i) ||
-          ItemStateCondition(posX, posY, 2, 2, i) ||
-          BORDERCHECK_COND(itemId)
-        ) {return 0;}
-        break;
-      case ITEMID_BLUE_SHARD:
-        if (
-          ItemPlaceable_Cond_3x3_Plus(posX, posY, i) ||
-          ItemStateCondition(posX, posY, 0, 0, i) ||
-          ItemStateCondition(posX, posY, 2, 0, i) ||
-          ItemStateCondition(posX, posY, 0, 2, i) ||
-          BORDERCHECK_COND(itemId)
-        ) {return 0;}
-        break;
-      case ITEMID_IRON_BALL:
-        if (
-          ItemPlaceable_Cond_3x3(posX, posY, i) ||
-          BORDERCHECK_COND(itemId)
-        ) {return 0;}
-        break;
-      case ITEMID_REVIVE_MAX:
-        if (
-          ItemPlaceable_Cond_3x3(posX, posY, i) ||
-          BORDERCHECK_COND(itemId)
-        ) {return 0;}
-        break;
-      case ITEMID_EVER_STONE:
-        if (
-          ItemPlaceable_Cond_2x2(posX, posY, i) ||
-          ItemStateCondition(posX, posY, 2, 0, i) ||
-          ItemStateCondition(posX, posY, 3, 0, i) ||
-          ItemStateCondition(posX, posY, 2, 1, i) ||
-          ItemStateCondition(posX, posY, 3, 1, i) ||
-          BORDERCHECK_COND(itemId)
-        ) {return 0;}
-        break;
-      case ITEMID_OVAL_STONE:
-        if (
-          ItemPlaceable_Cond_3x3(posX, posY, i) ||
-          BORDERCHECK_COND(itemId)
-        ) {return 0;}
-        break;
-      case ITEMID_LIGHT_CLAY:
-        if (
-          ItemStateCondition(posX, posY, 0, 0, i) ||
-          ItemStateCondition(posX, posY, 0, 1, i) ||
-          ItemStateCondition(posX, posY, 0, 2, i) ||
-          ItemStateCondition(posX, posY, 1, 1, i) ||
-          ItemStateCondition(posX, posY, 1, 2, i) ||
-          ItemStateCondition(posX, posY, 1, 3, i) ||
-          ItemStateCondition(posX, posY, 2, 0, i) ||
-          ItemStateCondition(posX, posY, 2, 1, i) ||
-          ItemStateCondition(posX, posY, 2, 2, i) ||
-          ItemStateCondition(posX, posY, 3, 2, i) ||
-          ItemStateCondition(posX, posY, 3, 3, i) ||
-          BORDERCHECK_COND(itemId)
-        ) {return 0;}
-        break;
-      case ITEMID_HEAT_ROCK:
-        if (
-          ItemStateCondition(posX, posY, 0, 0, i) ||
-          ItemStateCondition(posX, posY, 0, 1, i) ||
-          ItemStateCondition(posX, posY, 0, 2, i) ||
-          ItemStateCondition(posX, posY, 1, 1, i) ||
-          ItemStateCondition(posX, posY, 1, 2, i) ||
-          ItemStateCondition(posX, posY, 2, 0, i) ||
-          ItemStateCondition(posX, posY, 2, 1, i) ||
-          ItemStateCondition(posX, posY, 2, 2, i) ||
-          ItemStateCondition(posX, posY, 3, 1, i) ||
-          ItemStateCondition(posX, posY, 3, 2, i) ||
-          BORDERCHECK_COND(itemId)
-        ) {return 0;}
-        break;
-      }
-  }
-  return 1;
+            ItemStateCondition(posX, posY, xcoords[0+0*4], ycoords[0+0*4], i) ||
+            ItemStateCondition(posX, posY, xcoords[0+1*4], ycoords[0+1*4], i) ||
+            ItemStateCondition(posX, posY, xcoords[0+2*4], ycoords[0+2*4], i) ||
+            ItemStateCondition(posX, posY, xcoords[0+3*4], ycoords[0+3*4], i) ||
+            ItemStateCondition(posX, posY, xcoords[1+0*4], ycoords[1+0*4], i) ||
+            ItemStateCondition(posX, posY, xcoords[1+1*4], ycoords[1+1*4], i) ||
+            ItemStateCondition(posX, posY, xcoords[1+2*4], ycoords[1+2*4], i) ||
+            ItemStateCondition(posX, posY, xcoords[1+3*4], ycoords[1+3*4], i) ||
+            ItemStateCondition(posX, posY, xcoords[2+0*4], ycoords[2+0*4], i) ||
+            ItemStateCondition(posX, posY, xcoords[2+1*4], ycoords[2+1*4], i) ||
+            ItemStateCondition(posX, posY, xcoords[2+2*4], ycoords[2+2*4], i) ||
+            ItemStateCondition(posX, posY, xcoords[2+3*4], ycoords[2+3*4], i) ||
+            ItemStateCondition(posX, posY, xcoords[3+0*4], ycoords[3+0*4], i) ||
+            ItemStateCondition(posX, posY, xcoords[3+1*4], ycoords[3+1*4], i) ||
+            ItemStateCondition(posX, posY, xcoords[3+2*4], ycoords[3+2*4], i) ||
+            ItemStateCondition(posX, posY, xcoords[3+3*4], ycoords[3+3*4], i) ||
+            BORDERCHECK_COND(itemId)
+        ) { return 0; }
+
+    }
+    return 1;
 }
+
 static void DoDrawRandomItem(u8 itemStateId, u8 itemId) {
     u32 y;
     u32 x;
