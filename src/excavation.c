@@ -1868,6 +1868,14 @@ static void Crack_UpdateCracksRelativeToCrackPos(u8 offsetIn8, u8 ofs2, u16* ptr
       break;
     case 6:
       Crack_DrawCrack_6(offsetIn8, ofs2, ptr);
+      if (sExcavationUiState->crackPos == 7) {
+         OverwriteTileDataInTilemapBuffer(0x00, 18 - offsetIn8 * 4 + ofs2, 1, ptr, 0x01);
+         OverwriteTileDataInTilemapBuffer(0x00, 19 - offsetIn8 * 4 + ofs2, 1, ptr, 0x01);
+         OverwriteTileDataInTilemapBuffer(0x00, 20 - offsetIn8 * 4 + ofs2, 1, ptr, 0x01);
+         OverwriteTileDataInTilemapBuffer(0x00, 19 - offsetIn8 * 4 + ofs2, 2, ptr, 0x01);
+         OverwriteTileDataInTilemapBuffer(0x00, 20 - offsetIn8 * 4 + ofs2, 2, ptr, 0x01);
+         OverwriteTileDataInTilemapBuffer(0x00, 20 - offsetIn8 * 4 + ofs2, 3, ptr, 0x01);
+      }
       sExcavationUiState->crackCount = 1;
       sExcavationUiState->crackPos++;
       break;
