@@ -1,0 +1,22 @@
+[items]
+"../graphics/excavation/items/heart_scale.4bpp" = "ITEMID_HEART_SCALE"
+"../graphics/excavation/items/star_piece.4bpp" = "ITEMID_STAR_PIECE"
+"../graphics/excavation/items/red_shard.4bpp" = "ITEMID_RED_SHARD"
+"../graphics/excavation/items/revive.4bpp" = "ITEMID_REVIVE"
+"../graphics/excavation/items/light_clay.4bpp" = "ITEMID_LIGHT_CLAY"
+"../graphics/excavation/items/heat_rock.4bpp" =  "ITEMID_HEAT_ROCK"
+"../graphics/excavation/items/damp_rock.4bpp" = "ITEMID_DAMP_ROCK"
+"../graphics/excavation/items/blue_shard.4bpp" = "ITEMID_BLUE_SHARD"
+"../graphics/excavation/items/oval_stone.4bpp" = "ITEMID_OVAL_STONE"
+"../graphics/excavation/items/ever_stone.4bpp" = "ITEMID_EVER_STONE"
+"../graphics/excavation/items/hard_stone.4bpp" = "ITEMID_HARD_STONE"
+"../graphics/excavation/items/revive_max.4bpp" = "ITEMID_REVIVE_MAX"
+"../graphics/excavation/items/iron_ball.4bpp" = "ITEMID_IRON_BALL"
+
+[stones]
+"../graphics/excavation/stones/stone_2x2.4bpp" = "ID_STONE_2x2"
+"../graphics/excavation/stones/stone_3x3.4bpp" = "ID_STONE_3x3"
+"../graphics/excavation/stones/stone_1x4.4bpp" = "ID_STONE_1x4"
+"../graphics/excavation/stones/stone_4x1.4bpp" = "ID_STONE_4x1"
+"../graphics/excavation/stones/stone_2x4.4bpp" = "ID_STONE_2x4"
+"../graphics/excavation/stones/stone_4x2.4bpp" = "ID_STONE_4x2"
