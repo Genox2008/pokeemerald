@@ -36,25 +36,47 @@ def read_4bpp_file(file_path):
     return data_32bit_chunks
 
 def IsTileTransparent(tile, data):
-    rmin = tile*8
-    rmax = 0
+    xcoord_table = [
+        0,2,4,6,
+        0,2,4,6,
+        0,2,4,6,
+        0,2,4,6
+    ]
 
-    if tile == 0:
-        rmax = 7
-    else:
-        rmax = tile*8 + 8
+    ycoord_table = [
+        0,0,0,0,
+        2,2,2,2,
+        4,4,4,4,
+        6,6,6,6
+    ]
 
-    for row in range(tile*8, tile*8+8):
+    first_tile_starting_idx = (xcoord_table[tile] + ycoord_table[tile] * 8) * 8
+    #second_tile_starting_idx = ((xcoord_table[tile]+1) + ycoord_table[tile] * 8) * 8
+    second_tile_starting_idx = (xcoord_table[tile] + (ycoord_table[tile]+1) * 8) * 8
+    #fourth_tile_starting_idx = ((xcoord_table[tile]+1) + (ycoord_table[tile]+1) * 8) * 8
+
+    for row in range(first_tile_starting_idx, first_tile_starting_idx+16):    
         if data[row] > 0:
             return 1
+
+    for row in range(second_tile_starting_idx, second_tile_starting_idx+16):    
+        if data[row] > 0:
+            return 1
+
+    #for row in range(tile*8, tile*8+15):
+    #    if data[row] > 0:
+    #        return 1
+
+
     return 0
 
 
 if __name__ == "__main__":
-    file_path = "../graphics/excavation/items/heart_scale.4bpp"
+    file_path = "../graphics/excavation/items/light_clay.4bpp"
     data = read_4bpp_file(file_path)
 
     if data:
-        for tile in range(0, 63):
+        for tile in range(0, 16):
             print(f"{IsTileTransparent(tile, data)}")
+            #IsTileTransparent(tile, data)
 
