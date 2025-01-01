@@ -575,6 +575,9 @@ static const u16 gItemHeatRockPal[] = INCBIN_U16("graphics/excavation/items/heat
 static const u32 gItemIcyRockGfx[] = INCBIN_U32("graphics/excavation/items/icy_rock.4bpp.lz");
 static const u16 gItemIcyRockPal[] = INCBIN_U16("graphics/excavation/items/icy_rock.gbapal");
 
+static const u32 gItemSmoothRockGfx[] = INCBIN_U32("graphics/excavation/items/smooth_rock.4bpp.lz");
+static const u16 gItemSmoothRockPal[] = INCBIN_U16("graphics/excavation/items/smooth_rock.gbapal");
+
 // Stone SpriteSheets and SpritePalettes
 static const struct CompressedSpriteSheet sSpriteSheet_Stone1x4[] = {
   {gStone1x4Gfx, 64*64/2, TAG_STONE_1X4},
@@ -725,6 +728,12 @@ static const struct CompressedSpriteSheet sSpriteSheet_ItemIcyRock = {
   gItemIcyRockGfx,
   64*64/2,
   TAG_ITEM_ICY_ROCK,
+};
+
+static const struct CompressedSpriteSheet sSpriteSheet_ItemSmoothRock = {
+  gItemSmoothRockGfx,
+  64*64/2,
+  TAG_ITEM_SMOOTH_ROCK,
 };
 
 static const struct SpriteTemplate gSpriteStone1x4 = {
@@ -944,6 +953,15 @@ static const struct ExcavationItem ExcavationItemList[] = {
     .totalTiles = 11,
     .tag = TAG_ITEM_ICY_ROCK,
     .sheet = &sSpriteSheet_ItemIcyRock,
+  },
+  [ITEMID_SMOOTH_ROCK] = {
+    .excItemId = ITEMID_SMOOTH_ROCK,
+    .realItemId = ITEM_WATER_STONE,
+    .top = 3,
+    .left = 3,
+    .totalTiles = 7,
+    .tag = TAG_ITEM_SMOOTH_ROCK,
+    .sheet = &sSpriteSheet_ItemSmoothRock,
   },
 };
 
@@ -1515,6 +1533,7 @@ static const struct ItemRarity ItemRarityTable_Rare[] = {
   ITEMID_OVAL_STONE,
   ITEMID_LIGHT_CLAY,
   ITEMID_ICY_ROCK,
+  ITEMID_SMOOTH_ROCK,
 };
 
 static u8 GetRandomItemId() {
@@ -2036,6 +2055,9 @@ static const u16* GetCorrectPalette(u32 TileTag) {
       break;
     case TAG_ITEM_ICY_ROCK:
       return gItemIcyRockPal;
+      break;
+    case TAG_ITEM_SMOOTH_ROCK:
+      return gItemSmoothRockPal;
       break;
   }
 }

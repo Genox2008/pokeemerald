@@ -13,6 +13,7 @@
 "../graphics/excavation/items/revive_max.4bpp" = "ITEMID_REVIVE_MAX"
 "../graphics/excavation/items/iron_ball.4bpp" = "ITEMID_IRON_BALL"
 "../graphics/excavation/items/icy_rock.4bpp" = "ITEMID_ICY_ROCK"
+"../graphics/excavation/items/smooth_rock.4bpp" = "ITEMID_SMOOTH_ROCK"
 
 [stones]
 "../graphics/excavation/stones/stone_2x2.4bpp" = "ID_STONE_2x2"
