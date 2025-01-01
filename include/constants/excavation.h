@@ -30,6 +30,7 @@
 #define TAG_ITEM_OVAL_STONE     30
 #define TAG_ITEM_LIGHT_CLAY     31
 #define TAG_ITEM_HEAT_ROCK      32
+#define TAG_ITEM_ICY_ROCK       33
 
 #define TAG_STONE_1X4           24
 #define TAG_STONE_4X1           25
@@ -66,6 +67,7 @@ enum
     ITEMID_OVAL_STONE,
     ITEMID_LIGHT_CLAY,
     ITEMID_HEAT_ROCK,
+    ITEMID_ICY_ROCK,
 };
 
 #define EXCAVATION_ITEM_COUNT ITEMID_REVIVE_MAX

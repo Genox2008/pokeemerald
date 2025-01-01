@@ -162,7 +162,7 @@ static EWRAM_DATA struct ExcavationState *sExcavationUiState = NULL;
 static EWRAM_DATA u8 *sBg2TilemapBuffer = NULL;
 static EWRAM_DATA u8 *sBg3TilemapBuffer = NULL;
 
-//#define EXCAVATION_DEBUG
+// #define EXCAVATION_DEBUG
 
 #ifdef EXCAVATION_DEBUG
 static EWRAM_DATA u8 debugVariable = 0; // Debug
@@ -572,6 +572,9 @@ static const u16 gItemLightClayPal[] = INCBIN_U16("graphics/excavation/items/lig
 static const u32 gItemHeatRockGfx[] = INCBIN_U32("graphics/excavation/items/heat_rock.4bpp.lz");
 static const u16 gItemHeatRockPal[] = INCBIN_U16("graphics/excavation/items/heat_rock.gbapal");
 
+static const u32 gItemIcyRockGfx[] = INCBIN_U32("graphics/excavation/items/icy_rock.4bpp.lz");
+static const u16 gItemIcyRockPal[] = INCBIN_U16("graphics/excavation/items/icy_rock.gbapal");
+
 // Stone SpriteSheets and SpritePalettes
 static const struct CompressedSpriteSheet sSpriteSheet_Stone1x4[] = {
   {gStone1x4Gfx, 64*64/2, TAG_STONE_1X4},
@@ -716,6 +719,12 @@ static const struct CompressedSpriteSheet sSpriteSheet_ItemHeatRock = {
   gItemHeatRockGfx,
   64*64/2,
   TAG_ITEM_HEAT_ROCK,
+};
+
+static const struct CompressedSpriteSheet sSpriteSheet_ItemIcyRock = {
+  gItemIcyRockGfx,
+  64*64/2,
+  TAG_ITEM_ICY_ROCK,
 };
 
 static const struct SpriteTemplate gSpriteStone1x4 = {
@@ -927,6 +936,15 @@ static const struct ExcavationItem ExcavationItemList[] = {
     .tag = TAG_ITEM_HEAT_ROCK,
     .sheet = &sSpriteSheet_ItemHeatRock,
   },
+  [ITEMID_ICY_ROCK] = {
+    .excItemId = ITEMID_ICY_ROCK,
+    .realItemId = ITEM_WATER_STONE,
+    .top = 3,
+    .left = 3,
+    .totalTiles = 11,
+    .tag = TAG_ITEM_ICY_ROCK,
+    .sheet = &sSpriteSheet_ItemIcyRock,
+  },
 };
 
 static const struct ExcavationStone ExcavationStoneList[] = {
@@ -1087,12 +1105,8 @@ enum {
 	CRACK_POS_MAX,
 };
 
-
-
-
 // IGNORE THIS PSF
 static const u32 gTestForAlgGfx[] = INCBIN_U32("graphics/battle_interface/ball_caught_indicator.4bpp.lz");
-
 
 // Uncompress some data idk
 static void LZ77UnCompSprite(const u32* data, u32 output[512]) {
@@ -1293,7 +1307,7 @@ static bool8 Excavation_InitBgs(void) {
   ScheduleBgCopyTilemapToVram(2);
   ScheduleBgCopyTilemapToVram(3);
 
-	ShowBg(0);
+  ShowBg(0);
   ShowBg(2);
   ShowBg(3);
 
@@ -1478,29 +1492,29 @@ static void ClearItemMap(void) {
 
 struct ItemRarity {
   u8 itemId;
-  u8 rarity;
 };
 
 static const struct ItemRarity ItemRarityTable_Common[] = {
-  {ITEMID_HEART_SCALE, RARITY_COMMON},
-  {ITEMID_RED_SHARD, RARITY_COMMON},
-  {ITEMID_BLUE_SHARD, RARITY_COMMON},
+  ITEMID_HEART_SCALE,
+  ITEMID_RED_SHARD,
+  ITEMID_BLUE_SHARD,
 };
 
 static const struct ItemRarity ItemRarityTable_Uncommon[] = {
-  {ITEMID_IRON_BALL, RARITY_RARE},
-  {ITEMID_HARD_STONE, RARITY_RARE},
-  {ITEMID_REVIVE, RARITY_RARE},
-  {ITEMID_EVER_STONE, RARITY_RARE},
+  ITEMID_IRON_BALL,
+  ITEMID_HARD_STONE,
+  ITEMID_REVIVE,
+  ITEMID_EVER_STONE,
 };
 
 static const struct ItemRarity ItemRarityTable_Rare[] = {
-  {ITEMID_STAR_PIECE, RARITY_RARE},
-  {ITEMID_DAMP_ROCK, RARITY_RARE},
-  {ITEMID_HEAT_ROCK, RARITY_RARE},
-  {ITEMID_REVIVE_MAX, RARITY_RARE},
-  {ITEMID_OVAL_STONE, RARITY_RARE},
-  {ITEMID_LIGHT_CLAY, RARITY_RARE},
+  ITEMID_STAR_PIECE,
+  ITEMID_DAMP_ROCK,
+  ITEMID_HEAT_ROCK,
+  ITEMID_REVIVE_MAX,
+  ITEMID_OVAL_STONE,
+  ITEMID_LIGHT_CLAY,
+  ITEMID_ICY_ROCK,
 };
 
 static u8 GetRandomItemId() {
@@ -1517,18 +1531,19 @@ static u8 GetRandomItemId() {
   }
 
 #ifdef EXCAVATION_DEBUG
+  // This is buggy, there is not `item`. What did you do psf
   return Debug_CreateRandomItem(item); // Debug
 #endif
 
   switch (rarity) {
     case RARITY_COMMON:
-      index = random(3);
+      index = random(ARRAY_COUNT(ItemRarityTable_Common));
       return ItemRarityTable_Common[index].itemId;
     case RARITY_UNCOMMON:
-      index = random(4);
+      index = random(ARRAY_COUNT(ItemRarityTable_Uncommon));
       return ItemRarityTable_Uncommon[index].itemId;
     case RARITY_RARE:
-      index = random(6);
+      index = random(ARRAY_COUNT(ItemRarityTable_Rare));
       return ItemRarityTable_Rare[index].itemId;
   }
 
@@ -1605,7 +1620,6 @@ static void Excavation_LoadSpriteGraphics(void) {
   // TODO: Change this randomness by using my new `random(u32 amount);` function!
 
   for (i=0; i<COUNT_MAX_NUMBER_STONES; i++) {
-
       stone = ITEMID_NONE;
       while (!DoesStoneFitInItemMap(stone))
           stone = ((Random() % COUNT_ID_STONE) + ID_STONE_1x4);
@@ -1979,6 +1993,7 @@ static void Terrain_DrawLayerTileToScreen(u8 x, u8 y, u8 layer, u16* ptr) {
 
 // TODO: Turn this into a table
 static const u16* GetCorrectPalette(u32 TileTag) {
+  //DebugPrintf("Entered GetCorrectPalette(u32 TileTag)"); 
   switch (TileTag) {
     case TAG_ITEM_REVIVE:
       return gItemRevivePal;
@@ -2019,6 +2034,9 @@ static const u16* GetCorrectPalette(u32 TileTag) {
     case TAG_ITEM_HEAT_ROCK:
       return gItemHeatRockPal;
       break;
+    case TAG_ITEM_ICY_ROCK:
+      return gItemIcyRockPal;
+      break;
   }
 }
 
@@ -2028,6 +2046,7 @@ static struct SpriteTemplate CreatePaletteAndReturnTemplate(u32 TileTag, u32 Pal
 
   TempPalette.tag = PalTag;
   TempPalette.data = GetCorrectPalette(TileTag);
+  //DebugPrintf("Left GetCorrectPalette(u32 TileTag)");
   LoadSpritePalette(&TempPalette);
 
   TempSpriteTemplate.tileTag = TileTag;
@@ -2262,6 +2281,7 @@ static void DoDrawRandomItem(u8 itemStateId, u8 itemId) {
         }
         // If it hasn't placed an Item (that's very unlikely but while debuggin, this happened), just retry
         if (y == yMax && !isItemPlaced) {
+            //DebugPrintf("test test test");
             y = yMin;
         }
     }
@@ -2292,9 +2312,9 @@ static bool32 CanStoneBePlacedAtXY(u32 x, u32 y, u32 itemId)
 
 static bool32 DoesStoneFitInItemMap(u8 itemId)
 {
-    u32 coordX,coordY;
+    u32 coordX, coordY;
 
-    if (itemId == ITEM_NONE)
+    if (itemId == ITEMID_NONE)
         return FALSE;
 
     for (coordX = 0; coordX < GRID_WIDTH; coordX++)
@@ -2909,7 +2929,7 @@ static u32 Debug_CreateRandomItem(u32 random)
     switch (debug)
 #endif
     {
-        case 0: return ITEMID_REVIVE_MAX;
+        case 0: return ITEMID_ICY_ROCK;
         case 1: return ITEMID_REVIVE_MAX;
         case 2: return ITEMID_EVER_STONE;
         case 3: return ITEMID_EVER_STONE;
