@@ -85,7 +85,7 @@ static bool32 GetBuriedItemStatus(u32 index);
 static void ExitExcavationUI(u8 taskId);
 
 static u32 Debug_SetNumberOfBuriedItems(u32 rnd);
-static u32 Debug_CreateRandomItem(u32 random);
+static u32 Debug_CreateRandomItem(u32 random, u32 itemId);
 static u32 Debug_DetermineStoneSize(u32 stone, u32 stoneIndex);
 static void Debug_DetermineLocation(u32* x, u32* y, u32 item);
 static void Debug_RaiseSpritePriority(u32 spriteId);
@@ -162,7 +162,7 @@ static EWRAM_DATA struct ExcavationState *sExcavationUiState = NULL;
 static EWRAM_DATA u8 *sBg2TilemapBuffer = NULL;
 static EWRAM_DATA u8 *sBg3TilemapBuffer = NULL;
 
-// #define EXCAVATION_DEBUG
+//#define EXCAVATION_DEBUG
 
 #ifdef EXCAVATION_DEBUG
 static EWRAM_DATA u8 debugVariable = 0; // Debug
@@ -364,7 +364,7 @@ static const struct OamData gOamItem64x64 = {
     .matrixNum = 0,
     #if DEBUG_SET_ITEM_PRIORITY_TOP == FALSE
     .size = 3,
-    #elif DEBUG_SET_ITEM_PRIORITY_TOP == TRUE 
+    #elif DEBUG_SET_ITEM_PRIORITY_TOP == TRUE
     .size = 0,
     #endif
     .tileNum = 0,
@@ -1176,7 +1176,7 @@ static void LZ77UnCompSprite(const u32* data, u32 output[512]) {
 //
 //              0 0 1 0
 //
-// 
+//
 //
 //          --- ANOTHER EXAMPLE ---
 //
@@ -1192,14 +1192,14 @@ static void LZ77UnCompSprite(const u32* data, u32 output[512]) {
 //
 //  It is stored like this
 //
-//              . . . # # # . . 
-//              . . # # # # # . 
-//              . # # # # # # # 
-//              . # # # # # # # 
-//              . # # # # # # # 
-//              . . # # # # # . 
-//              . . . # # # . . 
-//              . . . . . . . . 
+//              . . . # # # . .
+//              . . # # # # # .
+//              . # # # # # # #
+//              . # # # # # # #
+//              . # # # # # # #
+//              . . # # # # # .
+//              . . . # # # . .
+//              . . . . . . . .
 
 static const u8 sText_Transparent[] = _("o ");
 static const u8 sText_NoTransparent[] = _("8 ");
@@ -1236,7 +1236,7 @@ static void GetOneTileRow(u32 row, u32 uncomp_sprite[512]) {
         //DebugPrintf("-------");
     }
     DebugPrintf("%S", string);
-   
+
 }
 
 static void RunSpriteAnalysisAlgorithm() {
@@ -1247,7 +1247,7 @@ static void RunSpriteAnalysisAlgorithm() {
     // - 'which_tile' is basically an index for a 8 by 8 tile in a sprite. Think of it as an array of 8 by 8 tiles.
     // - We have to multiply 'which_tile' by 8 because of how each row is stored
     // - 'px_row' is just the index for the rows in 8 by 8 tile. It gets incremented by 1 each iteration.
-    
+
     u32 uncomp_sprite[512];                 // Storage for the uncompressed sprite
 
     LZ77UnCompSprite(gItemReviveGfx, uncomp_sprite);
@@ -1576,32 +1576,37 @@ static const struct ItemRarity ItemRarityTable_Rare[] = {
 static u8 GetRandomItemId() {
   u32 rarity;
   u32 index;
+  u32 itemId;
   u32 rnd = random(7);
 
   if (rnd < 4) {
     rarity = RARITY_COMMON;
   } else if (rnd < 6) {
     rarity = RARITY_UNCOMMON;
-  } else if (rnd == 6) {
+  } else {
     rarity = RARITY_RARE;
   }
-
-#ifdef EXCAVATION_DEBUG
-  // This is buggy, there is not `item`. What did you do psf
-  return Debug_CreateRandomItem(item); // Debug
-#endif
 
   switch (rarity) {
     case RARITY_COMMON:
       index = random(ARRAY_COUNT(ItemRarityTable_Common));
-      return ItemRarityTable_Common[index].itemId;
+      itemId =  ItemRarityTable_Common[index].itemId;
+      break;
     case RARITY_UNCOMMON:
       index = random(ARRAY_COUNT(ItemRarityTable_Uncommon));
-      return ItemRarityTable_Uncommon[index].itemId;
+      itemId =  ItemRarityTable_Uncommon[index].itemId;
+      break;
     case RARITY_RARE:
       index = random(ARRAY_COUNT(ItemRarityTable_Rare));
-      return ItemRarityTable_Rare[index].itemId;
+      itemId =  ItemRarityTable_Rare[index].itemId;
+      break;
   }
+
+#ifdef EXCAVATION_DEBUG
+  return Debug_CreateRandomItem(rarity,itemId); // Debug
+#else
+  return itemId;
+#endif
 
   // This won't ever happen.
   return 0;
@@ -2049,7 +2054,7 @@ static void Terrain_DrawLayerTileToScreen(u8 x, u8 y, u8 layer, u16* ptr) {
 
 // TODO: Turn this into a table
 static const u16* GetCorrectPalette(u32 TileTag) {
-  //DebugPrintf("Entered GetCorrectPalette(u32 TileTag)"); 
+  //DebugPrintf("Entered GetCorrectPalette(u32 TileTag)");
   switch (TileTag) {
     case TAG_ITEM_REVIVE:
       return gItemRevivePal;
@@ -2219,7 +2224,7 @@ static void OverwriteItemMapData(u8 posX, u8 posY, u8 itemStateId, u8 itemId) {
 static bool32 ItemStateCondition(u32 posX, u32 posY, u32 x, u32 y, u32 i) {
   if (x == IGNORE_COORDS || y == IGNORE_COORDS)
     return FALSE;
-  else 
+  else
     return (sExcavationUiState->itemMap[posX + (x) + (posY + (y)) * 12] == i);
 }
 
@@ -2248,7 +2253,7 @@ static u8 CheckIfItemCanBePlaced(u8 itemId, u8 posX, u8 posY, u8 xBorder, u8 yBo
                     ycoords[x+y*4] = IGNORE_COORDS;
                 }
             }
-        }   
+        }
 
         if (
             ItemStateCondition(posX, posY, xcoords[0+0*4], ycoords[0+0*4], i) ||
@@ -2292,6 +2297,9 @@ static void DoDrawRandomItem(u8 itemStateId, u8 itemId) {
     //
     // |item1|item3|
     // |item2|item4|
+
+
+    DebugPrintf("We are trying to bury item %d which is a %d",itemStateId,itemId);
 
     switch(itemStateId) {
         default:
@@ -2346,8 +2354,9 @@ static void DoDrawRandomItem(u8 itemStateId, u8 itemId) {
         }
         // If it hasn't placed an Item (that's very unlikely but while debuggin, this happened), just retry
         if (y == yMax && !isItemPlaced) {
-            //DebugPrintf("test test test");
+            DebugPrintf("We have failed trying to place an item in the following coordinates xMin %d xMax %d yMin %d yMax %d",xMin,xMax,yMin,yMax);
             y = yMin;
+            //x = xMin;
         }
     }
 }
@@ -2742,7 +2751,7 @@ static void EndMining(u8 taskId) {
 
 static bool32 ClearWindowPlaySelectButtonPress(void) {
 	if (JOY_NEW(A_BUTTON)) {
-    
+
 		PlaySE(SE_SELECT);
     switch (sExcavationUiState->loadGameState) {
 		  case STATE_GAME_FINISH:
@@ -2985,7 +2994,7 @@ static u32 Debug_SetNumberOfBuriedItems(u32 rnd)
     return rnd;
 }
 
-static u32 Debug_CreateRandomItem(u32 random)
+static u32 Debug_CreateRandomItem(u32 random, u32 itemId)
 {
     u32 debug = 4;
 #ifdef EXCAVATION_DEBUG
@@ -2994,27 +3003,21 @@ static u32 Debug_CreateRandomItem(u32 random)
     switch (debug)
 #endif
     {
-        case 0: return ITEMID_ICY_ROCK;
-        case 1: return ITEMID_REVIVE_MAX;
-        case 2: return ITEMID_EVER_STONE;
-        case 3: return ITEMID_EVER_STONE;
-        default: return random;
+        case 0: return itemId;
+        case 1: return itemId;
+        case 2: return itemId;
+        case 3: return itemId;
+        default: return itemId;
     }
 }
 
 static u32 Debug_DetermineStoneSize(u32 stone, u32 stoneIndex)
 {
-    u32 desiredStones[2];
-    u32 returnStone;
-
-    desiredStones[0] = ITEMID_NONE;
-    desiredStones[1] = ITEMID_NONE ;
-    desiredStones[2] = ITEMID_NONE;
-
-    returnStone = desiredStones[stoneIndex];
+    u32 desiredStones[2] = {ITEMID_NONE, ITEMID_NONE};
+    stoneIndex = (stoneIndex > 1) ? 1 : stoneIndex;
 
 #ifdef EXCAVATION_DEBUG
-    return (!returnStone ? stone : returnStone);
+    return (desiredStones[stoneIndex] == ITEMID_NONE) ? stone : desiredStones[stoneIndex];
 #else
     return stone;
 #endif
