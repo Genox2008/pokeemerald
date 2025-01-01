@@ -557,6 +557,9 @@ static const u16 gItemBlueShardPal[] = INCBIN_U16("graphics/excavation/items/blu
 static const u32 gItemYellowShardGfx[] = INCBIN_U32("graphics/excavation/items/yellow_shard.4bpp.lz");
 static const u16 gItemYellowShardPal[] = INCBIN_U16("graphics/excavation/items/yellow_shard.gbapal");
 
+static const u32 gItemGreenShardGfx[] = INCBIN_U32("graphics/excavation/items/green_shard.4bpp.lz");
+static const u16 gItemGreenShardPal[] = INCBIN_U16("graphics/excavation/items/green_shard.gbapal");
+
 static const u32 gItemIronBallGfx[] = INCBIN_U32("graphics/excavation/items/iron_ball.4bpp.lz");
 static const u16 gItemIronBallPal[] = INCBIN_U16("graphics/excavation/items/iron_ball.gbapal");
 
@@ -695,6 +698,12 @@ static const struct CompressedSpriteSheet sSpriteSheet_ItemYellowShard = {
   gItemYellowShardGfx,
   64*64/2,
   TAG_ITEM_YELLOW_SHARD
+};
+
+static const struct CompressedSpriteSheet sSpriteSheet_ItemGreenShard = {
+  gItemGreenShardGfx,
+  64*64/2,
+  TAG_ITEM_GREEN_SHARD
 };
 
 static const struct CompressedSpriteSheet sSpriteSheet_ItemIronBall = {
@@ -895,6 +904,15 @@ static const struct ExcavationItem ExcavationItemList[] = {
     .totalTiles = 8,
     .tag = TAG_ITEM_YELLOW_SHARD,
     .sheet = &sSpriteSheet_ItemYellowShard,
+  },
+  [ITEMID_GREEN_SHARD] = {
+    .excItemId = ITEMID_GREEN_SHARD,
+    .realItemId = ITEM_GREEN_SHARD,
+    .top = 2,
+    .left = 3,
+    .totalTiles = 10,
+    .tag = TAG_ITEM_GREEN_SHARD,
+    .sheet = &sSpriteSheet_ItemGreenShard,
   },
   [ITEMID_IRON_BALL] = {
     .excItemId = ITEMID_IRON_BALL,
@@ -1534,6 +1552,7 @@ static const struct ItemRarity ItemRarityTable_Common[] = {
   ITEMID_RED_SHARD,
   ITEMID_BLUE_SHARD,
   ITEMID_YELLOW_SHARD,
+  ITEMID_GREEN_SHARD,
 };
 
 static const struct ItemRarity ItemRarityTable_Uncommon[] = {
@@ -2052,6 +2071,9 @@ static const u16* GetCorrectPalette(u32 TileTag) {
       break;
     case TAG_ITEM_YELLOW_SHARD:
       return gItemYellowShardPal;
+      break;
+    case TAG_ITEM_GREEN_SHARD:
+      return gItemGreenShardPal;
       break;
     case TAG_ITEM_EVER_STONE:
       return gItemEverStonePal;
