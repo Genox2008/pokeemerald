@@ -29,6 +29,9 @@ static const int SpriteTileTable[][16] = {
     [ITEMID_BLUE_SHARD] = {
       1,1,1,0,1,1,1,0,1,1,0,0,0,0,0,0,
     },
+    [ITEMID_YELLOW_SHARD] = {
+      1,0,1,0,1,1,1,0,1,1,1,1,0,0,0,0,
+    },
     [ITEMID_OVAL_STONE] = {
       1,1,1,0,1,1,1,0,1,1,1,0,0,0,0,0,
     },

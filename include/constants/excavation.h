@@ -32,6 +32,7 @@
 #define TAG_ITEM_HEAT_ROCK      32
 #define TAG_ITEM_ICY_ROCK       33
 #define TAG_ITEM_SMOOTH_ROCK    34
+#define TAG_ITEM_YELLOW_SHARD   35
 
 #define TAG_STONE_1X4           24
 #define TAG_STONE_4X1           25
@@ -70,6 +71,7 @@ enum
     ITEMID_HEAT_ROCK,
     ITEMID_ICY_ROCK,
     ITEMID_SMOOTH_ROCK,
+    ITEMID_YELLOW_SHARD,
 };
 
 #define EXCAVATION_ITEM_COUNT ITEMID_REVIVE_MAX
