@@ -587,6 +587,9 @@ static const u16 gItemSmoothRockPal[] = INCBIN_U16("graphics/excavation/items/sm
 static const u32 gItemLeafStoneGfx[] = INCBIN_U32("graphics/excavation/items/leaf_stone.4bpp.lz");
 static const u16 gItemLeafStonePal[] = INCBIN_U16("graphics/excavation/items/leaf_stone.gbapal");
 
+static const u32 gItemFireStoneGfx[] = INCBIN_U32("graphics/excavation/items/fire_stone.4bpp.lz");
+static const u16 gItemFireStonePal[] = INCBIN_U16("graphics/excavation/items/fire_stone.gbapal");
+
 // Stone SpriteSheets and SpritePalettes
 static const struct CompressedSpriteSheet sSpriteSheet_Stone1x4[] = {
   {gStone1x4Gfx, 64*64/2, TAG_STONE_1X4},
@@ -761,6 +764,12 @@ static const struct CompressedSpriteSheet sSpriteSheet_ItemLeafStone = {
   gItemLeafStoneGfx,
   64*64/2,
   TAG_ITEM_LEAF_STONE,
+};
+
+static const struct CompressedSpriteSheet sSpriteSheet_ItemFireStone = {
+  gItemFireStoneGfx,
+  64*64/2,
+  TAG_ITEM_FIRE_STONE,
 };
 
 static const struct SpriteTemplate gSpriteStone1x4 = {
@@ -1015,6 +1024,15 @@ static const struct ExcavationItem ExcavationItemList[] = {
     .totalTiles = 7,
     .tag = TAG_ITEM_LEAF_STONE,
     .sheet = &sSpriteSheet_ItemLeafStone,
+  },
+  [ITEMID_FIRE_STONE] = {
+    .excItemId = ITEMID_FIRE_STONE,
+    .realItemId = ITEM_FIRE_STONE,
+    .top = 2,
+    .left = 2,
+    .totalTiles = 8,
+    .tag = TAG_ITEM_FIRE_STONE,
+    .sheet = &sSpriteSheet_ItemFireStone,
   },
 };
 
@@ -1590,6 +1608,7 @@ static const struct ItemRarity ItemRarityTable_Rare[] = {
   ITEMID_ICY_ROCK,
   ITEMID_SMOOTH_ROCK,
   ITEMID_LEAF_STONE,
+  ITEMID_FIRE_STONE,
 };
 
 static u8 GetRandomItemId() {
@@ -2128,6 +2147,9 @@ static const u16* GetCorrectPalette(u32 TileTag) {
       break;
     case TAG_ITEM_LEAF_STONE:
       return gItemLeafStonePal;
+      break;
+    case TAG_ITEM_FIRE_STONE:
+      return gItemFireStonePal;
       break;
   }
 }
@@ -3026,7 +3048,7 @@ static u32 Debug_CreateRandomItem(u32 random, u32 itemId)
 #endif
     {
         case 0: return ITEMID_LEAF_STONE;
-        case 1: return ITEMID_LIGHT_CLAY;
+        case 1: return ITEMID_FIRE_STONE;
         case 2: return ITEMID_ICY_ROCK;
         case 3: return ITEMID_SMOOTH_ROCK;
         default: return itemId;

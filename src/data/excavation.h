@@ -11,6 +11,9 @@ static const int SpriteTileTable[][16] = {
     [ITEMID_REVIVE] = {
       0,1,0,0,1,1,1,0,0,1,0,0,0,0,0,0,
     },
+    [ITEMID_FIRE_STONE] = {
+      1,1,1,0,1,1,1,0,1,1,1,0,0,0,0,0,
+    },
     [ITEMID_SMOOTH_ROCK] = {
       0,0,1,0,1,1,1,0,0,1,1,1,0,1,0,0,
     },
