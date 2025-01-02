@@ -849,6 +849,7 @@ struct ExcavationItem {
   u32 totalTiles; // starts with 0
   u32 tag;
   const struct CompressedSpriteSheet* sheet;
+  const u16* paldata;
 };
 
 struct ExcavationStone {
@@ -867,6 +868,7 @@ static const struct ExcavationItem ExcavationItemList[] = {
     .totalTiles = 0,
     .tag = 0,
     .sheet = NULL,
+    .paldata = NULL,
   },
   [ITEMID_HARD_STONE] = {
     .excItemId = ITEMID_HARD_STONE,
@@ -876,6 +878,7 @@ static const struct ExcavationItem ExcavationItemList[] = {
     .totalTiles = 3,
     .tag = TAG_ITEM_HARDSTONE,
     .sheet = &sSpriteSheet_ItemHardStone,
+    .paldata = gItemHardStonePal,
   },
   [ITEMID_REVIVE] = {
     .excItemId = ITEMID_REVIVE,
@@ -885,6 +888,7 @@ static const struct ExcavationItem ExcavationItemList[] = {
     .totalTiles = 4,
     .tag = TAG_ITEM_REVIVE,
     .sheet = &sSpriteSheet_ItemRevive,
+    .paldata = gItemRevivePal,
   },
   [ITEMID_STAR_PIECE] = {
     .excItemId = ITEMID_STAR_PIECE,
@@ -894,6 +898,7 @@ static const struct ExcavationItem ExcavationItemList[] = {
     .totalTiles = 4,
     .tag = TAG_ITEM_STAR_PIECE,
     .sheet = &sSpriteSheet_ItemStarPiece,
+    .paldata = gItemStarPiecePal,
   },
   [ITEMID_DAMP_ROCK] = {
     .excItemId = ITEMID_DAMP_ROCK,
@@ -904,6 +909,7 @@ static const struct ExcavationItem ExcavationItemList[] = {
     .totalTiles = 7,
     .tag = TAG_ITEM_DAMP_ROCK,
     .sheet = &sSpriteSheet_ItemDampRock,
+    .paldata = gItemDampRockPal,
   },
   [ITEMID_RED_SHARD] = {
     .excItemId = ITEMID_RED_SHARD,
@@ -913,6 +919,7 @@ static const struct ExcavationItem ExcavationItemList[] = {
     .totalTiles = 7,
     .tag = TAG_ITEM_RED_SHARD,
     .sheet = &sSpriteSheet_ItemRedShard,
+    .paldata = gItemRedShardPal,
   },
   [ITEMID_BLUE_SHARD] = {
     .excItemId = ITEMID_BLUE_SHARD,
@@ -922,6 +929,7 @@ static const struct ExcavationItem ExcavationItemList[] = {
     .totalTiles = 7,
     .tag = TAG_ITEM_BLUE_SHARD,
     .sheet = &sSpriteSheet_ItemBlueShard,
+    .paldata = gItemBlueShardPal,
   },
   [ITEMID_YELLOW_SHARD] = {
     .excItemId = ITEMID_YELLOW_SHARD,
@@ -931,6 +939,7 @@ static const struct ExcavationItem ExcavationItemList[] = {
     .totalTiles = 8,
     .tag = TAG_ITEM_YELLOW_SHARD,
     .sheet = &sSpriteSheet_ItemYellowShard,
+    .paldata = gItemYellowShardPal,
   },
   [ITEMID_GREEN_SHARD] = {
     .excItemId = ITEMID_GREEN_SHARD,
@@ -940,6 +949,7 @@ static const struct ExcavationItem ExcavationItemList[] = {
     .totalTiles = 10,
     .tag = TAG_ITEM_GREEN_SHARD,
     .sheet = &sSpriteSheet_ItemGreenShard,
+    .paldata = gItemGreenShardPal,
   },
   [ITEMID_IRON_BALL] = {
     .excItemId = ITEMID_IRON_BALL,
@@ -950,6 +960,7 @@ static const struct ExcavationItem ExcavationItemList[] = {
     .totalTiles = 8,
     .tag = TAG_ITEM_IRON_BALL,
     .sheet = &sSpriteSheet_ItemIronBall,
+    .paldata = gItemIronBallPal,
   },
   [ITEMID_REVIVE_MAX] = {
     .excItemId = ITEMID_REVIVE_MAX,
@@ -960,6 +971,7 @@ static const struct ExcavationItem ExcavationItemList[] = {
     .totalTiles = 8,
     .tag = TAG_ITEM_REVIVE_MAX,
     .sheet = &sSpriteSheet_ItemReviveMax,
+    .paldata = gItemReviveMaxPal,
   },
   [ITEMID_EVER_STONE] = {
     .excItemId = ITEMID_EVER_STONE,
@@ -970,6 +982,7 @@ static const struct ExcavationItem ExcavationItemList[] = {
     .totalTiles = 7,
     .tag = TAG_ITEM_EVER_STONE,
     .sheet = &sSpriteSheet_ItemEverStone,
+    .paldata = gItemEverStonePal,
   },
   [ITEMID_HEART_SCALE] = {
     .excItemId = ITEMID_HEART_SCALE,
@@ -979,6 +992,7 @@ static const struct ExcavationItem ExcavationItemList[] = {
     .totalTiles = 2,
     .tag = TAG_ITEM_HEARTSCALE,
     .sheet = &sSpriteSheet_ItemHeartScale,
+    .paldata = gItemHeartScalePal,
   },
   [ITEMID_OVAL_STONE] = {
     .excItemId = ITEMID_OVAL_STONE,
@@ -988,6 +1002,7 @@ static const struct ExcavationItem ExcavationItemList[] = {
     .totalTiles = 8,
     .tag = TAG_ITEM_OVAL_STONE,
     .sheet = &sSpriteSheet_ItemOvalStone,
+    .paldata = gItemOvalStonePal,
   },
   [ITEMID_LIGHT_CLAY] = {
     .excItemId = ITEMID_LIGHT_CLAY,
@@ -997,6 +1012,7 @@ static const struct ExcavationItem ExcavationItemList[] = {
     .totalTiles = 10,
     .tag = TAG_ITEM_LIGHT_CLAY,
     .sheet = &sSpriteSheet_ItemLightClay,
+    .paldata = gItemLightClayPal,
   },
   [ITEMID_HEAT_ROCK] = {
     .excItemId = ITEMID_HEAT_ROCK,
@@ -1006,6 +1022,7 @@ static const struct ExcavationItem ExcavationItemList[] = {
     .totalTiles = 9,
     .tag = TAG_ITEM_HEAT_ROCK,
     .sheet = &sSpriteSheet_ItemHeatRock,
+    .paldata = gItemHeatRockPal,
   },
   [ITEMID_ICY_ROCK] = {
     .excItemId = ITEMID_ICY_ROCK,
@@ -1015,6 +1032,7 @@ static const struct ExcavationItem ExcavationItemList[] = {
     .totalTiles = 11,
     .tag = TAG_ITEM_ICY_ROCK,
     .sheet = &sSpriteSheet_ItemIcyRock,
+    .paldata = gItemIcyRockPal,
   },
   [ITEMID_SMOOTH_ROCK] = {
     .excItemId = ITEMID_SMOOTH_ROCK,
@@ -1024,6 +1042,7 @@ static const struct ExcavationItem ExcavationItemList[] = {
     .totalTiles = 7,
     .tag = TAG_ITEM_SMOOTH_ROCK,
     .sheet = &sSpriteSheet_ItemSmoothRock,
+    .paldata = gItemSmoothRockPal,
   },
   [ITEMID_LEAF_STONE] = {
     .excItemId = ITEMID_LEAF_STONE,
@@ -1033,6 +1052,7 @@ static const struct ExcavationItem ExcavationItemList[] = {
     .totalTiles = 7,
     .tag = TAG_ITEM_LEAF_STONE,
     .sheet = &sSpriteSheet_ItemLeafStone,
+    .paldata = gItemLeafStonePal,
   },
   [ITEMID_FIRE_STONE] = {
     .excItemId = ITEMID_FIRE_STONE,
@@ -1042,6 +1062,7 @@ static const struct ExcavationItem ExcavationItemList[] = {
     .totalTiles = 8,
     .tag = TAG_ITEM_FIRE_STONE,
     .sheet = &sSpriteSheet_ItemFireStone,
+    .paldata = gItemFireStonePal,
   },
   [ITEMID_WATER_STONE] = {
     .excItemId = ITEMID_WATER_STONE,
@@ -1051,6 +1072,7 @@ static const struct ExcavationItem ExcavationItemList[] = {
     .totalTiles = 7,
     .tag = TAG_ITEM_WATER_STONE,
     .sheet = &sSpriteSheet_ItemWaterStone,
+    .paldata = gItemWaterStonePal,
   },
 };
 
@@ -2109,80 +2131,12 @@ static void Terrain_DrawLayerTileToScreen(u8 x, u8 y, u8 layer, u16* ptr) {
   }
 }
 
-// TODO: Turn this into a table
-static const u16* GetCorrectPalette(u32 TileTag) {
-  //DebugPrintf("Entered GetCorrectPalette(u32 TileTag)");
-  switch (TileTag) {
-    case TAG_ITEM_REVIVE:
-      return gItemRevivePal;
-      break;
-    case TAG_ITEM_DAMP_ROCK:
-      return gItemDampRockPal;
-      break;
-    case TAG_ITEM_HARDSTONE:
-      return gItemHardStonePal;
-      break;
-    case TAG_ITEM_RED_SHARD:
-      return gItemRedShardPal;
-      break;
-    case TAG_ITEM_IRON_BALL:
-      return gItemIronBallPal;
-      break;
-    case TAG_ITEM_BLUE_SHARD:
-      return gItemBlueShardPal;
-      break;
-    case TAG_ITEM_YELLOW_SHARD:
-      return gItemYellowShardPal;
-      break;
-    case TAG_ITEM_GREEN_SHARD:
-      return gItemGreenShardPal;
-      break;
-    case TAG_ITEM_EVER_STONE:
-      return gItemEverStonePal;
-      break;
-    case TAG_ITEM_HEARTSCALE:
-      return gItemHeartScalePal;
-      break;
-    case TAG_ITEM_REVIVE_MAX:
-      return gItemReviveMaxPal;
-      break;
-    case TAG_ITEM_STAR_PIECE:
-      return gItemStarPiecePal;
-      break;
-    case TAG_ITEM_OVAL_STONE:
-      return gItemOvalStonePal;
-      break;
-    case TAG_ITEM_LIGHT_CLAY:
-      return gItemLightClayPal;
-      break;
-    case TAG_ITEM_HEAT_ROCK:
-      return gItemHeatRockPal;
-      break;
-    case TAG_ITEM_ICY_ROCK:
-      return gItemIcyRockPal;
-      break;
-    case TAG_ITEM_SMOOTH_ROCK:
-      return gItemSmoothRockPal;
-      break;
-    case TAG_ITEM_LEAF_STONE:
-      return gItemLeafStonePal;
-      break;
-    case TAG_ITEM_FIRE_STONE:
-      return gItemFireStonePal;
-      break;
-    case TAG_ITEM_WATER_STONE:
-      return gItemWaterStonePal;
-      break;
-  }
-}
-
-static struct SpriteTemplate CreatePaletteAndReturnTemplate(u32 TileTag, u32 PalTag) {
+static struct SpriteTemplate CreatePaletteAndReturnTemplate(u32 TileTag, u32 PalTag, u32 itemId) {
   struct SpritePalette TempPalette;
   struct SpriteTemplate TempSpriteTemplate = gDummySpriteTemplate;
 
   TempPalette.tag = PalTag;
-  TempPalette.data = GetCorrectPalette(TileTag);
-  //DebugPrintf("Left GetCorrectPalette(u32 TileTag)");
+  TempPalette.data = (u16 *)ExcavationItemList[itemId].paldata;
   LoadSpritePalette(&TempPalette);
 
   TempSpriteTemplate.tileTag = TileTag;
@@ -2257,7 +2211,7 @@ static void DrawItemSprite(u8 x, u8 y, u8 itemId, u32 itemNumPalTag) {
       spriteId = CreateSprite(&gSpriteStone3x3, posX+POS_OFFS_64X64, posY+POS_OFFS_64X64, 3);
       break;
     default: // If Item and not Stone
-      gSpriteTemplate = CreatePaletteAndReturnTemplate(ExcavationItemList[itemId].tag, itemNumPalTag);
+      gSpriteTemplate = CreatePaletteAndReturnTemplate(ExcavationItemList[itemId].tag, itemNumPalTag, itemId);
       LoadCompressedSpriteSheet(ExcavationItemList[itemId].sheet);
       spriteId = CreateSprite(&gSpriteTemplate, posX+POS_OFFS_64X64, posY+POS_OFFS_64X64, 3);
       break;
