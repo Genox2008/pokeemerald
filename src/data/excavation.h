@@ -20,6 +20,9 @@ static const int SpriteTileTable[][16] = {
     [ITEMID_ICY_ROCK] = {
       0,1,1,0,1,1,1,1,1,1,1,1,1,0,0,1,
     },
+    [ITEMID_LEAF_STONE] = {
+      0,1,0,0,1,1,1,0,1,1,1,0,0,1,0,0,
+    },
     [ITEMID_HEAT_ROCK] = {
       1,0,1,0,1,1,1,1,1,1,1,1,0,0,0,0,
     },

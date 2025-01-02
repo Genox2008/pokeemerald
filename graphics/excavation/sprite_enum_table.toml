@@ -16,6 +16,7 @@
 "../graphics/excavation/items/smooth_rock.4bpp" = "ITEMID_SMOOTH_ROCK"
 "../graphics/excavation/items/yellow_shard.4bpp" = "ITEMID_YELLOW_SHARD"
 "../graphics/excavation/items/green_shard.4bpp" = "ITEMID_GREEN_SHARD"
+"../graphics/excavation/items/leaf_stone.4bpp" = "ITEMID_LEAF_STONE"
 
 [stones]
 "../graphics/excavation/stones/stone_2x2.4bpp" = "ID_STONE_2x2"

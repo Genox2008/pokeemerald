@@ -584,6 +584,9 @@ static const u16 gItemIcyRockPal[] = INCBIN_U16("graphics/excavation/items/icy_r
 static const u32 gItemSmoothRockGfx[] = INCBIN_U32("graphics/excavation/items/smooth_rock.4bpp.lz");
 static const u16 gItemSmoothRockPal[] = INCBIN_U16("graphics/excavation/items/smooth_rock.gbapal");
 
+static const u32 gItemLeafStoneGfx[] = INCBIN_U32("graphics/excavation/items/leaf_stone.4bpp.lz");
+static const u16 gItemLeafStonePal[] = INCBIN_U16("graphics/excavation/items/leaf_stone.gbapal");
+
 // Stone SpriteSheets and SpritePalettes
 static const struct CompressedSpriteSheet sSpriteSheet_Stone1x4[] = {
   {gStone1x4Gfx, 64*64/2, TAG_STONE_1X4},
@@ -752,6 +755,12 @@ static const struct CompressedSpriteSheet sSpriteSheet_ItemSmoothRock = {
   gItemSmoothRockGfx,
   64*64/2,
   TAG_ITEM_SMOOTH_ROCK,
+};
+
+static const struct CompressedSpriteSheet sSpriteSheet_ItemLeafStone = {
+  gItemLeafStoneGfx,
+  64*64/2,
+  TAG_ITEM_LEAF_STONE,
 };
 
 static const struct SpriteTemplate gSpriteStone1x4 = {
@@ -997,6 +1006,15 @@ static const struct ExcavationItem ExcavationItemList[] = {
     .totalTiles = 7,
     .tag = TAG_ITEM_SMOOTH_ROCK,
     .sheet = &sSpriteSheet_ItemSmoothRock,
+  },
+  [ITEMID_LEAF_STONE] = {
+    .excItemId = ITEMID_LEAF_STONE,
+    .realItemId = ITEM_LEAF_STONE,
+    .top = 3,
+    .left = 2,
+    .totalTiles = 7,
+    .tag = TAG_ITEM_LEAF_STONE,
+    .sheet = &sSpriteSheet_ItemLeafStone,
   },
 };
 
@@ -1571,6 +1589,7 @@ static const struct ItemRarity ItemRarityTable_Rare[] = {
   ITEMID_LIGHT_CLAY,
   ITEMID_ICY_ROCK,
   ITEMID_SMOOTH_ROCK,
+  ITEMID_LEAF_STONE,
 };
 
 static u8 GetRandomItemId() {
@@ -2106,6 +2125,9 @@ static const u16* GetCorrectPalette(u32 TileTag) {
       break;
     case TAG_ITEM_SMOOTH_ROCK:
       return gItemSmoothRockPal;
+      break;
+    case TAG_ITEM_LEAF_STONE:
+      return gItemLeafStonePal;
       break;
   }
 }
@@ -3003,7 +3025,7 @@ static u32 Debug_CreateRandomItem(u32 random, u32 itemId)
     switch (debug)
 #endif
     {
-        case 0: return ITEMID_ICY_ROCK;
+        case 0: return ITEMID_LEAF_STONE;
         case 1: return ITEMID_LIGHT_CLAY;
         case 2: return ITEMID_ICY_ROCK;
         case 3: return ITEMID_SMOOTH_ROCK;
