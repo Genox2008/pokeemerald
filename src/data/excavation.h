@@ -53,6 +53,9 @@ static const int SpriteTileTable[][16] = {
     [ITEMID_REVIVE_MAX] = {
       1,1,1,0,1,1,1,0,1,1,1,0,0,0,0,0,
     },
+    [ITEMID_WATER_STONE] = {
+      1,1,1,0,1,1,1,0,1,1,0,0,0,0,0,0,
+    },
     [ITEMID_IRON_BALL] = {
       1,1,1,0,1,1,1,0,1,1,1,0,0,0,0,0,
     },
