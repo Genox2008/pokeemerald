@@ -162,7 +162,7 @@ static EWRAM_DATA struct ExcavationState *sExcavationUiState = NULL;
 static EWRAM_DATA u8 *sBg2TilemapBuffer = NULL;
 static EWRAM_DATA u8 *sBg3TilemapBuffer = NULL;
 
-//#define EXCAVATION_DEBUG
+#define EXCAVATION_DEBUG
 
 #ifdef EXCAVATION_DEBUG
 static EWRAM_DATA u8 debugVariable = 0; // Debug
@@ -2254,9 +2254,9 @@ static u8 CheckIfItemCanBePlaced(u8 itemId, u8 posX, u8 posY, u8 xBorder, u8 yBo
                 }
             }
         }
-
-        if (
-            ItemStateCondition(posX, posY, xcoords[0+0*4], ycoords[0+0*4], i) ||
+        
+        if ( // Checks if item cannot be placed
+            /*ItemStateCondition(posX, posY, xcoords[0+0*4], ycoords[0+0*4], i) ||
             ItemStateCondition(posX, posY, xcoords[0+1*4], ycoords[0+1*4], i) ||
             ItemStateCondition(posX, posY, xcoords[0+2*4], ycoords[0+2*4], i) ||
             ItemStateCondition(posX, posY, xcoords[0+3*4], ycoords[0+3*4], i) ||
@@ -2271,12 +2271,11 @@ static u8 CheckIfItemCanBePlaced(u8 itemId, u8 posX, u8 posY, u8 xBorder, u8 yBo
             ItemStateCondition(posX, posY, xcoords[3+0*4], ycoords[3+0*4], i) ||
             ItemStateCondition(posX, posY, xcoords[3+1*4], ycoords[3+1*4], i) ||
             ItemStateCondition(posX, posY, xcoords[3+2*4], ycoords[3+2*4], i) ||
-            ItemStateCondition(posX, posY, xcoords[3+3*4], ycoords[3+3*4], i) ||
+            ItemStateCondition(posX, posY, xcoords[3+3*4], ycoords[3+3*4], i) ||*/
             BORDERCHECK_COND(itemId)
-        ) { return 0; }
-
+        ) { return 0; } // If it cannot be placed, return false, that means that item placement should regenerate
     }
-    return 1;
+    return 1; // If it can be placed, return true
 }
 
 static void DoDrawRandomItem(u8 itemStateId, u8 itemId) {
@@ -2297,10 +2296,6 @@ static void DoDrawRandomItem(u8 itemStateId, u8 itemId) {
     //
     // |item1|item3|
     // |item2|item4|
-
-
-    DebugPrintf("We are trying to bury item %d which is a %d",itemStateId,itemId);
-
     switch(itemStateId) {
         default:
         case 1:
@@ -2335,17 +2330,23 @@ static void DoDrawRandomItem(u8 itemStateId, u8 itemId) {
 
     for(y=yMin; y<=yMax; y++) {
         for(x=xMin; x<=xMax; x++) {
-
-            if (isItemPlaced)
+            if (isItemPlaced) {
                 continue;
+            }
 
-            if (Random() <= 49151)
+            if (Random() <= 49151) {
                 continue;
+            }
 
             Debug_DetermineLocation(&x,&y,itemStateId); // Debug
-
-            if (!CheckIfItemCanBePlaced(itemId, x, y, xMax, yMax))
+            
+            if (ExcavationItemList[(itemId)].top == 3) {
+                y=yMin;
+            }
+            
+            if (!CheckIfItemCanBePlaced(itemId, x, y, xMax, yMax)) {
                 continue;
+            }
 
             DrawItemSprite(x,y,itemId, paletteTag);
             OverwriteItemMapData(x, y, itemStateId, itemId); // For the collection logic, overwrite the itemmap data
@@ -2354,9 +2355,8 @@ static void DoDrawRandomItem(u8 itemStateId, u8 itemId) {
         }
         // If it hasn't placed an Item (that's very unlikely but while debuggin, this happened), just retry
         if (y == yMax && !isItemPlaced) {
-            DebugPrintf("We have failed trying to place an item in the following coordinates xMin %d xMax %d yMin %d yMax %d",xMin,xMax,yMin,yMax);
+            //DebugPrintf("We have failed trying to place an item in the following coordinates xMin %d xMax %d yMin %d yMax %d",xMin,xMax,yMin,yMax);
             y = yMin;
-            //x = xMin;
         }
     }
 }
@@ -3003,10 +3003,10 @@ static u32 Debug_CreateRandomItem(u32 random, u32 itemId)
     switch (debug)
 #endif
     {
-        case 0: return itemId;
-        case 1: return itemId;
-        case 2: return itemId;
-        case 3: return itemId;
+        case 0: return ITEMID_ICY_ROCK;
+        case 1: return ITEMID_LIGHT_CLAY;
+        case 2: return ITEMID_ICY_ROCK;
+        case 3: return ITEMID_SMOOTH_ROCK;
         default: return itemId;
     }
 }
