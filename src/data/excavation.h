@@ -8,6 +8,9 @@ static const int SpriteTileTable[][16] = {
     [ITEMID_RED_SHARD] = {
       1,1,1,0,1,1,0,0,1,1,1,0,0,0,0,0,
     },
+    [ITEMID_THUNDER_STONE] = {
+      0,1,1,0,1,1,1,0,1,1,0,0,0,0,0,0,
+    },
     [ITEMID_REVIVE] = {
       0,1,0,0,1,1,1,0,0,1,0,0,0,0,0,0,
     },
