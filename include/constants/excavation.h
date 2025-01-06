@@ -17,36 +17,38 @@
 #define COUNT_MAX_NUMBER_STONES 2
 
 /*********** ITEM SPRITE TAGS ************/
-#define TAG_ITEM_HEARTSCALE     14
-#define TAG_ITEM_HARDSTONE      15
-#define TAG_ITEM_REVIVE         16
-#define TAG_ITEM_STAR_PIECE     17
-#define TAG_ITEM_DAMP_ROCK      18
-#define TAG_ITEM_RED_SHARD      19
-#define TAG_ITEM_BLUE_SHARD     20
-#define TAG_ITEM_IRON_BALL      21
-#define TAG_ITEM_REVIVE_MAX     22
-#define TAG_ITEM_EVER_STONE     23
-#define TAG_ITEM_OVAL_STONE     30
-#define TAG_ITEM_LIGHT_CLAY     31
-#define TAG_ITEM_HEAT_ROCK      32
-#define TAG_ITEM_ICY_ROCK       33
-#define TAG_ITEM_SMOOTH_ROCK    34
-#define TAG_ITEM_YELLOW_SHARD   35
-#define TAG_ITEM_GREEN_SHARD    36
-#define TAG_ITEM_LEAF_STONE     37
-#define TAG_ITEM_FIRE_STONE     38
-#define TAG_ITEM_WATER_STONE    39
-#define TAG_ITEM_THUNDER_STONE  40
-#define TAG_ITEM_MOON_STONE     41
-#define TAG_ITEM_SUN_STONE      42
+enum {
+    TAG_ITEM_HEARTSCALE = 14,
+    TAG_ITEM_HARDSTONE,
+    TAG_ITEM_REVIVE,
+    TAG_ITEM_STAR_PIECE,
+    TAG_ITEM_DAMP_ROCK,
+    TAG_ITEM_RED_SHARD,
+    TAG_ITEM_BLUE_SHARD,
+    TAG_ITEM_IRON_BALL,
+    TAG_ITEM_REVIVE_MAX,
+    TAG_ITEM_EVER_STONE,
+    TAG_ITEM_OVAL_STONE,
+    TAG_ITEM_LIGHT_CLAY,
+    TAG_ITEM_HEAT_ROCK,
+    TAG_ITEM_ICY_ROCK,     
+    TAG_ITEM_SMOOTH_ROCK,
+    TAG_ITEM_YELLOW_SHARD,   
+    TAG_ITEM_GREEN_SHARD,  
+    TAG_ITEM_LEAF_STONE,   
+    TAG_ITEM_FIRE_STONE,    
+    TAG_ITEM_WATER_STONE,
+    TAG_ITEM_THUNDER_STONE,
+    TAG_ITEM_MOON_STONE, 
+    TAG_ITEM_SUN_STONE,   
 
-#define TAG_STONE_1X4           24
-#define TAG_STONE_4X1           25
-#define TAG_STONE_2X4           26
-#define TAG_STONE_4X2           27
-#define TAG_STONE_2X2           28
-#define TAG_STONE_3X3           29
+    TAG_STONE_1X4,
+    TAG_STONE_4X1,
+    TAG_STONE_2X4,
+    TAG_STONE_4X2,
+    TAG_STONE_2X2,
+    TAG_STONE_3X3,
+};
 
 /*********** FLAGS ************/
 #define FLAG_USE_DEFAULT_MESSAGE_BOX FALSE
@@ -54,8 +56,7 @@
 /*********** DEBUG FLAGS ************/
 #define DEBUG_SET_ITEM_PRIORITY_TOP FALSE
 
-enum
-{
+enum {
     ITEMID_NONE,
     ID_STONE_1x4,
     ID_STONE_4x1,

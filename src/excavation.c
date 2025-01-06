@@ -141,8 +141,8 @@ struct ExcavationState {
 #define WIN_MSG         0
 
 // Other Sprite Tags
-#define TAG_CURSOR      1
-#define TAG_BUTTONS     2
+#define TAG_CURSOR              1
+#define TAG_BUTTONS             2   
 
 #define TAG_BLANK1              3
 #define TAG_BLANK2              4
