@@ -162,9 +162,7 @@ static EWRAM_DATA struct ExcavationState *sExcavationUiState = NULL;
 static EWRAM_DATA u8 *sBg2TilemapBuffer = NULL;
 static EWRAM_DATA u8 *sBg3TilemapBuffer = NULL;
 
-#define EXCAVATION_DEBUG
-
-#ifdef EXCAVATION_DEBUG
+#if DEBUG_ENABLE_ITEM_GENERATION_OPTIONS == TRUE
 static EWRAM_DATA u8 debugVariable = 0; // Debug
 #endif
 
@@ -1741,7 +1739,7 @@ static u8 GetRandomItemId() {
       break;
   }
 
-#ifdef EXCAVATION_DEBUG
+#if DEBUG_ENABLE_ITEM_GENERATION_OPTIONS == TRUE
   return Debug_CreateRandomItem(rarity,itemId); // Debug
 #else
   return itemId;
@@ -3068,7 +3066,7 @@ static u32 Debug_SetNumberOfBuriedItems(u32 rnd)
 {
     u32 desiredNumItems = 4;
 
-#ifdef EXCAVATION_DEBUG
+#if DEBUG_ENABLE_ITEM_GENERATION_OPTIONS == TRUE
         return (desiredNumItems - 2);
 #endif
     return rnd;
@@ -3077,7 +3075,7 @@ static u32 Debug_SetNumberOfBuriedItems(u32 rnd)
 static u32 Debug_CreateRandomItem(u32 random, u32 itemId)
 {
     u32 debug = 4;
-#ifdef EXCAVATION_DEBUG
+#if DEBUG_ENABLE_ITEM_GENERATION_OPTIONS == TRUE
     switch (debugVariable++)
 #else
     switch (debug)
@@ -3096,7 +3094,7 @@ static u32 Debug_DetermineStoneSize(u32 stone, u32 stoneIndex)
     u32 desiredStones[2] = {ITEMID_NONE, ITEMID_NONE};
     stoneIndex = (stoneIndex > 1) ? 1 : stoneIndex;
 
-#ifdef EXCAVATION_DEBUG
+#if DEBUG_ENABLE_ITEM_GENERATION_OPTIONS == TRUE
     return (desiredStones[stoneIndex] == ITEMID_NONE) ? stone : desiredStones[stoneIndex];
 #else
     return stone;
@@ -3105,7 +3103,7 @@ static u32 Debug_DetermineStoneSize(u32 stone, u32 stoneIndex)
 
 static void Debug_DetermineLocation(u32* x, u32* y, u32 item)
 {
-#ifdef EXCAVATION_DEBUG
+#if DEBUG_ENABLE_ITEM_GENERATION_OPTIONS == TRUE
     {
         switch (item)
         {
@@ -3134,7 +3132,7 @@ static void Debug_DetermineLocation(u32* x, u32* y, u32 item)
 
 static void Debug_RaiseSpritePriority(u32 spriteId)
 {
-#ifdef EXCAVATION_DEBUG
+#if DEBUG_ENABLE_ITEM_GENERATION_OPTIONS == TRUE
     gSprites[spriteId].oam.priority = 0;
 #endif
 }

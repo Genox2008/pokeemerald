@@ -54,7 +54,8 @@ enum {
 #define FLAG_USE_DEFAULT_MESSAGE_BOX FALSE
 
 /*********** DEBUG FLAGS ************/
-#define DEBUG_SET_ITEM_PRIORITY_TOP FALSE
+#define DEBUG_SET_ITEM_PRIORITY_TOP             FALSE
+#define DEBUG_ENABLE_ITEM_GENERATION_OPTIONS    TRUE
 
 enum {
     ITEMID_NONE,
@@ -88,8 +89,6 @@ enum {
     ITEMID_MOON_STONE,
     ITEMID_SUN_STONE,
 };
-
-#define EXCAVATION_ITEM_COUNT ITEMID_REVIVE_MAX
 
 #define COUNT_ID_STONE                  ID_STONE_3x3
 
