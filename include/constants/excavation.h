@@ -115,6 +115,4 @@ enum {
 #define ITEM_ZONE_4_Y_UP_BOUNDARY       4
 #define ITEM_ZONE_4_Y_DOWN_BOUNDARY     GRID_HEIGHT - 1
 
-// TODO: change this value to the max itemId
-
 #endif

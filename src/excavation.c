@@ -1185,17 +1185,12 @@ static u32 random(u32 amount) {
   return (Random() % amount);
 }
 
-static void delay(unsigned int amount) {
-  u32 i;
-  for (i = 0; i < amount * 10; i++) {};
-}
-
 void Excavation_ItemUseCB(void) {
   Excavation_Init(CB2_ReturnToField);
 }
 
 static void Excavation_Init(MainCallback callback) {
-  u8 rnd = Random();
+  u32 rnd;
   sExcavationUiState = AllocZeroed(sizeof(struct ExcavationState));
 
   if (sExcavationUiState == NULL) {
@@ -1219,18 +1214,7 @@ static void Excavation_Init(MainCallback callback) {
   sExcavationUiState->state_stone1 = SELECTED;
   sExcavationUiState->state_stone2 = SELECTED;
 
-  // TODO: Change this randomness by using my function `random(u32 amount);`
-  if (rnd < 85) {
-    rnd = 0;
-  } else if (rnd < 185) {
-    rnd = 1;
-  } else {
-    rnd = 2;
-  }
-
-  rnd = Debug_SetNumberOfBuriedItems(rnd); // Debug
-
-  switch(rnd) {
+  switch(Debug_SetNumberOfBuriedItems(random(3))) { // Debug
     case 0:
       sExcavationUiState->state_item3 = DESELECTED;
       sExcavationUiState->state_item2 = DESELECTED;
@@ -1288,110 +1272,6 @@ enum {
 	CRACK_POS_7,
 	CRACK_POS_MAX,
 };
-
-// IGNORE THIS PSF
-static const u32 gTestForAlgGfx[] = INCBIN_U32("graphics/battle_interface/ball_caught_indicator.4bpp.lz");
-
-// Uncompress some data idk
-static void LZ77UnCompSprite(const u32* data, u32 output[512]) {
-  LZ77UnCompVram(data, output);
-}
-
-// 4bpp images store indices like this. Lets imagine the number 0 being the transparent color index and 1 any other color index.
-// The image with have to analyse looks like this:
-//
-//              0 1 0 0
-//
-// If we open the png, we would see the colors in the order, from left to right.
-// However, the pixels are stored in reverse order in the 4bpp file format. So they are stored like this:
-//
-//              0 0 1 0
-//
-//
-//
-//          --- ANOTHER EXAMPLE ---
-//
-//              . . # # # . . .
-//              . # # # # # . .
-//              # # # # # # # .
-//              # # # # # # # .
-//              # # # # # # # .
-//              . # # # # # . .
-//              . . # # # . . .
-//              . . . . . . . .
-//
-//
-//  It is stored like this
-//
-//              . . . # # # . .
-//              . . # # # # # .
-//              . # # # # # # #
-//              . # # # # # # #
-//              . # # # # # # #
-//              . . # # # # # .
-//              . . . # # # . .
-//              . . . . . . . .
-
-static const u8 sText_Transparent[] = _("o ");
-static const u8 sText_NoTransparent[] = _("8 ");
-
-static void GetOneTileRow(u32 row, u32 uncomp_sprite[512]) {
-    u32 px_row, i;
-    u32 tile[8];
-    u32 tile_idx = row * 8;
-    u32 tile_loop_limit = tile_idx+8;
-    bool32 continue_parent_loop = FALSE;
-    u8 string[8] = _("");
-
-    for (tile_idx; tile_idx < tile_loop_limit; tile_idx++) {
-        for (px_row=0; px_row<8; px_row++) {
-            tile[px_row] = uncomp_sprite[tile_idx*8 + px_row];
-            //DebugPrintf("%d", uncomp_sprite[tile_idx*8 + px_row]);
-        }
-
-        for(i=0; i<8; i++) {
-            if (tile[i] > 0) {
-                StringAppend(string, sText_NoTransparent);
-                //DebugPrintf("#");
-                continue_parent_loop = TRUE;
-                break;
-            }
-        }
-        if (continue_parent_loop) {
-            continue_parent_loop = FALSE;
-            continue;
-        }
-
-        StringAppend(string, sText_Transparent);
-        //DebugPrintf(".");
-        //DebugPrintf("-------");
-    }
-    DebugPrintf("%S", string);
-
-}
-
-static void RunSpriteAnalysisAlgorithm() {
-    // The algorithm I came up with to get each row in a tile is the following:
-    //
-    //          which_tile * 8 + px_row
-    //
-    // - 'which_tile' is basically an index for a 8 by 8 tile in a sprite. Think of it as an array of 8 by 8 tiles.
-    // - We have to multiply 'which_tile' by 8 because of how each row is stored
-    // - 'px_row' is just the index for the rows in 8 by 8 tile. It gets incremented by 1 each iteration.
-
-    u32 uncomp_sprite[512];                 // Storage for the uncompressed sprite
-
-    LZ77UnCompSprite(gItemReviveGfx, uncomp_sprite);
-
-    GetOneTileRow(0, uncomp_sprite);
-    GetOneTileRow(1, uncomp_sprite);
-    GetOneTileRow(2, uncomp_sprite);
-    GetOneTileRow(3, uncomp_sprite);
-    GetOneTileRow(4, uncomp_sprite);
-    GetOneTileRow(5, uncomp_sprite);
-    GetOneTileRow(6, uncomp_sprite);
-    GetOneTileRow(7, uncomp_sprite);
-}
 
 static void Excavation_SetupCB(void) {
   u8 taskId;
@@ -1519,15 +1399,11 @@ static void ExcavationUi_Shake(u8 taskId) {
   switch(sExcavationUiState->shakeState) {
     case 0:
       MakeCursorInvisible();
-      //gSprites[sExcavationUiState->bRedSpriteIndex].x += 1;
-      //gSprites[sExcavationUiState->bBlueSpriteIndex].x += 1;
       SetGpuReg(REG_OFFSET_BG3HOFS, 1);
       SetGpuReg(REG_OFFSET_BG2HOFS, 1);
       sExcavationUiState->shakeState++;
       break;
     case 1:
-      //gSprites[sExcavationUiState->bRedSpriteIndex].y += 1;
-      //gSprites[sExcavationUiState->bBlueSpriteIndex].y += 1;
       SetGpuReg(REG_OFFSET_BG3VOFS, 1);
       SetGpuReg(REG_OFFSET_BG2VOFS, 1);
       gSprites[sExcavationUiState->ShakeHitEffect].invisible = 1;
@@ -1535,8 +1411,6 @@ static void ExcavationUi_Shake(u8 taskId) {
       sExcavationUiState->shakeState++;
       break;
     case 2:
-      //gSprites[sExcavationUiState->bRedSpriteIndex].x -= 2;
-      //gSprites[sExcavationUiState->bBlueSpriteIndex].x -= 2;
       SetGpuReg(REG_OFFSET_BG3HOFS, -1);
       SetGpuReg(REG_OFFSET_BG2HOFS, -1);
       gSprites[sExcavationUiState->ShakeHitEffect].invisible = 0;
@@ -1544,16 +1418,12 @@ static void ExcavationUi_Shake(u8 taskId) {
       sExcavationUiState->shakeState++;
       break;
     case 3:
-      //gSprites[sExcavationUiState->bRedSpriteIndex].y -= 2;
-      //gSprites[sExcavationUiState->bBlueSpriteIndex].y -= 2;
       SetGpuReg(REG_OFFSET_BG3VOFS, -1);
       SetGpuReg(REG_OFFSET_BG2VOFS, -1);
       gSprites[sExcavationUiState->ShakeHitEffect].invisible = 1;
       sExcavationUiState->shakeState++;
       break;
     case 4:
-      //gSprites[sExcavationUiState->bRedSpriteIndex].x += 2;
-      //gSprites[sExcavationUiState->bBlueSpriteIndex].x += 2;
       SetGpuReg(REG_OFFSET_BG3HOFS, 1);
       SetGpuReg(REG_OFFSET_BG2HOFS, 1);
       gSprites[sExcavationUiState->ShakeHitEffect].invisible = 0;
@@ -1562,8 +1432,6 @@ static void ExcavationUi_Shake(u8 taskId) {
       sExcavationUiState->shakeState++;
       break;
     case 5:
-      //gSprites[sExcavationUiState->bRedSpriteIndex].y += 2;
-      //gSprites[sExcavationUiState->bBlueSpriteIndex].y += 2;
       SetGpuReg(REG_OFFSET_BG3VOFS, 1);
       SetGpuReg(REG_OFFSET_BG2VOFS, 1);
       gSprites[sExcavationUiState->ShakeHitEffect].invisible = 1;
@@ -1571,8 +1439,6 @@ static void ExcavationUi_Shake(u8 taskId) {
       VBlankIntrWait();
       break;
     case 6:
-      //gSprites[sExcavationUiState->bRedSpriteIndex].x -= 2;
-      //gSprites[sExcavationUiState->bBlueSpriteIndex].x -= 2;
       SetGpuReg(REG_OFFSET_BG3HOFS, -1);
       SetGpuReg(REG_OFFSET_BG2HOFS, -1);
       gSprites[sExcavationUiState->ShakeHitEffect].invisible = 0;
@@ -1581,8 +1447,6 @@ static void ExcavationUi_Shake(u8 taskId) {
       VBlankIntrWait();
       break;
     case 7:
-      //gSprites[sExcavationUiState->bRedSpriteIndex].y -= 2;
-      //gSprites[sExcavationUiState->bBlueSpriteIndex].y -= 2;
       SetGpuReg(REG_OFFSET_BG3VOFS, -1);
       SetGpuReg(REG_OFFSET_BG2VOFS, -1);
       gSprites[sExcavationUiState->ShakeHitEffect].invisible = 1;
@@ -1591,10 +1455,6 @@ static void ExcavationUi_Shake(u8 taskId) {
       VBlankIntrWait();
       break;
     case 8:
-      //gSprites[sExcavationUiState->bRedSpriteIndex].y += 1;
-      //gSprites[sExcavationUiState->bBlueSpriteIndex].y += 1;
-      //gSprites[sExcavationUiState->bRedSpriteIndex].x += 1;
-      //gSprites[sExcavationUiState->bBlueSpriteIndex].x += 1;
       SetGpuReg(REG_OFFSET_BG3VOFS, 0);
       SetGpuReg(REG_OFFSET_BG3HOFS, 0);
       SetGpuReg(REG_OFFSET_BG2HOFS, 0);
@@ -1608,16 +1468,10 @@ static void ExcavationUi_Shake(u8 taskId) {
       VBlankIntrWait();
       break;
   }
-
   BuildOamBuffer();
 }
 
 static void Excavation_VBlankCB(void) {
-  // I discovered that the VBlankCB is actually ran every VBlank. There's no function that can halt it just because of a huge loop or smth
-  // However I discovered that the MainCB can be halted! UiShake() delays with huge loops to make the shake
-  // effect visible! Because of this, other tasks cannot run (or other functions) in the same time as UiShake is ran. This makes the fade/flash
-  // effect on the items which got dug up, delay by a few `ms`! Because Vblank cannot be halted, we just do the checking, each vblank + there's no lag
-  // because of this!
   Excavation_CheckItemFound();
   UpdatePaletteFade();
   LoadOam();
@@ -1814,8 +1668,6 @@ static void Excavation_LoadSpriteGraphics(void) {
     DoDrawRandomItem(4, itemId4);
     sExcavationUiState->Item4_TilesToDigUp = ExcavationUtil_GetTotalTileAmount(itemId4);
   }
-
-  // TODO: Change this randomness by using my new `random(u32 amount);` function!
 
   for (i=0; i<COUNT_MAX_NUMBER_STONES; i++) {
       stone = ITEMID_NONE;
@@ -2134,19 +1986,8 @@ static void Terrain_DrawLayerTileToScreen(u8 x, u8 y, u8 layer, u16* ptr) {
   u8 tileX = x;
   u8 tileY = y;
 
-  // Idk why tf I am doing the checking
-  // TODO: Change this
-  if (x == 0) {
-    tileX = 0;
-  } else {
-    tileX = x*2;
-  }
-
-  if (y == 0) {
-    tileY = 0;
-  } else {
-    tileY = y*2;
-  }
+  tileX = x*2;
+  tileY = y*2;
 
   switch(layer) {
      // layer 0 and 1 - tile: 0
@@ -2234,9 +2075,7 @@ static void DrawItemSprite(u8 x, u8 y, u8 itemId, u32 itemNumPalTag) {
   u8 posX = x * 16;
   u8 posY = y * 16 + 32;
   u32 spriteId;
-  //ExcavationItem_LoadPalette(gTestItemPal, tag);
 
-  //LoadPalette(gTestItemPal, OBJ_PLTT_ID(3), PLTT_SIZE_4BPP);
   switch(itemId) {
     case ID_STONE_1x4:
       LoadSpritePalette(sSpritePal_Stone1x4);
@@ -2333,25 +2172,9 @@ static u8 CheckIfItemCanBePlaced(u8 itemId, u8 posX, u8 posY, u8 xBorder, u8 yBo
             }
         }
         
-        if ( // Checks if item cannot be placed
-            /*ItemStateCondition(posX, posY, xcoords[0+0*4], ycoords[0+0*4], i) ||
-            ItemStateCondition(posX, posY, xcoords[0+1*4], ycoords[0+1*4], i) ||
-            ItemStateCondition(posX, posY, xcoords[0+2*4], ycoords[0+2*4], i) ||
-            ItemStateCondition(posX, posY, xcoords[0+3*4], ycoords[0+3*4], i) ||
-            ItemStateCondition(posX, posY, xcoords[1+0*4], ycoords[1+0*4], i) ||
-            ItemStateCondition(posX, posY, xcoords[1+1*4], ycoords[1+1*4], i) ||
-            ItemStateCondition(posX, posY, xcoords[1+2*4], ycoords[1+2*4], i) ||
-            ItemStateCondition(posX, posY, xcoords[1+3*4], ycoords[1+3*4], i) ||
-            ItemStateCondition(posX, posY, xcoords[2+0*4], ycoords[2+0*4], i) ||
-            ItemStateCondition(posX, posY, xcoords[2+1*4], ycoords[2+1*4], i) ||
-            ItemStateCondition(posX, posY, xcoords[2+2*4], ycoords[2+2*4], i) ||
-            ItemStateCondition(posX, posY, xcoords[2+3*4], ycoords[2+3*4], i) ||
-            ItemStateCondition(posX, posY, xcoords[3+0*4], ycoords[3+0*4], i) ||
-            ItemStateCondition(posX, posY, xcoords[3+1*4], ycoords[3+1*4], i) ||
-            ItemStateCondition(posX, posY, xcoords[3+2*4], ycoords[3+2*4], i) ||
-            ItemStateCondition(posX, posY, xcoords[3+3*4], ycoords[3+3*4], i) ||*/
-            BORDERCHECK_COND(itemId)
-        ) { return 0; } // If it cannot be placed, return false, that means that item placement should regenerate
+        if (BORDERCHECK_COND(itemId)) { 
+            return 0; 
+        } // If it cannot be placed, return false, that means that item placement should regenerate
     }
     return 1; // If it can be placed, return true
 }
@@ -2620,23 +2443,8 @@ static void Terrain_UpdateLayerTileOnScreen(u16* ptr, s8 ofsX, s8 ofsY) {
   //}
 
   i = (sExcavationUiState->cursorY-2+ofsY)*12 + sExcavationUiState->cursorX + ofsX; // Why the minus 2? Because the cursorY value starts at 2, so when calculating the position of the cursor, we have that additional 2 with it!!
-  tileX = sExcavationUiState->cursorX;
-  tileY = sExcavationUiState->cursorY;
-  // Maybe this?
-  //u8 layer = sExcavationUiState->layerMap[sExcavationUiState->cursorY*8 + sExcavationUiState->cursorX];
-
-  // TODO: Change this as well
-  if (sExcavationUiState->cursorX == 0) {
-    tileX = (0+ofsX)*2;
-  } else {
-    tileX = (sExcavationUiState->cursorX+ofsX) * 2;
-  }
-
-  if (sExcavationUiState->cursorY == 0) {
-    tileY = (0+ofsY)*2;
-  } else {
-    tileY = (sExcavationUiState->cursorY+ofsY) * 2;
-  }
+  tileX = (sExcavationUiState->cursorX+ofsX) * 2;
+  tileY = (sExcavationUiState->cursorY+ofsY) * 2;
 
   // Here, case 0 is missing because it will never appear. Why? Because the value we are doing the switch statement on would need to be negative.
   // Case 6 clears the tile so we can take a look at Bg3 (for the item sprite)!
