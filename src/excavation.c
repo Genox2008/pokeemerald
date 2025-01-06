@@ -599,6 +599,9 @@ static const u16 gItemThunderStonePal[] = INCBIN_U16("graphics/excavation/items/
 static const u32 gItemMoonStoneGfx[] = INCBIN_U32("graphics/excavation/items/moon_stone.4bpp.lz");
 static const u16 gItemMoonStonePal[] = INCBIN_U16("graphics/excavation/items/moon_stone.gbapal");
 
+static const u32 gItemSunStoneGfx[] = INCBIN_U32("graphics/excavation/items/sun_stone.4bpp.lz");
+static const u16 gItemSunStonePal[] = INCBIN_U16("graphics/excavation/items/sun_stone.gbapal");
+
 // Stone SpriteSheets and SpritePalettes
 static const struct CompressedSpriteSheet sSpriteSheet_Stone1x4[] = {
   {gStone1x4Gfx, 64*64/2, TAG_STONE_1X4},
@@ -797,6 +800,12 @@ static const struct CompressedSpriteSheet sSpriteSheet_ItemMoonStone = {
   gItemMoonStoneGfx,
   64*64/2,
   TAG_ITEM_MOON_STONE,
+};
+
+static const struct CompressedSpriteSheet sSpriteSheet_ItemSunStone = {
+  gItemSunStoneGfx,
+  64*64/2,
+  TAG_ITEM_SUN_STONE,
 };
 
 static const struct SpriteTemplate gSpriteStone1x4 = {
@@ -1111,6 +1120,16 @@ static const struct ExcavationItem ExcavationItemList[] = {
     .tag = TAG_ITEM_MOON_STONE,
     .sheet = &sSpriteSheet_ItemMoonStone,
     .paldata = gItemMoonStonePal,
+  },
+  [ITEMID_SUN_STONE] = {
+    .excItemId = ITEMID_SUN_STONE,
+    .realItemId = ITEM_SUN_STONE,
+    .top = 2,
+    .left = 2,
+    .totalTiles = 6,
+    .tag = TAG_ITEM_SUN_STONE,
+    .sheet = &sSpriteSheet_ItemSunStone,
+    .paldata = gItemSunStonePal,
   },
 };
 
@@ -1690,6 +1709,7 @@ static const struct ItemRarity ItemRarityTable_Rare[] = {
   ITEMID_WATER_STONE,
   ITEMID_THUNDER_STONE,
   ITEMID_MOON_STONE,
+  ITEMID_SUN_STONE,
 };
 
 static u8 GetRandomItemId() {
@@ -3064,7 +3084,7 @@ static u32 Debug_CreateRandomItem(u32 random, u32 itemId)
 #endif
     {
         case 0: return ITEMID_MOON_STONE;
-        case 1: return ITEMID_FIRE_STONE;
+        case 1: return ITEMID_SUN_STONE;
         case 2: return ITEMID_WATER_STONE;
         case 3: return ITEMID_THUNDER_STONE;
         default: return itemId;

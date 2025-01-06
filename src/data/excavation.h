@@ -2,6 +2,9 @@
 #include "constants/excavation.h"
 
 static const int SpriteTileTable[][16] = {
+    [ITEMID_SUN_STONE] = {
+      0,1,0,0,1,1,1,0,1,1,1,0,0,0,0,0,
+    },
     [ITEMID_STAR_PIECE] = {
       0,1,0,0,1,1,1,0,0,1,0,0,0,0,0,0,
     },

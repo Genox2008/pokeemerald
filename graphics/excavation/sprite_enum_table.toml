@@ -21,6 +21,7 @@
 "../graphics/excavation/items/water_stone.4bpp" = "ITEMID_WATER_STONE"
 "../graphics/excavation/items/thunder_stone.4bpp" = "ITEMID_THUNDER_STONE"
 "../graphics/excavation/items/moon_stone.4bpp" = "ITEMID_MOON_STONE"
+"../graphics/excavation/items/sun_stone.4bpp" = "ITEMID_SUN_STONE"
 
 [stones]
 "../graphics/excavation/stones/stone_2x2.4bpp" = "ID_STONE_2x2"
