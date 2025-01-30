@@ -360,11 +360,7 @@ static const struct OamData gOamItem64x64 = {
     .shape = 0,
     .x = 0,
     .matrixNum = 0,
-    #if DEBUG_SET_ITEM_PRIORITY_TOP == FALSE
     .size = 3,
-    #elif DEBUG_SET_ITEM_PRIORITY_TOP == TRUE
-    .size = 0,
-    #endif
     .tileNum = 0,
     .priority = 3,
     .paletteNum = 0,
@@ -2396,10 +2392,26 @@ static void Excavation_CheckItemFound(void) {
 
 }
 
+static s16 RandRangeSigned(s16 min, s16 max)
+{
+	if (min == max)
+		return min;
+
+	return (Random() % (max - min)) + min;
+}
+
+static bool8 AtCornerOfRectangle(u8 row, u8 col, u8 baseRow, u8 baseCol, u8 finalRow, u8 finalCol)
+{
+	return (col == baseCol && row == baseRow)
+		|| (col == baseCol && row == finalRow)
+		|| (col == finalCol && row == baseRow)
+		|| (col == finalCol && row == finalRow);
+}
+
 // Randomly generates a terrain, stores the layering in an array and draw the right tiles, with the help of the layer map, to the screen.
 // Use the above function just to draw a tile once (for updating the tile, use Terrain_UpdateLayerTileOnScreen(...); )
 static void Excavation_DrawRandomTerrain(void) {
-  u8 i;
+  /*u8 i;
   u8 x;
   u8 y;
   u8 rnd;
@@ -2429,7 +2441,89 @@ static void Excavation_DrawRandomTerrain(void) {
     for (x = 0; x < 12 && i < 96; x++, i++) {
       Terrain_DrawLayerTileToScreen(x, y, sExcavationUiState->layerMap[i], ptr);
     }
-  }
+  }*/
+
+    u8 row1, row2, col1, col2, x, y;
+	u8 i, j, totalTimes;
+    s8 baseRow; //Rocks can go up to one row over on either top or bottom
+	s8 baseCol; //Rocks can go up to one col over on either left or right
+	s8 finalRow;
+	s8 finalCol, k, m;
+    u16* ptr = GetBgTilemapBuffer(2);
+
+
+    //Start by placing blank layer 3 rocks
+	for (i = 0; i < 96; ++i) {    
+        sExcavationUiState->layerMap[i] = 2;
+	}
+    
+    //Create patches of lighter dirt areas
+	totalTimes = 3 + random(5);
+	for (i = 0; i < totalTimes; ++i)
+	{
+		do
+		{
+			row1 = random(9);
+			row2 = random(9);
+		} while (row1 >= row2);
+
+		do
+		{
+			col1 = random(13);
+			col2 = random(13);
+		} while (col1 >= col2);
+
+		for (; row1 < row2; ++row1)
+		{
+			for (j = col1; j < col2; ++j) //col1 is needed in subsequent loops
+				//sUndergroundMiningPtr->grid[row1][j] = L2_SMALL_ROCK;
+                sExcavationUiState->layerMap[j + row1*12] = 4;
+		}
+	}
+
+    //Create smaller patches of big rocks on top
+	/*Always in the shape:
+		  0 0 0
+		0 0 0 0 0
+		0 0 0 0 0
+		0 0 0 0 0
+		  0 0 0
+	*/
+	totalTimes = random(5)+2;
+	for (i = 0; i < totalTimes; ++i)
+	{
+		baseRow = RandRangeSigned(-4, 8); //Rocks can go up to one row over on either top or bottom
+		baseCol = RandRangeSigned(-4, 12); //Rocks can go up to one col over on either left or right
+		finalRow = baseRow + 5;
+		finalCol = baseCol + 5;
+
+		for (k = baseRow; k < finalRow; ++k)
+		{
+			if (k < 0 || k >= 8)
+				continue; //Not legal row
+
+			for (m = baseCol; m < finalCol; ++m)
+			{
+				if (m < 0 || m >= 12)
+					continue; //Not legal column
+
+				if (AtCornerOfRectangle(k, m, baseRow, baseCol, baseRow + 4, baseCol + 4))
+					continue; //Leave corner out
+
+                sExcavationUiState->layerMap[m + k*12] = 0;
+			}
+		}
+	}
+
+    i = 0; // Using 'i' again to get the layer of the layer map
+
+    // Using 'x', 'y' and 'i' to draw the right layer_tiles from layerMap to the screen.
+    // Why 'y = 2'? Because we need to have a distance from the top of the screen, which is 32px -> 2 * 16
+    for (y = 2; y < 8 +2; y++) {
+        for (x = 0; x < 12 && i < 96; x++, i++) {
+            Terrain_DrawLayerTileToScreen(x, y, sExcavationUiState->layerMap[i], ptr);
+        }
+    }
 }
 
 // This function is like 'Terrain_DrawLayerTileToScreen(...);', but for updating a tile AND the layer in the layerMap (we want to sync it)
