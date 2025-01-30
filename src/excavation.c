@@ -2711,9 +2711,12 @@ static void PrintMessage(const u8 *string) {
 
 	DrawDialogFrameWithCustomTileAndPalette(WIN_MSG, FALSE, 20, 15);
 	FillWindowPixelBuffer(WIN_MSG, PIXEL_FILL(TEXT_COLOR_WHITE));
-	AddTextPrinterParameterized4(WIN_MSG, FONT_NORMAL, x, y, letterSpacing, 1, txtColor, TEXT_SKIP_DRAW,string);
+	CopyWindowToVram(WIN_MSG, 3);
 	PutWindowTilemap(WIN_MSG);
-	CopyWindowToVram(WIN_MSG,COPYWIN_FULL);
+	AddTextPrinterParameterized4(WIN_MSG, FONT_NORMAL, x, y, letterSpacing, 1, txtColor, GetPlayerTextSpeedDelay(),string);
+	//PutWindowTilemap(WIN_MSG);
+    //CopyWindowToVram(WIN_MSG,COPYWIN_FULL);
+    RunTextPrinters();
 }
 
 static u32 GetCrackPosition(void) {
@@ -2754,29 +2757,37 @@ static bool32 ClearWindowPlaySelectButtonPress(void) {
 }
 
 static void Task_WaitButtonPressOpening(u8 taskId) {
-	if (!ClearWindowPlaySelectButtonPress())
-		return;
 
-	switch (sExcavationUiState->loadGameState)
-	{
-		case STATE_GAME_FINISH:
-		case STATE_ITEM_NAME_1:
-		case STATE_ITEM_BAG_1:
-		case STATE_ITEM_NAME_2:
-		case STATE_ITEM_BAG_2:
-		case STATE_ITEM_NAME_3:
-		case STATE_ITEM_BAG_3:
-		case STATE_ITEM_NAME_4:
-		case STATE_ITEM_BAG_4:
-			gTasks[taskId].func = Task_ExcavationPrintResult;
-			break;
-		case STATE_QUIT:
-			ExitExcavationUI(taskId);
-			break;
-		default:
-			gTasks[taskId].func = Task_ExcavationMainInput;
-			break;
-	}
+    if (!RunTextPrintersAndIsPrinter0Active()) {
+    	if (!ClearWindowPlaySelectButtonPress())
+	    	return;
+
+    	switch (sExcavationUiState->loadGameState) {
+		    case STATE_GAME_FINISH:
+    		case STATE_ITEM_NAME_1:
+	    	case STATE_ITEM_BAG_1:
+		    case STATE_ITEM_NAME_2:
+    		case STATE_ITEM_BAG_2:
+	    	case STATE_ITEM_NAME_3:
+		    case STATE_ITEM_BAG_3:
+    		case STATE_ITEM_NAME_4:
+	    	case STATE_ITEM_BAG_4:
+		    	gTasks[taskId].func = Task_ExcavationPrintResult;
+			    break;
+    		case STATE_QUIT:
+	    		ExitExcavationUI(taskId);
+		    	break;
+    		default:
+	    		gTasks[taskId].func = Task_ExcavationMainInput;
+		    	break;
+    	}
+    } else if (JOY_NEW(A_BUTTON)) {
+        while(1) {
+            if (!RunTextPrintersAndIsPrinter0Active()) {
+                break;        
+            }
+        }
+    }
 }
 
 static void Task_ExcavationPrintResult(u8 taskId) {
