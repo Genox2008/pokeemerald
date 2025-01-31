@@ -159,6 +159,7 @@ struct ExcavationState {
 #define TAG_HIT_PICKAXE         13
 
 static EWRAM_DATA struct ExcavationState *sExcavationUiState = NULL;
+static EWRAM_DATA u8 *sBg1TilemapBuffer = NULL;
 static EWRAM_DATA u8 *sBg2TilemapBuffer = NULL;
 static EWRAM_DATA u8 *sBg3TilemapBuffer = NULL;
 
@@ -178,16 +179,27 @@ static const struct WindowTemplate sWindowTemplates[] =
         .paletteNum = 14,
         .baseBlock = 256,
     },
+    DUMMY_WIN_TEMPLATE
 };
 
 static const struct BgTemplate sExcavationBgTemplates[] =
 {
+    // Text Box
     {
         .bg = 0,
         .charBaseIndex = 0,
         .mapBaseIndex = 13,
         .priority = 0,
     },
+
+    // Collapse Screen
+    {
+        .bg = 1,
+        .charBaseIndex = 1,
+        .mapBaseIndex = 29,
+        .priority = 1,
+    },
+
     // Cracks, Terrain (idk how its called lol)
     {
         .bg = 2,
@@ -209,6 +221,11 @@ static const struct BgTemplate sExcavationBgTemplates[] =
 static const u32 sUiTiles[] = INCBIN_U32("graphics/excavation/ui.4bpp.lz");
 static const u32 sUiTilemap[] = INCBIN_U32("graphics/excavation/ui.bin.lz");
 static const u16 sUiPalette[] = INCBIN_U16("graphics/excavation/ui.gbapal");
+
+// Collapse screen
+static const u32 sCollapseScreenTiles[] = INCBIN_U32("graphics/excavation/collapse.4bpp.lz");
+static const u32 sCollapseScreenUiTilemap[] = INCBIN_U32("graphics/excavation/collapse.bin.lz");
+static const u16 sCollapseScreenPalette[] = INCBIN_U16("graphics/excavation/collapse.gbapal");
 
 static const u32 gCracksAndTerrainTiles[] = INCBIN_U32("graphics/excavation/cracks_terrain.4bpp.lz");
 static const u32 gCracksAndTerrainTilemap[] = INCBIN_U32("graphics/excavation/cracks_terrain.bin.lz");
@@ -306,7 +323,7 @@ static const struct OamData gOamCursor = {
     .matrixNum = 0,
     .size = 1,
     .tileNum = 0,
-    .priority = 0,
+    .priority = 2,
     .paletteNum = 0,
 };
 
@@ -320,7 +337,7 @@ static const struct OamData gOamButton = {
     .matrixNum = 0,
     .size = 3,
     .tileNum = 0,
-    .priority = 1,
+    .priority = 2,
     .paletteNum = 0,
 };
 
@@ -334,7 +351,7 @@ static const struct OamData gOamHitEffect = {
     .matrixNum = 0,
     .size = 3,
     .tileNum = 0,
-    .priority = 0,
+    .priority = 2,
     .paletteNum = 0,
 };
 
@@ -348,7 +365,7 @@ static const struct OamData gOamHitTools = {
     .matrixNum = 0,
     .size = 2,
     .tileNum = 0,
-    .priority = 0,
+    .priority = 2,
     .paletteNum = 0,
 };
 
@@ -1349,11 +1366,14 @@ static bool8 Excavation_InitBgs(void) {
 
   ResetAllBgsCoordinates();
 
+  sBg1TilemapBuffer = AllocZeroed(TILEMAP_BUFFER_SIZE);
   sBg2TilemapBuffer = AllocZeroed(TILEMAP_BUFFER_SIZE);
   sBg3TilemapBuffer = AllocZeroed(TILEMAP_BUFFER_SIZE);
   if (sBg3TilemapBuffer == NULL) {
     return FALSE;
   } else if (sBg2TilemapBuffer == NULL) {
+    return FALSE;
+  } else if (sBg1TilemapBuffer == NULL) {
     return FALSE;
   }
 
@@ -1361,9 +1381,11 @@ static bool8 Excavation_InitBgs(void) {
 
   InitBgsFromTemplates(0, sExcavationBgTemplates, NELEMS(sExcavationBgTemplates));
 
+  SetBgTilemapBuffer(1, sBg1TilemapBuffer);
   SetBgTilemapBuffer(2, sBg2TilemapBuffer);
   SetBgTilemapBuffer(3, sBg3TilemapBuffer);
 
+  ScheduleBgCopyTilemapToVram(1);
   ScheduleBgCopyTilemapToVram(2);
   ScheduleBgCopyTilemapToVram(3);
 
@@ -1482,23 +1504,43 @@ static void Excavation_FadeAndBail(void) {
     SetMainCallback2(Excavation_MainCB);
 }
 
-static bool8 Excavation_LoadBgGraphics(void) {
 
+#define TILE_POS(x,y) (32*(y) + (x))
+
+// Overwrites specific tile in the tilemap of a background!!!
+// Credits to Sbird (Karathan) for helping me with the tile override!
+static void OverwriteTileDataInTilemapBuffer(u8 tile, u8 x, u8 y, u16* tilemapBuf, u8 pal) {
+  tilemapBuf[TILE_POS(x, y)] = tile | (pal << 12);
+}
+
+
+static bool8 Excavation_LoadBgGraphics(void) {
+  u32 i, j;
+  u16* tilemapBuf = GetBgTilemapBuffer(1);
   switch (sExcavationUiState->loadGameState) {
     case 0:
       ResetTempTileDataBuffers();
+      DecompressAndCopyTileDataToVram(1, sCollapseScreenTiles, 0, 0, 0);
       DecompressAndCopyTileDataToVram(2, gCracksAndTerrainTiles, 0, 0, 0);
       DecompressAndCopyTileDataToVram(3, sUiTiles, 0, 0, 0);
       sExcavationUiState->loadGameState++;
       break;
     case 1:
       if (FreeTempTileDataBuffersIfPossible() != TRUE) {
+        //LZDecompressWram(sCollapseScreenUiTilemap, sBg1TilemapBuffer);
+        for (i = 0; i<32; i++) {
+            for (j = 0; j<32; j++) {
+                OverwriteTileDataInTilemapBuffer(0, i, j, tilemapBuf, 2);
+            }
+        }
+
         LZDecompressWram(gCracksAndTerrainTilemap, sBg2TilemapBuffer);
         LZDecompressWram(sUiTilemap, sBg3TilemapBuffer);
         sExcavationUiState->loadGameState++;
       }
       break;
     case 2:
+      LoadPalette(sCollapseScreenPalette, BG_PLTT_ID(2), PLTT_SIZE_4BPP);
       LoadPalette(gCracksAndTerrainPalette, BG_PLTT_ID(1), PLTT_SIZE_4BPP);
       LoadPalette(sUiPalette, BG_PLTT_ID(0), PLTT_SIZE_4BPP);
       sExcavationUiState->loadGameState++;
@@ -1752,14 +1794,6 @@ static void Task_ExcavationMainInput(u8 taskId) {
 
 	if (IsCrackMax())
 		EndMining(taskId);
-}
-
-#define TILE_POS(x,y) (32*(y) + (x))
-
-// Overwrites specific tile in the tilemap of a background!!!
-// Credits to Sbird (Karathan) for helping me with the tile override!
-static void OverwriteTileDataInTilemapBuffer(u8 tile, u8 x, u8 y, u16* tilemapBuf, u8 pal) {
-  tilemapBuf[TILE_POS(x, y)] = tile | (pal << 12);
 }
 
 // DO NOT TOUCH ANY OF THE CRACK UPDATE FUNCTIONS!!!!! GENERATION IS TOO COMPLICATED TO GET FIXED! (most likely will forget everything lmao (thats why)! )!
@@ -2892,7 +2926,55 @@ static const struct HWWindowPosition HWinCoords[1] = {
   },
 };
 
+static void WallCollapse_Shake(u32 duration) {
+    u32 i = 0;
+    for (i = 0; i<duration; i++) {
+        SetGpuReg(REG_OFFSET_BG3HOFS, RandRangeSigned(-2,2));
+        SetGpuReg(REG_OFFSET_BG3VOFS, RandRangeSigned(-2,2));
+        SetGpuReg(REG_OFFSET_BG2HOFS, RandRangeSigned(-2,2));
+        SetGpuReg(REG_OFFSET_BG2VOFS, RandRangeSigned(-2,2));
+    }
+}
+
+static void WaitForDuration(u32 duration) {
+    u32 i;
+    for (i = 0; i<duration; i++) {
+    }
+}
+
+static void WallCollapseAnimation() {
+    u32 i, j;
+    u32 delay = 0;
+    u16* tilemapBuf = GetBgTilemapBuffer(1);
+    ShowBg(1);
+
+    WallCollapse_Shake(4000);
+
+    /*for (i = 0; i<20; delay++) { // Black screen falling from the top
+        if (delay == 10000) {
+            for (j=0; j<30; j++) { 
+                OverwriteTileDataInTilemapBuffer(1, j, i, tilemapBuf, 2);
+            }
+            ScheduleBgCopyTilemapToVram(1);
+            DoScheduledBgTilemapCopiesToVram();
+            i++;
+            delay = 0;
+        }
+    }*/
+
+    for (i = 0; i<20; i++) { // Black screen falling from the top
+        for (j=0; j<30; j++) { 
+            OverwriteTileDataInTilemapBuffer(1, j, i, tilemapBuf, 2);
+        }
+        ScheduleBgCopyTilemapToVram(1);
+        DoScheduledBgTilemapCopiesToVram();
+        WaitForDuration(20000);
+    }
+}
+
 static void HandleGameFinish(u8 taskId) {
+  u32 i,j, delay;
+  u16* tilemapBuf = GetBgTilemapBuffer(1);
   MakeCursorInvisible();
 
   // Ignore PSF
@@ -2903,10 +2985,12 @@ static void HandleGameFinish(u8 taskId) {
   //SetGpuReg(REG_OFFSET_WININ, WININ_WIN0_BG1);
   //SetGpuReg(REG_OFFSET_WINOUT, WINOUT_WIN01_ALL);
 
-	if (IsCrackMax())
+	if (IsCrackMax()) {
+        WallCollapseAnimation();
 		PrintMessage(sText_TheWall);
-	else
+    } else {
 		PrintMessage(sText_EverythingWas);
+    }
 
 	sExcavationUiState->loadGameState++;
 	gTasks[taskId].func = Task_WaitButtonPressOpening;
